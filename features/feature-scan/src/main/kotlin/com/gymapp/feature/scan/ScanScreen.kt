@@ -53,6 +53,7 @@ fun ScanScreen(
     viewModel: ScanViewModel = hiltViewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val knownNames by viewModel.knownExerciseNames.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -95,6 +96,7 @@ fun ScanScreen(
     if (uiState.reviewItems != null) {
         ScanReviewScreen(
             items = uiState.reviewItems!!,
+            knownNames = knownNames,
             onItemChanged = { index, item -> viewModel.updateReviewItem(index, item) },
             onItemRemoved = { index -> viewModel.removeReviewItem(index) },
             onItemAdded = { viewModel.addReviewItem() },

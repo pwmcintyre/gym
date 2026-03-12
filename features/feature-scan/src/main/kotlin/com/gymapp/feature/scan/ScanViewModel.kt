@@ -15,8 +15,10 @@ import com.gymapp.core.database.repository.WorkoutRepository
 import com.gymapp.core.model.ExerciseEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.io.ByteArrayOutputStream
@@ -42,6 +44,10 @@ class ScanViewModel @Inject constructor(
 
     private val _uiState = MutableStateFlow(ScanUiState())
     val uiState: StateFlow<ScanUiState> = _uiState.asStateFlow()
+
+    val knownExerciseNames: StateFlow<List<String>> =
+        workoutRepository.observeDistinctExerciseNames()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private var imageCapture: ImageCapture? = null
 

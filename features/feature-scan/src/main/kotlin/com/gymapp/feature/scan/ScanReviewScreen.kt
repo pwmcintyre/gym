@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -26,10 +28,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
@@ -40,6 +44,7 @@ import com.gymapp.core.model.ExerciseEntry
 @Composable
 fun ScanReviewScreen(
     items: List<ExerciseEntry>,
+    knownNames: List<String>,
     onItemChanged: (index: Int, item: ExerciseEntry) -> Unit,
     onItemRemoved: (index: Int) -> Unit,
     onItemAdded: () -> Unit,
@@ -82,6 +87,7 @@ fun ScanReviewScreen(
             itemsIndexed(items, key = { _, item -> item.id }) { index, item ->
                 ReviewItemCard(
                     item = item,
+                    knownNames = knownNames,
                     onChanged = { onItemChanged(index, it) },
                     onRemove = { onItemRemoved(index) },
                 )
@@ -103,9 +109,17 @@ fun ScanReviewScreen(
 @Composable
 private fun ReviewItemCard(
     item: ExerciseEntry,
+    knownNames: List<String>,
     onChanged: (ExerciseEntry) -> Unit,
     onRemove: () -> Unit,
 ) {
+    val suggestions = remember(item.exerciseName, knownNames) {
+        if (item.exerciseName.isBlank()) emptyList()
+        else knownNames.filter {
+            it.contains(item.exerciseName.trim(), ignoreCase = true) &&
+                !it.equals(item.exerciseName.trim(), ignoreCase = true)
+        }.take(5)
+    }
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -142,6 +156,20 @@ private fun ReviewItemCard(
                     )
                 }
             }
+            if (suggestions.isNotEmpty()) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    items(suggestions) { suggestion ->
+                        SuggestionChip(
+                            onClick = { onChanged(item.copy(exerciseName = suggestion)) },
+                            label = { Text(suggestion, style = MaterialTheme.typography.labelSmall) },
+                        )
+                    }
+                }
+            }
+
             Row(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier.padding(top = 8.dp),
