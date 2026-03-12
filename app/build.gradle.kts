@@ -52,6 +52,7 @@ android {
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
+            excludes += "/META-INF/DEPENDENCIES"
         }
     }
 }
@@ -60,6 +61,11 @@ dependencies {
     // Core modules
     implementation(project(":core:core-model"))
     implementation(project(":core:core-database"))
+
+    // Feature modules
+    implementation(project(":features:feature-workouts"))
+    implementation(project(":features:feature-history"))
+    implementation(project(":features:feature-settings"))
 
     // AndroidX
     implementation(libs.androidx.core.ktx)
