@@ -225,6 +225,7 @@ Prefer concise, high-signal updates.
 
 Required commit checkpoint:
 - one commit at the completion of each milestone.
+- push to remote immediately after the milestone commit — do not start the next milestone until pushed.
 
 ---
 

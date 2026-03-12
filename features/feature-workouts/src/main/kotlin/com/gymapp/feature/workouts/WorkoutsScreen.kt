@@ -19,6 +19,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -32,6 +33,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gymapp.core.model.ExerciseProgressSummary
 import com.gymapp.core.model.WorkoutSession
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -41,10 +43,13 @@ import java.util.Locale
 @Composable
 fun WorkoutsScreen(
     onOpenWorkout: (sessionId: String) -> Unit,
+    onOpenDetail: (sessionId: String) -> Unit,
+    onOpenProgress: (exerciseName: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WorkoutsViewModel = hiltViewModel(),
 ) {
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
+    val progressSummaries by viewModel.progressSummaries.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = modifier,
@@ -81,13 +86,76 @@ fun WorkoutsScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
+                if (progressSummaries.isNotEmpty()) {
+                    item {
+                        ProgressOverviewCard(
+                            progressSummaries = progressSummaries,
+                            onOpenProgress = onOpenProgress,
+                        )
+                    }
+                }
                 items(sessions, key = { it.id }) { session ->
                     SessionCard(
                         session = session,
-                        onClick = { onOpenWorkout(session.id) },
+                        onClick = { onOpenDetail(session.id) },
                         onCopyAsTemplate = {
                             viewModel.createFromTemplate(session.id, onOpenWorkout)
                         },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProgressOverviewCard(
+    progressSummaries: List<ExerciseProgressSummary>,
+    onOpenProgress: (exerciseName: String) -> Unit,
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = "Progress Overview",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "Recent movements ranked by the latest logged session.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+
+            progressSummaries.forEachIndexed { index, summary ->
+                if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onOpenProgress(summary.exerciseName) },
+                ) {
+                    Text(
+                        text = summary.exerciseName,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = buildProgressSummaryLine(summary),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 2.dp),
+                    )
+                    Text(
+                        text = "Last logged ${formatDate(summary.lastPerformed)}",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 2.dp),
                     )
                 }
             }
@@ -149,5 +217,30 @@ private fun SessionCard(
     }
 }
 
+private fun buildProgressSummaryLine(summary: ExerciseProgressSummary): String = buildString {
+    append("${summary.sessionCount} session")
+    if (summary.sessionCount != 1) append("s")
+    append(" • Best ${summary.bestWeight?.let { formatWeight(it) } ?: "—"}")
+    append(" • Volume ${formatVolume(summary.totalVolume)}")
+}
+
 private fun formatDate(epochMillis: Long): String =
     SimpleDateFormat("EEE, MMM d yyyy", Locale.getDefault()).format(Date(epochMillis))
+
+private fun formatWeight(weight: Float): String {
+    val value = if (weight == weight.toLong().toFloat()) {
+        weight.toLong().toString()
+    } else {
+        String.format(Locale.getDefault(), "%.1f", weight)
+    }
+    return "$value kg"
+}
+
+private fun formatVolume(volume: Float): String {
+    val value = if (volume == volume.toLong().toFloat()) {
+        volume.toLong().toString()
+    } else {
+        String.format(Locale.getDefault(), "%.1f", volume)
+    }
+    return "$value kg"
+}

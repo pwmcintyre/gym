@@ -51,7 +51,6 @@ sealed class BottomNavDestination(
 
 val bottomNavDestinations: List<BottomNavDestination> = listOf(
     BottomNavDestination.Workouts,
-    BottomNavDestination.History,
     BottomNavDestination.Scan,
     BottomNavDestination.Settings,
 )

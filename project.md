@@ -276,16 +276,15 @@ Delivered:
 - **Delete exercise** — trash icon opens a confirmation dialog; cascades to sets via DB foreign key.
 - Both actions exposed via `ActiveWorkoutViewModel.renameExercise` / `removeExercise`.
 
-## Milestone 7 — Workout / History Consolidation
+## ✅ Milestone 7 — Workout / History Consolidation
 
-From user feedback: "workouts" (active/planned) and "history" (past sessions) have significant overlap and should be one unified concept.
-
-Scope:
-- Merge `feature-workouts` and `feature-history` into a single `feature-sessions` module, or at minimum unify the bottom-nav tab into one "Workouts" tab that shows all sessions (past and in-progress) in one list.
-- A session has a status: `IN_PROGRESS` vs `COMPLETED` (or just uses date ordering).
-- Remove the separate History tab; surfacing progress/charts can live on a per-session or per-exercise detail screen.
-
-This is a navigation + UX restructure. No new DB schema needed beyond a potential `status` field on `WorkoutSession`.
+Delivered:
+- Removed the "History" bottom nav tab entirely.
+- `WorkoutsScreen` now shows the Progress Overview card (exercise summaries) and all sessions in one unified list.
+- Session card tap → `WorkoutDetailScreen` (read-only history view); copy icon → `ActiveWorkoutScreen` (new editable session); FAB → `ActiveWorkoutScreen` (new blank session).
+- `WorkoutsViewModel` now exposes `progressSummaries` alongside `sessions`.
+- History routes (`history/detail/{sessionId}`, `history/progress/{exerciseName}`) remain in the nav graph, reachable from the Workouts tab.
+- `HistoryScreen` still exists in the module but is no longer used as a top-level tab — it can be deleted in a cleanup pass.
 
 ## Milestone 8 — Banded Bodyweight Support
 
