@@ -43,6 +43,7 @@ kotlinxSerialization    = "1.6.3"
 googleApiClientAndroid  = "2.2.0"
 googleApiServicesDrive  = "v3-rev20240123-2.0.0"
 playServicesAuth        = "21.0.0"
+googleServices          = "4.4.2"
 
 # Testing
 junit                   = "4.13.2"
@@ -120,6 +121,7 @@ kotlin-jvm             = { id = "org.jetbrains.kotlin.jvm",               versio
 kotlin-serialization   = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
 hilt-android           = { id = "com.google.dagger.hilt.android",         version.ref = "hilt" }
 ksp                    = { id = "com.google.devtools.ksp",                version.ref = "ksp" }
+google-services        = { id = "com.google.gms.google-services",         version.ref = "googleServices" }
 
 [bundles]
 camerax = [

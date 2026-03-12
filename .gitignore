@@ -20,6 +20,10 @@ local.properties
 # Heap dumps
 *.hprof
 
+# Google Services config (contains project ID — keep local)
+app/google-services.json
+client_secret_*.json
+
 # Misplaced SDK directory (created by agent running mkdir ~/... from within repo)
 "~/"
 ~/
