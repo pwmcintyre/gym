@@ -5,6 +5,7 @@ import com.gymapp.core.database.dao.WorkoutSessionDao
 import com.gymapp.core.database.entity.ExerciseEntryEntity
 import com.gymapp.core.database.entity.WorkoutSessionEntity
 import com.gymapp.core.model.ExerciseEntry
+import com.gymapp.core.model.ExerciseProgressSummary
 import com.gymapp.core.model.RepModifier
 import com.gymapp.core.model.WorkoutSession
 import kotlinx.coroutines.flow.Flow
@@ -43,6 +44,9 @@ class WorkoutRepository @Inject constructor(
 
     fun observeExercises(sessionId: String): Flow<List<ExerciseEntry>> =
         exerciseDao.observeBySession(sessionId).map { list -> list.map { it.toModel() } }
+
+    fun observeProgressSummaries(limit: Int = 5): Flow<List<ExerciseProgressSummary>> =
+        exerciseDao.observeProgressSummaries(limit)
 
     suspend fun addExercise(
         sessionId: String,

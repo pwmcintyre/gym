@@ -241,6 +241,14 @@ Validation note:
 
 Progress charts per movement. PR tracking. Volume trends.
 
+Current direction:
+- Start with a Room-backed history overview that summarizes recently trained exercises using session count, best logged weight, total volume, and last-performed date.
+- Use the current `exerciseName` field as the grouping key for the first increment, then tighten this to canonical movement identity in a follow-up once that path is wired end-to-end.
+
+Current status:
+- Implemented: a `Progress Overview` card on the History screen backed by aggregate Room queries.
+- Remaining: per-movement drill-down, chart visualizations, and clearer PR-specific views.
+
 ## Milestone 5 — Workout Suggestions
 
 Auto-progression. Template reuse.

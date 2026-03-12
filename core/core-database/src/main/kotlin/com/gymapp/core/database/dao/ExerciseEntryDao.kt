@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.gymapp.core.database.entity.ExerciseEntryEntity
+import com.gymapp.core.model.ExerciseProgressSummary
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -20,6 +21,25 @@ interface ExerciseEntryDao {
 
     @Query("SELECT * FROM exercise_entries ORDER BY workout_session_id ASC, label ASC, id ASC")
     suspend fun getAllForBackup(): List<ExerciseEntryEntity>
+
+    @Query(
+        """
+        SELECT
+            e.exercise_name AS exerciseName,
+            COUNT(DISTINCT e.workout_session_id) AS sessionCount,
+            MAX(ws.date) AS lastPerformed,
+            MAX(s.weight) AS bestWeight,
+            CAST(SUM(COALESCE(s.weight, 0) * COALESCE(s.reps_performed, 0)) AS REAL) AS totalVolume
+        FROM exercise_entries e
+        INNER JOIN workout_sessions ws ON ws.id = e.workout_session_id
+        LEFT JOIN set_entries s ON s.exercise_entry_id = e.id
+        WHERE TRIM(e.exercise_name) != ''
+        GROUP BY e.exercise_name
+        ORDER BY lastPerformed DESC, sessionCount DESC, exerciseName COLLATE NOCASE ASC
+        LIMIT :limit
+        """
+    )
+    fun observeProgressSummaries(limit: Int): Flow<List<ExerciseProgressSummary>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: ExerciseEntryEntity)
