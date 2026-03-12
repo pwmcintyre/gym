@@ -1,5 +1,14 @@
 # AGENTS.md
 
+## Ways of working
+
+- This is a **PoC / personal app**. Do not add database migrations — use Room's `fallbackToDestructiveMigration()` and wipe-on-schema-change. Local data loss during development is acceptable.
+- Do not add backwards-compatibility shims or version gates. Change the code directly.
+- Do not over-engineer for hypothetical future scale. Solve the immediate problem simply.
+- User feedback is tracked in `feedback/YYYY-MM-DD.md`. Check recent feedback files for known issues before starting a session.
+
+---
+
 ## Project purpose
 
 This repository contains a mobile gym app intended to run on a Pixel phone.

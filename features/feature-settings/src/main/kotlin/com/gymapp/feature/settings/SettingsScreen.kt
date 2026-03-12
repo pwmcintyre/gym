@@ -47,8 +47,12 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
     val savedKey by viewModel.apiKey.collectAsStateWithLifecycle()
+    val savedBodyWeight by viewModel.bodyWeightKg.collectAsStateWithLifecycle()
     val driveBackupState by viewModel.driveBackupState.collectAsStateWithLifecycle()
     var keyDraft by rememberSaveable(savedKey) { mutableStateOf(savedKey) }
+    var bodyWeightDraft by rememberSaveable(savedBodyWeight) {
+        mutableStateOf(savedBodyWeight?.let { formatWeight(it) } ?: "")
+    }
     var showRestoreConfirm by rememberSaveable { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
     val driveSignInLauncher = rememberLauncherForActivityResult(
@@ -88,6 +92,35 @@ fun SettingsScreen(
                     keyboardActions = KeyboardActions(
                         onDone = {
                             viewModel.saveApiKey(keyDraft)
+                            focusManager.clearFocus()
+                        },
+                    ),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Text(
+                    text = "Saved when you press Done on the keyboard.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            SettingsSectionCard(
+                title = "Body Weight",
+                supportingText = "Your current body weight. Used as a weight value when you tap BW during set entry.",
+            ) {
+                OutlinedTextField(
+                    value = bodyWeightDraft,
+                    onValueChange = { bodyWeightDraft = it },
+                    label = { Text("Body weight (kg)") },
+                    placeholder = { Text("e.g. 80") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Decimal,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            bodyWeightDraft.toFloatOrNull()?.let { viewModel.saveBodyWeight(it) }
                             focusManager.clearFocus()
                         },
                     ),
@@ -238,3 +271,6 @@ private fun SettingsSectionCard(
         }
     }
 }
+
+private fun formatWeight(weight: Float): String =
+    if (weight == weight.toLong().toFloat()) weight.toLong().toString() else weight.toString()

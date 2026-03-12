@@ -9,9 +9,11 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -29,6 +31,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -55,6 +58,8 @@ fun ActiveWorkoutScreen(
     viewModel: ActiveWorkoutViewModel = hiltViewModel(),
 ) {
     val exercises by viewModel.exercises.collectAsStateWithLifecycle()
+    val bodyWeightKg by viewModel.bodyWeightKg.collectAsStateWithLifecycle()
+    val knownNames by viewModel.knownExerciseNames.collectAsStateWithLifecycle()
     var showAddExerciseDialog by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
@@ -85,7 +90,8 @@ fun ActiveWorkoutScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding)
+                .imePadding(),
         ) {
             if (exercises.isEmpty()) {
                 item {
@@ -98,7 +104,11 @@ fun ActiveWorkoutScreen(
                 }
             }
             items(exercises, key = { it.id }) { exercise ->
-                ExerciseCard(exercise = exercise, viewModel = viewModel)
+                ExerciseCard(
+                    exercise = exercise,
+                    bodyWeightKg = bodyWeightKg,
+                    viewModel = viewModel,
+                )
             }
         }
     }
@@ -106,6 +116,7 @@ fun ActiveWorkoutScreen(
     if (showAddExerciseDialog) {
         AddExerciseDialog(
             nextLabel = nextLabel(exercises),
+            knownNames = knownNames,
             onConfirm = { label, name, sets, reps ->
                 viewModel.addExercise(label, name, sets, reps)
                 showAddExerciseDialog = false
@@ -116,7 +127,11 @@ fun ActiveWorkoutScreen(
 }
 
 @Composable
-private fun ExerciseCard(exercise: ExerciseEntry, viewModel: ActiveWorkoutViewModel) {
+private fun ExerciseCard(
+    exercise: ExerciseEntry,
+    bodyWeightKg: Float?,
+    viewModel: ActiveWorkoutViewModel,
+) {
     val sets by viewModel.observeSets(exercise.id).collectAsStateWithLifecycle()
 
     Card(
@@ -184,7 +199,7 @@ private fun ExerciseCard(exercise: ExerciseEntry, viewModel: ActiveWorkoutViewMo
             }
 
             sets.forEach { set ->
-                SetRow(set = set, onUpdate = { viewModel.updateSet(it) })
+                SetRow(set = set, bodyWeightKg = bodyWeightKg, onUpdate = { viewModel.updateSet(it) })
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -208,7 +223,7 @@ private fun ExerciseCard(exercise: ExerciseEntry, viewModel: ActiveWorkoutViewMo
 }
 
 @Composable
-private fun SetRow(set: SetEntry, onUpdate: (SetEntry) -> Unit) {
+private fun SetRow(set: SetEntry, bodyWeightKg: Float?, onUpdate: (SetEntry) -> Unit) {
     var weightText by remember(set.id) { mutableStateOf(set.weight?.let { formatWeight(it) } ?: "") }
     var repsText by remember(set.id) { mutableStateOf(set.repsPerformed?.toString() ?: "") }
 
@@ -223,19 +238,34 @@ private fun SetRow(set: SetEntry, onUpdate: (SetEntry) -> Unit) {
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.width(36.dp),
         )
-        OutlinedTextField(
-            value = weightText,
-            onValueChange = { v ->
-                weightText = v
-                onUpdate(set.copy(weight = v.toFloatOrNull()))
-            },
-            placeholder = { Text("kg") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            singleLine = true,
-            modifier = Modifier
-                .weight(1f)
-                .padding(end = 8.dp),
-        )
+        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+            OutlinedTextField(
+                value = weightText,
+                onValueChange = { v ->
+                    weightText = v
+                    onUpdate(set.copy(weight = v.toFloatOrNull()))
+                },
+                placeholder = { Text("kg") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            if (bodyWeightKg != null) {
+                TextButton(
+                    onClick = {
+                        weightText = formatWeight(bodyWeightKg)
+                        onUpdate(set.copy(weight = bodyWeightKg))
+                    },
+                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
+                ) {
+                    Text(
+                        "BW ${formatWeight(bodyWeightKg)}kg",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+            }
+        }
         OutlinedTextField(
             value = repsText,
             onValueChange = { v ->
@@ -253,6 +283,7 @@ private fun SetRow(set: SetEntry, onUpdate: (SetEntry) -> Unit) {
 @Composable
 private fun AddExerciseDialog(
     nextLabel: String,
+    knownNames: List<String>,
     onConfirm: (label: String, name: String, sets: Int?, reps: Int?) -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -260,6 +291,11 @@ private fun AddExerciseDialog(
     var name by rememberSaveable { mutableStateOf("") }
     var setsText by rememberSaveable { mutableStateOf("") }
     var repsText by rememberSaveable { mutableStateOf("") }
+
+    val suggestions = remember(name, knownNames) {
+        if (name.isBlank()) emptyList()
+        else knownNames.filter { it.contains(name.trim(), ignoreCase = true) && !it.equals(name.trim(), ignoreCase = true) }.take(5)
+    }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -280,6 +316,16 @@ private fun AddExerciseDialog(
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
+                if (suggestions.isNotEmpty()) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        items(suggestions) { suggestion ->
+                            SuggestionChip(
+                                onClick = { name = suggestion },
+                                label = { Text(suggestion, style = MaterialTheme.typography.labelSmall) },
+                            )
+                        }
+                    }
+                }
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(
                         value = setsText,

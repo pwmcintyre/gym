@@ -52,6 +52,9 @@ class WorkoutRepository @Inject constructor(
     fun observeProgressSessions(exerciseName: String): Flow<List<ExerciseSessionProgress>> =
         exerciseDao.observeProgressSessions(exerciseName)
 
+    fun observeDistinctExerciseNames(): Flow<List<String>> =
+        exerciseDao.observeDistinctNames()
+
     suspend fun addExercise(
         sessionId: String,
         label: String,

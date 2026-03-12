@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymapp.core.ai.AiSettings
+import com.gymapp.core.ai.UserSettings
 import com.gymapp.core.drivebackup.DriveAccountState
 import com.gymapp.core.drivebackup.DriveBackupRepository
 import com.gymapp.core.drivebackup.GoogleDriveAuthManager
@@ -26,12 +27,16 @@ data class DriveBackupUiState(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val aiSettings: AiSettings,
+    private val userSettings: UserSettings,
     private val driveAuthManager: GoogleDriveAuthManager,
     private val driveBackupRepository: DriveBackupRepository,
 ) : ViewModel() {
 
     val apiKey: StateFlow<String> = aiSettings.apiKey
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+
+    val bodyWeightKg: StateFlow<Float?> = userSettings.bodyWeightKg
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     private val _driveBackupState = MutableStateFlow(
         driveAuthManager.currentAccountState().toUiState(),
@@ -40,6 +45,10 @@ class SettingsViewModel @Inject constructor(
 
     fun saveApiKey(key: String) {
         viewModelScope.launch { aiSettings.setApiKey(key) }
+    }
+
+    fun saveBodyWeight(kg: Float) {
+        viewModelScope.launch { userSettings.setBodyWeightKg(kg) }
     }
 
     fun createDriveSignInIntent(): Intent =

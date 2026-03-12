@@ -60,6 +60,9 @@ interface ExerciseEntryDao {
     )
     fun observeProgressSessions(exerciseName: String): Flow<List<ExerciseSessionProgress>>
 
+    @Query("SELECT DISTINCT exercise_name FROM exercise_entries WHERE TRIM(exercise_name) != '' ORDER BY exercise_name COLLATE NOCASE ASC")
+    fun observeDistinctNames(): Flow<List<String>>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: ExerciseEntryEntity)
 
