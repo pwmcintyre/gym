@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="gym_launch_background">#0F1115</color>
+    <color name="gym_icon_background">#0F1115</color>
+    <color name="gym_icon_plate">#7CFF6B</color>
+</resources>

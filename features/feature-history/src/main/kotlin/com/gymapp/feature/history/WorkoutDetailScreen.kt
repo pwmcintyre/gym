@@ -1,5 +1,6 @@
 package com.gymapp.feature.history
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -54,6 +55,7 @@ fun WorkoutDetailScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Workout Detail") },
@@ -82,6 +84,7 @@ fun WorkoutDetailScreen(
                     Text(
                         "No exercises recorded.",
                         style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 32.dp),
                     )
                 }
@@ -117,8 +120,12 @@ private fun ExerciseDetailCard(exercise: ExerciseEntry, viewModel: WorkoutDetail
     val sets by viewModel.observeSets(exercise.id).collectAsStateWithLifecycle()
 
     Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -155,9 +162,24 @@ private fun ExerciseDetailCard(exercise: ExerciseEntry, viewModel: WorkoutDetail
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Row(modifier = Modifier.fillMaxWidth()) {
-                    Text("Set", style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(36.dp))
-                    Text("Weight", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
-                    Text("Reps", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                    Text(
+                        "Set",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.width(36.dp),
+                    )
+                    Text(
+                        "Weight",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        "Reps",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.weight(1f),
+                    )
                 }
 
                 sets.forEach { set -> SetDetailRow(set) }
@@ -176,7 +198,7 @@ private fun SetDetailRow(set: SetEntry) {
     ) {
         Text(
             text = "${set.setNumber}",
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.width(36.dp),
         )
         Text(

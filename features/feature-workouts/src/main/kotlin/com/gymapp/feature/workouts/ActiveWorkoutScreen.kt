@@ -1,5 +1,6 @@
 package com.gymapp.feature.workouts
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -58,6 +59,7 @@ fun ActiveWorkoutScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
                 title = { Text("Workout") },
@@ -69,7 +71,11 @@ fun ActiveWorkoutScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { showAddExerciseDialog = true }) {
+            FloatingActionButton(
+                onClick = { showAddExerciseDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "Add exercise")
             }
         },
@@ -86,6 +92,7 @@ fun ActiveWorkoutScreen(
                     Text(
                         "No exercises yet. Tap + to add one.",
                         style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 32.dp),
                     )
                 }
@@ -113,8 +120,12 @@ private fun ExerciseCard(exercise: ExerciseEntry, viewModel: ActiveWorkoutViewMo
     val sets by viewModel.observeSets(exercise.id).collectAsStateWithLifecycle()
 
     Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -152,9 +163,24 @@ private fun ExerciseCard(exercise: ExerciseEntry, viewModel: ActiveWorkoutViewMo
 
             // Set rows header
             Row(modifier = Modifier.fillMaxWidth()) {
-                Text("Set", style = MaterialTheme.typography.labelMedium, modifier = Modifier.width(36.dp))
-                Text("Weight", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
-                Text("Reps", style = MaterialTheme.typography.labelMedium, modifier = Modifier.weight(1f))
+                Text(
+                    "Set",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.width(36.dp),
+                )
+                Text(
+                    "Weight",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    "Reps",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
             }
 
             sets.forEach { set ->
@@ -194,7 +220,7 @@ private fun SetRow(set: SetEntry, onUpdate: (SetEntry) -> Unit) {
     ) {
         Text(
             text = "${set.setNumber}",
-            style = MaterialTheme.typography.bodyMedium,
+            style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.width(36.dp),
         )
         OutlinedTextField(

@@ -219,6 +219,20 @@ Camera capture + gallery image picker → direct OpenAI gpt-4o call → review/e
 
 Restructured exercise data into three layers (Movement Identity / Modifiers / Prescription) per ADR-0001. Added `Movement` entity with `findOrCreate` normalization, `ExerciseModifier` sealed class, updated AI parser to extract movement and modifiers separately.
 
+## ✅ Milestone 3.6 — Theme and Visual Identity
+
+Applied the dark-first "Stealth Training" theme from ADR-0003 across the app shell and core workout flows.
+
+Delivered in this milestone:
+- Fixed dark Material 3 palette with neon green accent and custom typography tokens.
+- Themed app shell, workout/history screens, scan flow, and settings surfaces around graphite cards and restrained accent usage.
+- Updated bottom navigation icon behavior to use outline icons when idle and filled icons when selected.
+- Added a new adaptive launcher icon based on the barbell-plate concept from the theme ADR.
+
+Validation note:
+- `./gradlew assembleDebug --no-daemon` passed.
+- Device install/launch smoke should be rerun on the next attached phone; no device was connected during this session.
+
 ---
 
 # Upcoming Milestones
@@ -267,6 +281,7 @@ Setup prerequisite:
 | Room DB                   | Reliable offline storage                        |
 | Direct OpenAI call        | No backend to host; user controls their own key |
 | Three-layer exercise model | Stable movement identity across programs (ADR-0001) |
+| Dark-first fixed theme    | High contrast in gym lighting; consistent brand identity |
 | DataStore for API key     | Encrypted-by-default local storage              |
 | Drive appDataFolder backup | Hidden app-specific storage; snapshot-friendly; avoids Sheets-as-database |
 | No proxy server           | Personal use; complexity not justified          |

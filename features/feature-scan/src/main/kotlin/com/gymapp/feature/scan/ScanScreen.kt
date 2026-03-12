@@ -37,7 +37,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
@@ -108,6 +107,7 @@ fun ScanScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = { TopAppBar(title = { Text("Scan Workout") }) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
@@ -136,6 +136,7 @@ fun ScanScreen(
                     Text(
                         "Camera permission is needed to scan workouts.",
                         style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 32.dp),
                     )
                     Button(
@@ -150,14 +151,14 @@ fun ScanScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.5f)),
+                        .background(MaterialTheme.colorScheme.scrim.copy(alpha = 0.72f)),
                     contentAlignment = Alignment.Center,
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        CircularProgressIndicator(color = Color.White)
+                        CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         Text(
                             text = if (uiState.isParsing) "Analysing…" else "Capturing…",
-                            color = Color.White,
+                            color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(top = 12.dp),
                         )
                     }
@@ -182,13 +183,16 @@ fun ScanScreen(
                         },
                         modifier = Modifier
                             .size(56.dp)
-                            .background(Color.White.copy(alpha = 0.85f), CircleShape),
+                            .background(
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.94f),
+                                CircleShape,
+                            ),
                     ) {
                         Icon(
                             imageVector = Icons.Default.Photo,
                             contentDescription = "Pick from gallery",
                             modifier = Modifier.size(28.dp),
-                            tint = MaterialTheme.colorScheme.primary,
+                            tint = MaterialTheme.colorScheme.secondary,
                         )
                     }
 
@@ -200,13 +204,13 @@ fun ScanScreen(
                             },
                             modifier = Modifier
                                 .size(72.dp)
-                                .background(Color.White, CircleShape),
+                                .background(MaterialTheme.colorScheme.primary, CircleShape),
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Camera,
                                 contentDescription = "Capture",
                                 modifier = Modifier.size(40.dp),
-                                tint = MaterialTheme.colorScheme.primary,
+                                tint = MaterialTheme.colorScheme.onPrimary,
                             )
                         }
                     }

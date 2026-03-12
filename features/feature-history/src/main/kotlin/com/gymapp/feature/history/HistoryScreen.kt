@@ -1,5 +1,6 @@
 package com.gymapp.feature.history
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -10,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -38,6 +40,7 @@ fun HistoryScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = { TopAppBar(title = { Text("History") }) },
     ) { innerPadding ->
         if (sessions.isEmpty()) {
@@ -47,7 +50,11 @@ fun HistoryScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
-                Text("No workouts logged yet.", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "No workouts logged yet.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         } else {
             LazyColumn(
@@ -67,13 +74,19 @@ fun HistoryScreen(
 
 @Composable
 private fun HistorySessionCard(session: WorkoutSession, onClick: () -> Unit) {
-    Card(modifier = Modifier
-        .fillMaxWidth()
-        .clickable(onClick = onClick)
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
     ) {
         Text(
             text = formatDate(session.date),
             style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(16.dp),
         )
         val notes = session.notes
@@ -81,6 +94,7 @@ private fun HistorySessionCard(session: WorkoutSession, onClick: () -> Unit) {
             Text(
                 text = notes,
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             )
         }

@@ -5,6 +5,10 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.outlined.CameraAlt
+import androidx.compose.material.icons.outlined.FitnessCenter
+import androidx.compose.material.icons.outlined.History
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
@@ -13,30 +17,35 @@ import androidx.compose.ui.graphics.vector.ImageVector
 sealed class BottomNavDestination(
     val route: String,
     val label: String,
-    val icon: ImageVector,
+    val unselectedIcon: ImageVector,
+    val selectedIcon: ImageVector,
 ) {
     data object Workouts : BottomNavDestination(
         route = "workouts",
         label = "Workouts",
-        icon = Icons.Filled.FitnessCenter,
+        unselectedIcon = Icons.Outlined.FitnessCenter,
+        selectedIcon = Icons.Filled.FitnessCenter,
     )
 
     data object History : BottomNavDestination(
         route = "history",
         label = "History",
-        icon = Icons.Filled.History,
+        unselectedIcon = Icons.Outlined.History,
+        selectedIcon = Icons.Filled.History,
     )
 
     data object Scan : BottomNavDestination(
         route = "scan",
         label = "Scan",
-        icon = Icons.Filled.CameraAlt,
+        unselectedIcon = Icons.Outlined.CameraAlt,
+        selectedIcon = Icons.Filled.CameraAlt,
     )
 
     data object Settings : BottomNavDestination(
         route = "settings",
         label = "Settings",
-        icon = Icons.Filled.Settings,
+        unselectedIcon = Icons.Outlined.Settings,
+        selectedIcon = Icons.Filled.Settings,
     )
 }
 

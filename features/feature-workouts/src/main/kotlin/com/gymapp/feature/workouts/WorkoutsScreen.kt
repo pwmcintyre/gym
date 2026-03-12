@@ -1,5 +1,6 @@
 package com.gymapp.feature.workouts
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -12,6 +13,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -42,9 +44,14 @@ fun WorkoutsScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = { TopAppBar(title = { Text("Workouts") }) },
         floatingActionButton = {
-            FloatingActionButton(onClick = { viewModel.createWorkout(onOpenWorkout) }) {
+            FloatingActionButton(
+                onClick = { viewModel.createWorkout(onOpenWorkout) },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
                 Icon(Icons.Default.Add, contentDescription = "New workout")
             }
         },
@@ -56,7 +63,11 @@ fun WorkoutsScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
-                Text("No workouts yet. Tap + to start.", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "No workouts yet. Tap + to start.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         } else {
             LazyColumn(
@@ -76,13 +87,19 @@ fun WorkoutsScreen(
 
 @Composable
 private fun SessionCard(session: WorkoutSession, onClick: () -> Unit) {
-    Card(modifier = Modifier
-        .fillMaxWidth()
-        .clickable(onClick = onClick)
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
     ) {
         Text(
             text = formatDate(session.date),
             style = MaterialTheme.typography.titleMedium,
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(16.dp),
         )
         val notes = session.notes
@@ -90,6 +107,7 @@ private fun SessionCard(session: WorkoutSession, onClick: () -> Unit) {
             Text(
                 text = notes,
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             )
         }

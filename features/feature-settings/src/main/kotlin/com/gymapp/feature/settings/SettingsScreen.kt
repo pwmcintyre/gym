@@ -2,15 +2,21 @@ package com.gymapp.feature.settings
 
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -53,123 +59,123 @@ fun SettingsScreen(
 
     Scaffold(
         modifier = modifier,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = { TopAppBar(title = { Text("Settings") }) },
     ) { innerPadding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
+                .verticalScroll(rememberScrollState())
                 .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text("AI Scan", style = MaterialTheme.typography.titleSmall)
-            Text(
-                text = "Your OpenAI API key. Get one at platform.openai.com. Stored only on this device.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
-            )
-            OutlinedTextField(
-                value = keyDraft,
-                onValueChange = { keyDraft = it },
-                label = { Text("OpenAI API Key") },
-                placeholder = { Text("sk-...") },
-                singleLine = true,
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Password,
-                    imeAction = ImeAction.Done,
-                ),
-                keyboardActions = KeyboardActions(
-                    onDone = {
-                        viewModel.saveApiKey(keyDraft)
-                        focusManager.clearFocus()
-                    },
-                ),
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Text(
-                text = "Saved when you press Done on the keyboard.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-
-            HorizontalDivider(modifier = Modifier.padding(vertical = 24.dp))
-
-            Text("Cloud Backup", style = MaterialTheme.typography.titleSmall)
-            Text(
-                text = "Back up workouts to Google Drive appDataFolder. Restore replaces local workout data. OpenAI API keys stay local.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
-            )
-            Text(
-                text = if (driveBackupState.isAuthorized) {
-                    "Connected: ${driveBackupState.accountLabel ?: "Google account"}"
-                } else {
-                    "Not connected to Google Drive."
-                },
-                style = MaterialTheme.typography.bodyMedium,
-            )
-            Column(
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 12.dp),
+            SettingsSectionCard(
+                title = "AI Scan",
+                supportingText = "Your OpenAI API key. Get one at platform.openai.com. Stored only on this device.",
             ) {
-                Button(
-                    onClick = {
-                        viewModel.clearDriveStatus()
-                        driveSignInLauncher.launch(viewModel.createDriveSignInIntent())
-                    },
-                    enabled = !driveBackupState.isWorking,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text(
-                        if (driveBackupState.isAuthorized) {
-                            "Reconnect Google Drive"
-                        } else {
-                            "Connect Google Drive"
+                OutlinedTextField(
+                    value = keyDraft,
+                    onValueChange = { keyDraft = it },
+                    label = { Text("OpenAI API Key") },
+                    placeholder = { Text("sk-...") },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done,
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            viewModel.saveApiKey(keyDraft)
+                            focusManager.clearFocus()
                         },
-                    )
-                }
-                Button(
-                    onClick = viewModel::backupNow,
-                    enabled = driveBackupState.isAuthorized && !driveBackupState.isWorking,
+                    ),
                     modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Back Up Now")
-                }
-                OutlinedButton(
-                    onClick = { showRestoreConfirm = true },
-                    enabled = driveBackupState.isAuthorized && !driveBackupState.isWorking,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    Text("Restore Backup")
-                }
-            }
-            if (driveBackupState.isWorking) {
-                CircularProgressIndicator(
-                    modifier = Modifier.padding(top = 12.dp),
                 )
-            }
-            driveBackupState.statusMessage?.let { message ->
                 Text(
-                    text = message,
+                    text = "Saved when you press Done on the keyboard.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 12.dp),
                 )
             }
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 24.dp))
+            SettingsSectionCard(
+                title = "Cloud Backup",
+                supportingText = "Back up workouts to Google Drive appDataFolder. Restore replaces local workout data. OpenAI API keys stay local.",
+            ) {
+                Text(
+                    text = if (driveBackupState.isAuthorized) {
+                        "Connected: ${driveBackupState.accountLabel ?: "Google account"}"
+                    } else {
+                        "Not connected to Google Drive."
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = if (driveBackupState.isAuthorized) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
+                )
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            viewModel.clearDriveStatus()
+                            driveSignInLauncher.launch(viewModel.createDriveSignInIntent())
+                        },
+                        enabled = !driveBackupState.isWorking,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text(
+                            if (driveBackupState.isAuthorized) {
+                                "Reconnect Google Drive"
+                            } else {
+                                "Connect Google Drive"
+                            },
+                        )
+                    }
+                    Button(
+                        onClick = viewModel::backupNow,
+                        enabled = driveBackupState.isAuthorized && !driveBackupState.isWorking,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Back Up Now")
+                    }
+                    OutlinedButton(
+                        onClick = { showRestoreConfirm = true },
+                        enabled = driveBackupState.isAuthorized && !driveBackupState.isWorking,
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        Text("Restore Backup")
+                    }
+                }
+                if (driveBackupState.isWorking) {
+                    CircularProgressIndicator(
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(top = 4.dp),
+                    )
+                }
+                driveBackupState.statusMessage?.let { message ->
+                    HorizontalDivider(modifier = Modifier.padding(top = 4.dp, bottom = 4.dp))
+                    Text(
+                        text = message,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+            }
 
-            Text("Version", style = MaterialTheme.typography.titleSmall)
-            Text(
-                text = "1.0 — Milestone 6 alpha",
-                style = MaterialTheme.typography.bodyMedium,
-                modifier = Modifier.padding(top = 4.dp),
-            )
+            SettingsSectionCard(title = "Version") {
+                Text(
+                    text = "1.0 — Milestone 6 alpha",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
         }
     }
 
@@ -196,5 +202,39 @@ fun SettingsScreen(
                 }
             },
         )
+    }
+}
+
+@Composable
+private fun SettingsSectionCard(
+    title: String,
+    supportingText: String? = null,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            supportingText?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            content()
+        }
     }
 }
