@@ -19,3 +19,8 @@ local.properties
 
 # Heap dumps
 *.hprof
+
+# Misplaced SDK directory (created by agent running mkdir ~/... from within repo)
+"~/"
+~/
+

@@ -11,13 +11,21 @@ import com.gymapp.core.model.SetEntry
 import com.gymapp.core.model.WeightMode
 import com.gymapp.core.model.WorkoutSession
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+
+sealed class RestTimerState {
+    object Idle : RestTimerState()
+    data class Running(val exerciseId: String, val remainingSeconds: Int, val totalSeconds: Int) : RestTimerState()
+}
 
 @HiltViewModel
 class ActiveWorkoutViewModel @Inject constructor(
@@ -47,6 +55,11 @@ class ActiveWorkoutViewModel @Inject constructor(
 
     private val _lastPerformance = MutableStateFlow<Map<String, List<SetEntry>>>(emptyMap())
     val lastPerformance: StateFlow<Map<String, List<SetEntry>>> = _lastPerformance.asStateFlow()
+
+    private val _restTimer = MutableStateFlow<RestTimerState>(RestTimerState.Idle)
+    val restTimer: StateFlow<RestTimerState> = _restTimer.asStateFlow()
+
+    private var timerJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -112,6 +125,7 @@ class ActiveWorkoutViewModel @Inject constructor(
                 weight = weight,
                 weightMode = weightMode,
             )
+            startRestTimer(exerciseId)
         }
     }
 
@@ -126,4 +140,22 @@ class ActiveWorkoutViewModel @Inject constructor(
     fun observeSets(exerciseId: String): StateFlow<List<SetEntry>> =
         setRepository.observeSets(exerciseId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun cancelRestTimer() {
+        timerJob?.cancel()
+        _restTimer.value = RestTimerState.Idle
+    }
+
+    private fun startRestTimer(exerciseId: String) {
+        timerJob?.cancel()
+        viewModelScope.launch {
+            val totalSeconds = userSettings.restTimerSeconds.first()
+            _restTimer.value = RestTimerState.Running(exerciseId, totalSeconds, totalSeconds)
+            for (remaining in (totalSeconds - 1) downTo 0) {
+                delay(1_000)
+                if (_restTimer.value is RestTimerState.Idle) return@launch
+                _restTimer.value = RestTimerState.Running(exerciseId, remaining, totalSeconds)
+            }
+        }.also { timerJob = it }
+    }
 }

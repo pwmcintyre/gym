@@ -323,9 +323,23 @@ Setup prerequisite:
 - Register an Android OAuth client for package `com.gymapp` with the debug SHA-1 used on this machine/device.
 - Until that is configured, the UI can compile and launch but Google sign-in may fail at runtime.
 
+## ✅ Milestone 10 — Rest Timer
+
+Auto-starts a configurable countdown after each logged set. Visible inline in the ExerciseCard with a circular progress indicator, MM:SS countdown, and a cancel button. Vibrates on completion.
+
+Delivered:
+- `RestTimerState` sealed class (`Idle` / `Running(exerciseId, remainingSeconds, totalSeconds)`) in `ActiveWorkoutViewModel`.
+- `startRestTimer(exerciseId)` called from `addSet()`; ticks every second via coroutine; `cancelRestTimer()` public method.
+- `restTimerSeconds: Flow<Int>` (default 90s) added to `UserSettings` DataStore and wired into `ActiveWorkoutViewModel`.
+- `RestTimerRow` composable in `ActiveWorkoutScreen` — circular progress, MM:SS text, "Rest" label, close button.
+- Vibration on expiry (400ms, API-level appropriate).
+- Settings screen: new "Rest Timer" card with 60s/90s/120s/180s preset `FilterChip` row. Persists via `SettingsViewModel.saveRestTimerSeconds()`.
+
+Validation: `./gradlew assembleDebug --no-daemon` BUILD SUCCESSFUL.
+
 ---
 
-# Key Design Decisions
+
 
 | Decision                  | Reason                                          |
 | ------------------------- | ----------------------------------------------- |

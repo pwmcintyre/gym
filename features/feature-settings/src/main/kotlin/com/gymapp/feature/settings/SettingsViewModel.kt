@@ -38,6 +38,9 @@ class SettingsViewModel @Inject constructor(
     val bodyWeightKg: StateFlow<Float?> = userSettings.bodyWeightKg
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
+    val restTimerSeconds: StateFlow<Int> = userSettings.restTimerSeconds
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 90)
+
     private val _driveBackupState = MutableStateFlow(
         driveAuthManager.currentAccountState().toUiState(),
     )
@@ -49,6 +52,10 @@ class SettingsViewModel @Inject constructor(
 
     fun saveBodyWeight(kg: Float) {
         viewModelScope.launch { userSettings.setBodyWeightKg(kg) }
+    }
+
+    fun saveRestTimerSeconds(seconds: Int) {
+        viewModelScope.launch { userSettings.setRestTimerSeconds(seconds) }
     }
 
     fun createDriveSignInIntent(): Intent =

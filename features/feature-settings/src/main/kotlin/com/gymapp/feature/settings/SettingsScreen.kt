@@ -6,6 +6,7 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,6 +20,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -48,6 +50,7 @@ fun SettingsScreen(
 ) {
     val savedKey by viewModel.apiKey.collectAsStateWithLifecycle()
     val savedBodyWeight by viewModel.bodyWeightKg.collectAsStateWithLifecycle()
+    val savedRestTimer by viewModel.restTimerSeconds.collectAsStateWithLifecycle()
     val driveBackupState by viewModel.driveBackupState.collectAsStateWithLifecycle()
     var keyDraft by rememberSaveable(savedKey) { mutableStateOf(savedKey) }
     var bodyWeightDraft by rememberSaveable(savedBodyWeight) {
@@ -131,6 +134,27 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
+            }
+
+            SettingsSectionCard(
+                title = "Rest Timer",
+                supportingText = "How long to rest between sets. The timer starts automatically after each set.",
+            ) {
+                val presets = listOf(60, 90, 120, 180)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    presets.forEach { preset ->
+                        FilterChip(
+                            selected = savedRestTimer == preset,
+                            onClick = { viewModel.saveRestTimerSeconds(preset) },
+                            label = {
+                                Text(
+                                    if (preset < 60) "${preset}s" else "${preset / 60}m${if (preset % 60 != 0) "${preset % 60}s" else ""}",
+                                    style = MaterialTheme.typography.labelSmall,
+                                )
+                            },
+                        )
+                    }
+                }
             }
 
             SettingsSectionCard(

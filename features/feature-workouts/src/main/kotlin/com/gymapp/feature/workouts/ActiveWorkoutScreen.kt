@@ -2,6 +2,7 @@ package com.gymapp.feature.workouts
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -27,6 +29,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -41,6 +44,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -48,6 +52,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -70,7 +75,28 @@ fun ActiveWorkoutScreen(
     val bodyWeightKg by viewModel.bodyWeightKg.collectAsStateWithLifecycle()
     val knownNames by viewModel.knownExerciseNames.collectAsStateWithLifecycle()
     val lastPerformance by viewModel.lastPerformance.collectAsStateWithLifecycle()
+    val restTimer by viewModel.restTimer.collectAsStateWithLifecycle()
+    val context = LocalContext.current
     var showAddExerciseDialog by rememberSaveable { mutableStateOf(false) }
+
+    // Vibrate when timer expires
+    LaunchedEffect(restTimer) {
+        if (restTimer is RestTimerState.Running) {
+            val running = restTimer as RestTimerState.Running
+            if (running.remainingSeconds == 0) {
+                @Suppress("DEPRECATION")
+                val vibrator = context.getSystemService(android.os.Vibrator::class.java)
+                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                    vibrator?.vibrate(
+                        android.os.VibrationEffect.createOneShot(400, android.os.VibrationEffect.DEFAULT_AMPLITUDE)
+                    )
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator?.vibrate(400)
+                }
+            }
+        }
+    }
 
     Scaffold(
         modifier = modifier,
@@ -123,11 +149,15 @@ fun ActiveWorkoutScreen(
                 }
             }
             items(exercises, key = { it.id }) { exercise ->
+                val timerForThisExercise = (restTimer as? RestTimerState.Running)
+                    ?.takeIf { it.exerciseId == exercise.id }
                 ExerciseCard(
                     exercise = exercise,
                     bodyWeightKg = bodyWeightKg,
                     previousSets = lastPerformance[exercise.exerciseName],
                     knownNames = knownNames,
+                    restTimer = timerForThisExercise,
+                    onCancelTimer = { viewModel.cancelRestTimer() },
                     viewModel = viewModel,
                 )
             }
@@ -153,6 +183,8 @@ private fun ExerciseCard(
     bodyWeightKg: Float?,
     previousSets: List<SetEntry>?,
     knownNames: List<String>,
+    restTimer: RestTimerState.Running?,
+    onCancelTimer: () -> Unit,
     viewModel: ActiveWorkoutViewModel,
 ) {
     val sets by viewModel.observeSets(exercise.id).collectAsStateWithLifecycle()
@@ -254,6 +286,11 @@ private fun ExerciseCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )
+            }
+
+            if (restTimer != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                RestTimerRow(timer = restTimer, onCancel = onCancelTimer)
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -553,6 +590,52 @@ private fun WorkoutNotesField(notes: String, onDone: (String) -> Unit) {
         }),
         modifier = Modifier.fillMaxWidth(),
     )
+}
+
+@Composable
+private fun RestTimerRow(timer: RestTimerState.Running, onCancel: () -> Unit) {
+    val progress = if (timer.totalSeconds > 0) {
+        timer.remainingSeconds.toFloat() / timer.totalSeconds.toFloat()
+    } else 0f
+    val minutes = timer.remainingSeconds / 60
+    val seconds = timer.remainingSeconds % 60
+    val timeText = "%d:%02d".format(minutes, seconds)
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+    ) {
+        Box(contentAlignment = Alignment.Center, modifier = Modifier.size(36.dp)) {
+            CircularProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.size(36.dp),
+                strokeWidth = 3.dp,
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.surfaceVariant,
+            )
+            Text(
+                text = timeText,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        Text(
+            text = "Rest",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.weight(1f),
+        )
+        IconButton(onClick = onCancel) {
+            Icon(
+                Icons.Default.Close,
+                contentDescription = "Cancel rest timer",
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }
 
 /** Generate next label like A1, A2 … B1, B2 … */
