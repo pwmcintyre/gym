@@ -36,6 +36,7 @@ android {
 dependencies {
     implementation(project(":core:core-model"))
     implementation(project(":core:core-drivebackup"))
+    implementation(project(":core:core-ai"))
 
     val composeBom = platform(libs.androidx.compose.bom)
     implementation(composeBom)
@@ -44,6 +45,8 @@ dependencies {
     implementation(libs.androidx.compose.material3)
 
     implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.work.runtime.ktx)
 

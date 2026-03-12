@@ -20,10 +20,10 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.gymapp.feature.history.HistoryScreen
 import com.gymapp.feature.history.WorkoutDetailScreen
+import com.gymapp.feature.scan.ScanScreen
 import com.gymapp.feature.settings.SettingsScreen
 import com.gymapp.feature.workouts.ActiveWorkoutScreen
 import com.gymapp.feature.workouts.WorkoutsScreen
-import com.gymapp.navigation.BottomNavDestination
 import com.gymapp.navigation.bottomNavDestinations
 import com.gymapp.ui.theme.GymAppTheme
 
@@ -32,30 +32,31 @@ private object Routes {
     const val ACTIVE_WORKOUT = "workout/{sessionId}"
     const val HISTORY = "history"
     const val HISTORY_DETAIL = "history/detail/{sessionId}"
+    const val SCAN = "scan"
     const val SETTINGS = "settings"
 
     fun activeWorkout(sessionId: String) = "workout/$sessionId"
     fun historyDetail(sessionId: String) = "history/detail/$sessionId"
 }
 
+private val bottomNavRoutes = setOf(
+    Routes.WORKOUTS, Routes.HISTORY, Routes.SCAN, Routes.SETTINGS,
+)
+
 @Composable
 fun GymAppRoot() {
     GymAppTheme {
         val navController = rememberNavController()
         val navBackStackEntry by navController.currentBackStackEntryAsState()
-        val currentDestination = navBackStackEntry?.destination
-
-        val showBottomBar = currentDestination?.route in listOf(
-            Routes.WORKOUTS, Routes.HISTORY, Routes.SETTINGS,
-        )
+        val currentRoute = navBackStackEntry?.destination?.route
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
             bottomBar = {
-                if (showBottomBar) {
+                if (currentRoute in bottomNavRoutes) {
                     NavigationBar {
                         bottomNavDestinations.forEach { destination ->
-                            val selected = currentDestination
+                            val selected = navBackStackEntry?.destination
                                 ?.hierarchy
                                 ?.any { it.route == destination.route } == true
 
@@ -90,9 +91,7 @@ fun GymAppRoot() {
             ) {
                 composable(Routes.WORKOUTS) {
                     WorkoutsScreen(
-                        onOpenWorkout = { sessionId ->
-                            navController.navigate(Routes.activeWorkout(sessionId))
-                        },
+                        onOpenWorkout = { navController.navigate(Routes.activeWorkout(it)) },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -109,9 +108,7 @@ fun GymAppRoot() {
 
                 composable(Routes.HISTORY) {
                     HistoryScreen(
-                        onOpenDetail = { sessionId ->
-                            navController.navigate(Routes.historyDetail(sessionId))
-                        },
+                        onOpenDetail = { navController.navigate(Routes.historyDetail(it)) },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -122,6 +119,17 @@ fun GymAppRoot() {
                 ) {
                     WorkoutDetailScreen(
                         onBack = { navController.popBackStack() },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+
+                composable(Routes.SCAN) {
+                    ScanScreen(
+                        onWorkoutReady = { sessionId ->
+                            navController.navigate(Routes.activeWorkout(sessionId)) {
+                                popUpTo(Routes.SCAN) { inclusive = false }
+                            }
+                        },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }

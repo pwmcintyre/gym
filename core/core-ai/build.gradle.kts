@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.kotlin.serialization)
 }
 
 android {
@@ -32,6 +33,13 @@ dependencies {
     ksp(libs.hilt.android.compiler)
 
     implementation(libs.bundles.coroutines)
+    implementation(libs.kotlinx.serialization.json)
+
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging)
+
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.core.ktx)
 
     testImplementation(libs.junit)
 }

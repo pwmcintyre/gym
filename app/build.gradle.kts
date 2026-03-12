@@ -65,6 +65,7 @@ dependencies {
     // Feature modules
     implementation(project(":features:feature-workouts"))
     implementation(project(":features:feature-history"))
+    implementation(project(":features:feature-scan"))
     implementation(project(":features:feature-settings"))
 
     // AndroidX
