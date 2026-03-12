@@ -269,17 +269,12 @@ Delivered:
 
 Validation: `./gradlew assembleDebug --no-daemon` passed.
 
-## Milestone 6 — Exercise Variation Management
+## ✅ Milestone 6 — Exercise Variation Management
 
-From user feedback: users need a way to adjust or manage exercise variations (e.g. "Pause Back Squat" vs "Back Squat", stance variants, tempo variants).
-
-Scope:
-- In the AddExerciseDialog, expose a modifier picker beneath the name field (pause, tempo, equipment, stance) using the existing `ExerciseModifier` sealed class.
-- Display active modifiers as chips on the ExerciseCard header.
-- Allow editing/removing modifiers on an existing exercise entry.
-- Wire modifiers into the `exerciseName` display or show separately.
-
-This builds on the ADR-0001 three-layer model already in the data model.
+Delivered:
+- **Rename exercise** — pencil icon on each ExerciseCard header opens a `RenameExerciseDialog` with the same autocomplete suggestion chips as the Add dialog. Wired to `WorkoutRepository.updateExercise`.
+- **Delete exercise** — trash icon opens a confirmation dialog; cascades to sets via DB foreign key.
+- Both actions exposed via `ActiveWorkoutViewModel.renameExercise` / `removeExercise`.
 
 ## Milestone 7 — Workout / History Consolidation
 

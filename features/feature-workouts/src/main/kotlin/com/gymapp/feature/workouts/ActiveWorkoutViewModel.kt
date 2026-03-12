@@ -60,6 +60,18 @@ class ActiveWorkoutViewModel @Inject constructor(
         }
     }
 
+    fun renameExercise(exercise: ExerciseEntry, newName: String) {
+        viewModelScope.launch {
+            workoutRepository.updateExercise(exercise.copy(exerciseName = newName.trim()))
+        }
+    }
+
+    fun removeExercise(exerciseId: String) {
+        viewModelScope.launch {
+            workoutRepository.deleteExercise(exerciseId)
+        }
+    }
+
     fun addExercise(label: String, name: String, targetSets: Int?, targetReps: Int?) {
         viewModelScope.launch {
             workoutRepository.addExercise(

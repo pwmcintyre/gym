@@ -19,6 +19,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -109,6 +111,7 @@ fun ActiveWorkoutScreen(
                     exercise = exercise,
                     bodyWeightKg = bodyWeightKg,
                     previousSets = lastPerformance[exercise.exerciseName],
+                    knownNames = knownNames,
                     viewModel = viewModel,
                 )
             }
@@ -133,9 +136,41 @@ private fun ExerciseCard(
     exercise: ExerciseEntry,
     bodyWeightKg: Float?,
     previousSets: List<SetEntry>?,
+    knownNames: List<String>,
     viewModel: ActiveWorkoutViewModel,
 ) {
     val sets by viewModel.observeSets(exercise.id).collectAsStateWithLifecycle()
+    var showRenameDialog by remember { mutableStateOf(false) }
+    var showDeleteConfirm by remember { mutableStateOf(false) }
+
+    if (showRenameDialog) {
+        RenameExerciseDialog(
+            current = exercise.exerciseName,
+            knownNames = knownNames,
+            onConfirm = { newName ->
+                viewModel.renameExercise(exercise, newName)
+                showRenameDialog = false
+            },
+            onDismiss = { showRenameDialog = false },
+        )
+    }
+
+    if (showDeleteConfirm) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirm = false },
+            title = { Text("Remove exercise?") },
+            text = { Text("This removes \"${exercise.exerciseName}\" and all its sets.") },
+            confirmButton = {
+                Button(onClick = {
+                    viewModel.removeExercise(exercise.id)
+                    showDeleteConfirm = false
+                }) { Text("Remove") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirm = false }) { Text("Cancel") }
+            },
+        )
+    }
 
     Card(
         colors = CardDefaults.cardColors(
@@ -156,7 +191,22 @@ private fun ExerciseCard(
                 Text(
                     text = exercise.exerciseName,
                     style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
                 )
+                IconButton(onClick = { showRenameDialog = true }) {
+                    Icon(
+                        Icons.Outlined.Edit,
+                        contentDescription = "Rename exercise",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                IconButton(onClick = { showDeleteConfirm = true }) {
+                    Icon(
+                        Icons.Default.Delete,
+                        contentDescription = "Remove exercise",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             val target = buildString {
@@ -377,6 +427,54 @@ private fun AddExerciseDialog(
                     }
                 },
             ) { Text("Add") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
+}
+
+@Composable
+private fun RenameExerciseDialog(
+    current: String,
+    knownNames: List<String>,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by rememberSaveable { mutableStateOf(current) }
+    val suggestions = remember(name, knownNames) {
+        if (name.isBlank()) emptyList()
+        else knownNames.filter { it.contains(name.trim(), ignoreCase = true) && !it.equals(name.trim(), ignoreCase = true) }.take(5)
+    }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rename exercise") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = { name = it },
+                    label = { Text("Exercise name") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                if (suggestions.isNotEmpty()) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        items(suggestions) { suggestion ->
+                            SuggestionChip(
+                                onClick = { name = suggestion },
+                                label = { Text(suggestion, style = MaterialTheme.typography.labelSmall) },
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = { if (name.isNotBlank()) onConfirm(name) },
+            ) { Text("Rename") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
