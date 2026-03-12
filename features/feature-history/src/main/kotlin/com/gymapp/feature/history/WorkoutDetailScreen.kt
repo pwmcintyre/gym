@@ -42,6 +42,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.SetEntry
+import com.gymapp.core.model.WeightMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,15 +51,20 @@ fun WorkoutDetailScreen(
     modifier: Modifier = Modifier,
     viewModel: WorkoutDetailViewModel = hiltViewModel(),
 ) {
+    val session by viewModel.session.collectAsStateWithLifecycle()
     val exercises by viewModel.exercises.collectAsStateWithLifecycle()
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+
+    val titleText = session?.let { s ->
+        s.notes?.takeIf { it.isNotBlank() } ?: formatDate(s.date)
+    } ?: "Workout"
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Workout Detail") },
+                title = { Text(titleText) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -201,8 +207,13 @@ private fun SetDetailRow(set: SetEntry) {
             style = MaterialTheme.typography.titleSmall,
             modifier = Modifier.width(36.dp),
         )
+        val weightLabel = when (set.weightMode) {
+            WeightMode.BODYWEIGHT -> set.weight?.let { "BW ${formatWeight(it)} kg" } ?: "BW"
+            WeightMode.BANDED -> set.weight?.let { "Band ${formatWeight(it)}" } ?: "Band"
+            WeightMode.BARBELL -> set.weight?.let { "${formatWeight(it)} kg" } ?: "—"
+        }
         Text(
-            text = set.weight?.let { "${formatWeight(it)} kg" } ?: "—",
+            text = weightLabel,
             style = MaterialTheme.typography.bodyMedium,
             modifier = Modifier.weight(1f),
         )
@@ -216,3 +227,7 @@ private fun SetDetailRow(set: SetEntry) {
 
 private fun formatWeight(weight: Float): String =
     if (weight == weight.toLong().toFloat()) weight.toLong().toString() else weight.toString()
+
+private fun formatDate(epochMillis: Long): String =
+    java.text.SimpleDateFormat("EEE, MMM d yyyy", java.util.Locale.getDefault())
+        .format(java.util.Date(epochMillis))

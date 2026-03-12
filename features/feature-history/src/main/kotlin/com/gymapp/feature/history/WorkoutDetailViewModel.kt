@@ -24,6 +24,10 @@ class WorkoutDetailViewModel @Inject constructor(
 
     private val sessionId: String = checkNotNull(savedStateHandle["sessionId"])
 
+    val session: StateFlow<WorkoutSession?> =
+        workoutRepository.observeById(sessionId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     val exercises: StateFlow<List<ExerciseEntry>> =
         workoutRepository.observeExercises(sessionId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
