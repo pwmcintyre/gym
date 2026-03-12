@@ -28,7 +28,7 @@ import com.gymapp.core.database.entity.WorkoutSessionEntity
         ExerciseEntryEntity::class,
         SetEntryEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 @TypeConverters(Converters::class)

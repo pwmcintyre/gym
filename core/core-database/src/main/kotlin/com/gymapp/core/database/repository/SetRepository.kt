@@ -3,6 +3,7 @@ package com.gymapp.core.database.repository
 import com.gymapp.core.database.dao.SetEntryDao
 import com.gymapp.core.database.entity.SetEntryEntity
 import com.gymapp.core.model.SetEntry
+import com.gymapp.core.model.WeightMode
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import java.util.UUID
@@ -22,6 +23,7 @@ class SetRepository @Inject constructor(
         repsPerformed: Int? = null,
         weight: Float? = null,
         notes: String? = null,
+        weightMode: WeightMode = WeightMode.BARBELL,
     ): SetEntry {
         val set = SetEntry(
             id = UUID.randomUUID().toString(),
@@ -30,6 +32,7 @@ class SetRepository @Inject constructor(
             repsPerformed = repsPerformed,
             weight = weight,
             notes = notes,
+            weightMode = weightMode,
         )
         setDao.insert(set.toEntity())
         return set
@@ -46,7 +49,7 @@ class SetRepository @Inject constructor(
 }
 
 private fun SetEntryEntity.toModel() =
-    SetEntry(id, exerciseEntryId, setNumber, repsPerformed, weight, notes)
+    SetEntry(id, exerciseEntryId, setNumber, repsPerformed, weight, notes, weightMode)
 
 private fun SetEntry.toEntity() =
-    SetEntryEntity(id, exerciseEntryId, setNumber, repsPerformed, weight, notes)
+    SetEntryEntity(id, exerciseEntryId, setNumber, repsPerformed, weight, notes, weightMode)

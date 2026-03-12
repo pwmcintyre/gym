@@ -8,6 +8,7 @@ import com.gymapp.core.database.repository.SetRepository
 import com.gymapp.core.database.repository.WorkoutRepository
 import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.SetEntry
+import com.gymapp.core.model.WeightMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -84,13 +85,20 @@ class ActiveWorkoutViewModel @Inject constructor(
         }
     }
 
-    fun addSet(exerciseId: String, setNumber: Int, weight: Float?, reps: Int?) {
+    fun addSet(
+        exerciseId: String,
+        setNumber: Int,
+        weight: Float?,
+        reps: Int?,
+        weightMode: WeightMode = WeightMode.BARBELL,
+    ) {
         viewModelScope.launch {
             setRepository.addSet(
                 exerciseEntryId = exerciseId,
                 setNumber = setNumber,
                 repsPerformed = reps,
                 weight = weight,
+                weightMode = weightMode,
             )
         }
     }

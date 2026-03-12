@@ -21,4 +21,5 @@ data class SetEntry(
     val repsPerformed: Int?,
     val weight: Float?,
     val notes: String?,
+    val weightMode: WeightMode = WeightMode.BARBELL,
 )

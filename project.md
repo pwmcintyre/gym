@@ -286,14 +286,16 @@ Delivered:
 - History routes (`history/detail/{sessionId}`, `history/progress/{exerciseName}`) remain in the nav graph, reachable from the Workouts tab.
 - `HistoryScreen` still exists in the module but is no longer used as a top-level tab — it can be deleted in a cleanup pass.
 
-## Milestone 8 — Banded Bodyweight Support
+## ✅ Milestone 8 — Banded Bodyweight Support
 
-From user feedback: for banded bodyweight workouts the bands used are more important than the weight value.
-
-Scope:
-- Add a `bandResistance` field or a `WeightMode` enum to `SetEntry`: `BARBELL | BODYWEIGHT | BANDED_BODYWEIGHT`.
-- For `BANDED_BODYWEIGHT`, the weight field stores band resistance (or is replaced by a free-text band descriptor).
-- UI: a mode toggle in the set row (weight / BW / banded BW).
+Delivered:
+- New `WeightMode` enum (`BARBELL`, `BODYWEIGHT`, `BANDED`) added to `core-model`.
+- `SetEntry` and `SetEntryEntity` now carry `weightMode` (Room type-converted; DB version bumped to 2 with destructive fallback).
+- `SetRow` now shows a compact chip row (`BB | BW | Band`) above each set's fields.
+  - `BB` mode: normal weight field.
+  - `BW` mode: auto-fills from stored body weight, field is read-only.
+  - `Band` mode: weight field clears and shows "band" placeholder; value stores band resistance.
+- `Add set` copies both weight and mode from the previous set in the exercise.
 
 ## Milestone 9 — Cross-device Sync / Backup (was M6)
 

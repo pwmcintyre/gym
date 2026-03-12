@@ -5,6 +5,7 @@ import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
+import com.gymapp.core.model.WeightMode
 
 @Entity(
     tableName = "set_entries",
@@ -39,4 +40,7 @@ data class SetEntryEntity(
 
     @ColumnInfo(name = "notes")
     val notes: String?,
+
+    @ColumnInfo(name = "weight_mode")
+    val weightMode: WeightMode = WeightMode.BARBELL,
 )

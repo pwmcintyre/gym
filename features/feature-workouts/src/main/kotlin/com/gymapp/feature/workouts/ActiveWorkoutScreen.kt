@@ -26,6 +26,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -51,6 +52,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.SetEntry
+import com.gymapp.core.model.WeightMode
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -273,11 +275,13 @@ private fun ExerciseCard(
             Spacer(modifier = Modifier.height(8.dp))
             TextButton(
                 onClick = {
+                    val last = sets.lastOrNull()
                     viewModel.addSet(
                         exerciseId = exercise.id,
                         setNumber = sets.size + 1,
-                        weight = sets.lastOrNull()?.weight,
+                        weight = last?.weight,
                         reps = null,
+                        weightMode = last?.weightMode ?: WeightMode.BARBELL,
                     )
                 },
                 modifier = Modifier.align(Alignment.End),
@@ -295,57 +299,81 @@ private fun SetRow(set: SetEntry, bodyWeightKg: Float?, onUpdate: (SetEntry) -> 
     var weightText by remember(set.id) { mutableStateOf(set.weight?.let { formatWeight(it) } ?: "") }
     var repsText by remember(set.id) { mutableStateOf(set.repsPerformed?.toString() ?: "") }
 
-    Row(
+    // Sync weightText when mode changes to/from BODYWEIGHT
+    val currentMode = set.weightMode
+
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Text(
-            text = "${set.setNumber}",
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.width(36.dp),
-        )
-        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
+        // Mode chips row
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Spacer(modifier = Modifier.width(36.dp))
+            WeightModeChip("BB", currentMode == WeightMode.BARBELL) {
+                onUpdate(set.copy(weightMode = WeightMode.BARBELL))
+            }
+            WeightModeChip("BW", currentMode == WeightMode.BODYWEIGHT) {
+                val bwWeight = bodyWeightKg
+                if (bwWeight != null) weightText = formatWeight(bwWeight)
+                onUpdate(set.copy(weightMode = WeightMode.BODYWEIGHT, weight = bodyWeightKg))
+            }
+            WeightModeChip("Band", currentMode == WeightMode.BANDED) {
+                weightText = ""
+                onUpdate(set.copy(weightMode = WeightMode.BANDED, weight = null))
+            }
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = "${set.setNumber}",
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.width(36.dp),
+            )
+            val weightLabel = when (currentMode) {
+                WeightMode.BODYWEIGHT -> "BW kg"
+                WeightMode.BANDED -> "band"
+                WeightMode.BARBELL -> "kg"
+            }
             OutlinedTextField(
                 value = weightText,
                 onValueChange = { v ->
                     weightText = v
                     onUpdate(set.copy(weight = v.toFloatOrNull()))
                 },
-                placeholder = { Text("kg") },
+                placeholder = { Text(weightLabel) },
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
+                readOnly = currentMode == WeightMode.BODYWEIGHT,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
             )
-            if (bodyWeightKg != null) {
-                TextButton(
-                    onClick = {
-                        weightText = formatWeight(bodyWeightKg)
-                        onUpdate(set.copy(weight = bodyWeightKg))
-                    },
-                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 0.dp),
-                ) {
-                    Text(
-                        "BW ${formatWeight(bodyWeightKg)}kg",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                    )
-                }
-            }
+            OutlinedTextField(
+                value = repsText,
+                onValueChange = { v ->
+                    repsText = v
+                    onUpdate(set.copy(repsPerformed = v.toIntOrNull()))
+                },
+                placeholder = { Text("reps") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true,
+                modifier = Modifier.weight(1f),
+            )
         }
-        OutlinedTextField(
-            value = repsText,
-            onValueChange = { v ->
-                repsText = v
-                onUpdate(set.copy(repsPerformed = v.toIntOrNull()))
-            },
-            placeholder = { Text("reps") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            singleLine = true,
-            modifier = Modifier.weight(1f),
-        )
     }
+}
+
+@Composable
+private fun WeightModeChip(label: String, selected: Boolean, onClick: () -> Unit) {
+    FilterChip(
+        selected = selected,
+        onClick = onClick,
+        label = { Text(label, style = MaterialTheme.typography.labelSmall) },
+    )
 }
 
 @Composable
