@@ -1,29 +1,40 @@
 package com.gymapp.feature.scan
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Camera
+import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Camera
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -47,7 +58,33 @@ fun ScanScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Show error in snackbar
+    // --- Camera permission state ---
+    var hasCameraPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+                == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val permissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted -> hasCameraPermission = granted }
+
+    // Request on first composition if not already granted
+    LaunchedEffect(Unit) {
+        if (!hasCameraPermission) permissionLauncher.launch(Manifest.permission.CAMERA)
+    }
+
+    // --- Image picker ---
+    val imagePicker = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        if (uri != null) {
+            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
+            if (bytes != null) viewModel.parseBytes(bytes)
+        }
+    }
+
+    // Show errors in snackbar
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
             snackbarHostState.showSnackbar(it)
@@ -55,8 +92,7 @@ fun ScanScreen(
         }
     }
 
-    // Once review items are ready navigate to review screen — done inline here
-    // by showing ScanReviewScreen as an overlay when reviewItems != null
+    // Review screen overlays once AI results arrive
     if (uiState.reviewItems != null) {
         ScanReviewScreen(
             items = uiState.reviewItems!!,
@@ -80,15 +116,34 @@ fun ScanScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            // CameraX preview
-            AndroidView(
-                factory = { ctx ->
-                    PreviewView(ctx).also { previewView ->
-                        viewModel.bindCamera(ctx, lifecycleOwner, previewView.surfaceProvider)
-                    }
-                },
-                modifier = Modifier.fillMaxSize(),
-            )
+            if (hasCameraPermission) {
+                // Camera preview
+                AndroidView(
+                    factory = { ctx ->
+                        PreviewView(ctx).also { previewView ->
+                            viewModel.bindCamera(ctx, lifecycleOwner, previewView.surfaceProvider)
+                        }
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                )
+            } else {
+                // Permission denied — prompt
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Text(
+                        "Camera permission is needed to scan workouts.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.padding(horizontal = 32.dp),
+                    )
+                    Button(
+                        onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                        modifier = Modifier.padding(top = 16.dp),
+                    ) { Text("Grant permission") }
+                }
+            }
 
             // Loading overlay
             if (uiState.isCapturing || uiState.isParsing) {
@@ -98,33 +153,63 @@ fun ScanScreen(
                         .background(Color.Black.copy(alpha = 0.5f)),
                     contentAlignment = Alignment.Center,
                 ) {
-                    CircularProgressIndicator(color = Color.White)
-                    Text(
-                        text = if (uiState.isParsing) "Analysing…" else "Capturing…",
-                        color = Color.White,
-                        modifier = Modifier.padding(top = 64.dp),
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        CircularProgressIndicator(color = Color.White)
+                        Text(
+                            text = if (uiState.isParsing) "Analysing…" else "Capturing…",
+                            color = Color.White,
+                            modifier = Modifier.padding(top = 12.dp),
+                        )
+                    }
                 }
             }
 
-            // Shutter button
+            // Bottom controls: shutter + gallery picker
             if (!uiState.isCapturing && !uiState.isParsing) {
-                IconButton(
-                    onClick = {
-                        viewModel.captureAndParse(ContextCompat.getMainExecutor(context))
-                    },
+                Row(
                     modifier = Modifier
                         .align(Alignment.BottomCenter)
-                        .padding(bottom = 48.dp)
-                        .size(72.dp)
-                        .background(Color.White, CircleShape),
+                        .padding(bottom = 48.dp),
+                    horizontalArrangement = Arrangement.spacedBy(32.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Camera,
-                        contentDescription = "Capture",
-                        modifier = Modifier.size(40.dp),
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
+                    // Gallery picker button
+                    IconButton(
+                        onClick = {
+                            imagePicker.launch(
+                                PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                            )
+                        },
+                        modifier = Modifier
+                            .size(56.dp)
+                            .background(Color.White.copy(alpha = 0.85f), CircleShape),
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Photo,
+                            contentDescription = "Pick from gallery",
+                            modifier = Modifier.size(28.dp),
+                            tint = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+
+                    // Shutter button (only usable when camera permission granted)
+                    if (hasCameraPermission) {
+                        IconButton(
+                            onClick = {
+                                viewModel.captureAndParse(ContextCompat.getMainExecutor(context))
+                            },
+                            modifier = Modifier
+                                .size(72.dp)
+                                .background(Color.White, CircleShape),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Camera,
+                                contentDescription = "Capture",
+                                modifier = Modifier.size(40.dp),
+                                tint = MaterialTheme.colorScheme.primary,
+                            )
+                        }
+                    }
                 }
             }
         }

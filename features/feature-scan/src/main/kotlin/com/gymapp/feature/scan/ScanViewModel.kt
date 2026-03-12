@@ -147,6 +147,16 @@ class ScanViewModel @Inject constructor(
         }
     }
 
+    /** Parse an already-obtained byte array (e.g. from image picker). */
+    fun parseBytes(bytes: ByteArray) {
+        _uiState.update { it.copy(isParsing = true, error = null) }
+        viewModelScope.launch {
+            parser.parse(bytes)
+                .onSuccess { entries -> _uiState.update { it.copy(isParsing = false, reviewItems = entries) } }
+                .onFailure { e -> _uiState.update { it.copy(isParsing = false, error = e.message) } }
+        }
+    }
+
     fun dismissError() = _uiState.update { it.copy(error = null) }
     fun resetReview() = _uiState.update { it.copy(reviewItems = null) }
 }
