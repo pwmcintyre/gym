@@ -276,9 +276,31 @@ Before stopping:
 ## Commands
 
 ### Setup
-- Android SDK: `~/android-sdk` (set `ANDROID_HOME=~/android-sdk` or relies on `local.properties`)
-- `local.properties` must contain: `sdk.dir=/home/pwm/android-sdk`
-- Java: OpenJDK 17 (`java -version`)
+
+First-time environment setup (macOS):
+
+1. Install Android command-line tools:
+   ```
+   brew install --cask android-commandlinetools
+   ```
+2. Seed the SDK directory and install required packages:
+   ```
+   mkdir -p ~/android-sdk/cmdline-tools
+   cp -r /opt/homebrew/share/android-commandlinetools/cmdline-tools/latest ~/android-sdk/cmdline-tools/latest
+   ```
+3. Accept licenses (write the hash files directly — `sdkmanager --licenses` is interactive and unreliable in agents):
+   ```
+   mkdir -p ~/android-sdk/licenses
+   printf '\n24333f8a63b6825ea9c5514f83c2829b004d1fee' > ~/android-sdk/licenses/android-sdk-license
+   printf '\n84831b9409646a918e30573bab4c9c91346d8abd' > ~/android-sdk/licenses/android-sdk-preview-license
+   ```
+4. Create `local.properties` in the repo root:
+   ```
+   sdk.dir=/Users/<your-username>/android-sdk
+   ```
+   The file is gitignored. The first `assembleDebug` run will auto-download `build-tools;34.0.0`, `platforms;android-35`, and `platform-tools` via Gradle.
+
+- Java: OpenJDK 17 required (`java -version`). Install via `brew install --cask temurin@17` if missing.
 
 ### Validation
 - full build: `./gradlew assembleDebug --no-daemon`

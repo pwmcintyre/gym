@@ -112,6 +112,7 @@ private fun SetEntryEntity.toModel() = SetEntry(
     repsPerformed = repsPerformed,
     weight = weight,
     notes = notes,
+    weightMode = weightMode,
 )
 
 private fun SetEntry.toEntity() = SetEntryEntity(
@@ -121,4 +122,5 @@ private fun SetEntry.toEntity() = SetEntryEntity(
     repsPerformed = repsPerformed,
     weight = weight,
     notes = notes,
+    weightMode = weightMode,
 )

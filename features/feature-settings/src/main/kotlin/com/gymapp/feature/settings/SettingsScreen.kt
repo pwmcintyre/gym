@@ -205,7 +205,7 @@ fun SettingsScreen(
 
             SettingsSectionCard(title = "Version") {
                 Text(
-                    text = "1.0 — Milestone 6 alpha",
+                    text = "1.0 — Milestone 9",
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
