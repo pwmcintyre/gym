@@ -1,6 +1,7 @@
 package com.gymapp.feature.history
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -8,7 +9,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -26,6 +29,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -86,10 +93,97 @@ fun ExerciseProgressScreen(
                         sessionProgress = sessionProgress,
                     )
                 }
+                if (sessionProgress.size > 1) {
+                    item {
+                        ExerciseProgressChartCard(
+                            sessionProgress = sessionProgress.take(6).asReversed(),
+                        )
+                    }
+                }
                 items(sessionProgress, key = { it.sessionId }) { progress ->
                     ExerciseProgressSessionCard(
                         progress = progress,
                         onClick = { onOpenWorkout(progress.sessionId) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgress>) {
+    val maxVolume = sessionProgress.maxOfOrNull { it.totalVolume }?.takeIf { it > 0f } ?: 1f
+    val barColor = MaterialTheme.colorScheme.primary
+    val axisColor = MaterialTheme.colorScheme.outlineVariant
+
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "Volume Trend",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "Recent session volume. Newest session is on the right.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+
+            Canvas(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(144.dp),
+            ) {
+                val spacing = 12.dp.toPx()
+                val barCount = sessionProgress.size.coerceAtLeast(1)
+                val availableWidth = size.width - (spacing * (barCount + 1))
+                val barWidth = (availableWidth / barCount).coerceAtLeast(8.dp.toPx())
+                val chartHeight = size.height - 8.dp.toPx()
+
+                drawLine(
+                    color = axisColor,
+                    start = Offset(0f, chartHeight),
+                    end = Offset(size.width, chartHeight),
+                    strokeWidth = 1.dp.toPx(),
+                )
+
+                sessionProgress.forEachIndexed { index, progress ->
+                    val left = spacing + index * (barWidth + spacing)
+                    val normalizedHeight = if (progress.totalVolume <= 0f) {
+                        8.dp.toPx()
+                    } else {
+                        (progress.totalVolume / maxVolume) * (chartHeight - 12.dp.toPx())
+                    }
+                    drawRoundRect(
+                        color = barColor,
+                        topLeft = Offset(left, chartHeight - normalizedHeight),
+                        size = Size(barWidth, normalizedHeight),
+                        cornerRadius = CornerRadius(10f, 10f),
+                    )
+                }
+            }
+
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                sessionProgress.forEach { progress ->
+                    Text(
+                        text = formatHistoryShortDate(progress.sessionDate),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.weight(1f),
                     )
                 }
             }
@@ -174,6 +268,9 @@ private fun ExerciseProgressSessionCard(
 
 private fun formatHistoryDate(epochMillis: Long): String =
     SimpleDateFormat("EEE, MMM d yyyy", Locale.getDefault()).format(Date(epochMillis))
+
+private fun formatHistoryShortDate(epochMillis: Long): String =
+    SimpleDateFormat("M/d", Locale.getDefault()).format(Date(epochMillis))
 
 private fun formatHistoryWeight(weight: Float): String {
     val value = if (weight == weight.toLong().toFloat()) {
