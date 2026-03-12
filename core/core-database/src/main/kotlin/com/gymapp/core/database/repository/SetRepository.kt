@@ -35,6 +35,9 @@ class SetRepository @Inject constructor(
         return set
     }
 
+    suspend fun getPreviousSessionSets(exerciseName: String, excludeSessionId: String): List<SetEntry> =
+        setDao.getPreviousSessionSets(exerciseName, excludeSessionId).map { it.toModel() }
+
     suspend fun update(set: SetEntry) =
         setDao.update(set.toEntity())
 

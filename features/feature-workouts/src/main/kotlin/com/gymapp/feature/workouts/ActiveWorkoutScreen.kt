@@ -60,6 +60,7 @@ fun ActiveWorkoutScreen(
     val exercises by viewModel.exercises.collectAsStateWithLifecycle()
     val bodyWeightKg by viewModel.bodyWeightKg.collectAsStateWithLifecycle()
     val knownNames by viewModel.knownExerciseNames.collectAsStateWithLifecycle()
+    val lastPerformance by viewModel.lastPerformance.collectAsStateWithLifecycle()
     var showAddExerciseDialog by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
@@ -107,6 +108,7 @@ fun ActiveWorkoutScreen(
                 ExerciseCard(
                     exercise = exercise,
                     bodyWeightKg = bodyWeightKg,
+                    previousSets = lastPerformance[exercise.exerciseName],
                     viewModel = viewModel,
                 )
             }
@@ -130,6 +132,7 @@ fun ActiveWorkoutScreen(
 private fun ExerciseCard(
     exercise: ExerciseEntry,
     bodyWeightKg: Float?,
+    previousSets: List<SetEntry>?,
     viewModel: ActiveWorkoutViewModel,
 ) {
     val sets by viewModel.observeSets(exercise.id).collectAsStateWithLifecycle()
@@ -169,6 +172,21 @@ private fun ExerciseCard(
                     text = target,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            if (!previousSets.isNullOrEmpty()) {
+                val hint = previousSets.joinToString("  ") { set ->
+                    buildString {
+                        set.weight?.let { append("${formatWeight(it)}kg") }
+                        if (set.weight != null && set.repsPerformed != null) append("×")
+                        set.repsPerformed?.let { append("$it") }
+                    }.ifBlank { "—" }
+                }
+                Text(
+                    text = "↑ $hint",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
                 )
             }
 

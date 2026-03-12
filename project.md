@@ -261,11 +261,47 @@ Current status:
 - Implemented: a `Progress Overview` card on the History screen backed by aggregate Room queries, plus a tap-through detail screen showing session-by-session stats and a simple recent-volume chart for each exercise.
 - Remaining: clearer PR-specific views and richer charting if needed.
 
-## Milestone 5 — Workout Suggestions
+## ✅ Milestone 5 — Workout Suggestions
 
-Auto-progression. Template reuse.
+Delivered:
+- **Template reuse** — each session card in the Workouts list now has a copy icon. Tapping it creates a new session pre-populated with the same exercises (name, label, targets). User lands directly in the new workout.
+- **Last-performance hints** — each ExerciseCard shows a `↑ 80kg×5  80kg×5  85kg×3` line sourced from the most recent prior session for that exercise name. Loaded reactively in `ActiveWorkoutViewModel.lastPerformance`.
 
-## Milestone 6 — Cross-device Sync / Backup
+Validation: `./gradlew assembleDebug --no-daemon` passed.
+
+## Milestone 6 — Exercise Variation Management
+
+From user feedback: users need a way to adjust or manage exercise variations (e.g. "Pause Back Squat" vs "Back Squat", stance variants, tempo variants).
+
+Scope:
+- In the AddExerciseDialog, expose a modifier picker beneath the name field (pause, tempo, equipment, stance) using the existing `ExerciseModifier` sealed class.
+- Display active modifiers as chips on the ExerciseCard header.
+- Allow editing/removing modifiers on an existing exercise entry.
+- Wire modifiers into the `exerciseName` display or show separately.
+
+This builds on the ADR-0001 three-layer model already in the data model.
+
+## Milestone 7 — Workout / History Consolidation
+
+From user feedback: "workouts" (active/planned) and "history" (past sessions) have significant overlap and should be one unified concept.
+
+Scope:
+- Merge `feature-workouts` and `feature-history` into a single `feature-sessions` module, or at minimum unify the bottom-nav tab into one "Workouts" tab that shows all sessions (past and in-progress) in one list.
+- A session has a status: `IN_PROGRESS` vs `COMPLETED` (or just uses date ordering).
+- Remove the separate History tab; surfacing progress/charts can live on a per-session or per-exercise detail screen.
+
+This is a navigation + UX restructure. No new DB schema needed beyond a potential `status` field on `WorkoutSession`.
+
+## Milestone 8 — Banded Bodyweight Support
+
+From user feedback: for banded bodyweight workouts the bands used are more important than the weight value.
+
+Scope:
+- Add a `bandResistance` field or a `WeightMode` enum to `SetEntry`: `BARBELL | BODYWEIGHT | BANDED_BODYWEIGHT`.
+- For `BANDED_BODYWEIGHT`, the weight field stores band resistance (or is replaced by a free-text band descriptor).
+- UI: a mode toggle in the set row (weight / BW / banded BW).
+
+## Milestone 9 — Cross-device Sync / Backup (was M6)
 
 Google Drive backup (appDataFolder). Optional restore.
 

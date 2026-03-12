@@ -25,4 +25,15 @@ class WorkoutsViewModel @Inject constructor(
             onCreated(session.id)
         }
     }
+
+    fun createFromTemplate(sourceSessionId: String, onCreated: (sessionId: String) -> Unit) {
+        viewModelScope.launch {
+            val session = workoutRepository.create(date = System.currentTimeMillis())
+            workoutRepository.copyExercisesFromSession(
+                sourceSessionId = sourceSessionId,
+                destSessionId = session.id,
+            )
+            onCreated(session.id)
+        }
+    }
 }

@@ -9,8 +9,10 @@ import com.gymapp.core.database.repository.WorkoutRepository
 import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.SetEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -36,6 +38,27 @@ class ActiveWorkoutViewModel @Inject constructor(
     val knownExerciseNames: StateFlow<List<String>> =
         workoutRepository.observeDistinctExerciseNames()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    private val _lastPerformance = MutableStateFlow<Map<String, List<SetEntry>>>(emptyMap())
+    val lastPerformance: StateFlow<Map<String, List<SetEntry>>> = _lastPerformance.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            exercises.collect { exerciseList ->
+                val current = _lastPerformance.value.toMutableMap()
+                exerciseList.forEach { exercise ->
+                    if (exercise.exerciseName !in current) {
+                        val prev = setRepository.getPreviousSessionSets(
+                            exerciseName = exercise.exerciseName,
+                            excludeSessionId = sessionId,
+                        )
+                        if (prev.isNotEmpty()) current[exercise.exerciseName] = prev
+                    }
+                }
+                _lastPerformance.value = current
+            }
+        }
+    }
 
     fun addExercise(label: String, name: String, targetSets: Int?, targetReps: Int?) {
         viewModelScope.launch {

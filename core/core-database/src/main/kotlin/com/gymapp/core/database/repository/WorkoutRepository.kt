@@ -10,6 +10,7 @@ import com.gymapp.core.model.ExerciseSessionProgress
 import com.gymapp.core.model.RepModifier
 import com.gymapp.core.model.WorkoutSession
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.util.UUID
 import javax.inject.Inject
@@ -85,6 +86,19 @@ class WorkoutRepository @Inject constructor(
 
     suspend fun deleteExercise(id: String) =
         exerciseDao.deleteById(id)
+
+    /** Copies exercises (label, name, targets) from [sourceSessionId] into [destSessionId]. */
+    suspend fun copyExercisesFromSession(sourceSessionId: String, destSessionId: String) {
+        val source = exerciseDao.observeBySession(sourceSessionId).first()
+        source.forEach { entity ->
+            exerciseDao.insert(
+                entity.copy(
+                    id = UUID.randomUUID().toString(),
+                    workoutSessionId = destSessionId,
+                )
+            )
+        }
+    }
 }
 
 private fun WorkoutSessionEntity.toModel() = WorkoutSession(id, date, notes, createdAt)

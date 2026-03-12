@@ -4,7 +4,9 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -12,11 +14,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -78,7 +82,13 @@ fun WorkoutsScreen(
                     .padding(innerPadding),
             ) {
                 items(sessions, key = { it.id }) { session ->
-                    SessionCard(session = session, onClick = { onOpenWorkout(session.id) })
+                    SessionCard(
+                        session = session,
+                        onClick = { onOpenWorkout(session.id) },
+                        onCopyAsTemplate = {
+                            viewModel.createFromTemplate(session.id, onOpenWorkout)
+                        },
+                    )
                 }
             }
         }
@@ -86,7 +96,11 @@ fun WorkoutsScreen(
 }
 
 @Composable
-private fun SessionCard(session: WorkoutSession, onClick: () -> Unit) {
+private fun SessionCard(
+    session: WorkoutSession,
+    onClick: () -> Unit,
+    onCopyAsTemplate: () -> Unit,
+) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -96,20 +110,41 @@ private fun SessionCard(session: WorkoutSession, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
     ) {
-        Text(
-            text = formatDate(session.date),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(16.dp),
-        )
-        val notes = session.notes
-        if (!notes.isNullOrBlank()) {
-            Text(
-                text = notes,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
-            )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = formatDate(session.date),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
+                )
+                val notes = session.notes
+                if (!notes.isNullOrBlank()) {
+                    Text(
+                        text = notes,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                    )
+                } else {
+                    androidx.compose.foundation.layout.Spacer(
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                }
+            }
+            IconButton(
+                onClick = onCopyAsTemplate,
+                modifier = Modifier.padding(end = 4.dp),
+            ) {
+                Icon(
+                    Icons.Outlined.ContentCopy,
+                    contentDescription = "Copy as new workout",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
