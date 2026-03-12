@@ -9,6 +9,7 @@ import com.gymapp.core.database.repository.WorkoutRepository
 import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.SetEntry
 import com.gymapp.core.model.WeightMode
+import com.gymapp.core.model.WorkoutSession
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,6 +28,10 @@ class ActiveWorkoutViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val sessionId: String = checkNotNull(savedStateHandle["sessionId"])
+
+    val session: StateFlow<WorkoutSession?> =
+        workoutRepository.observeById(sessionId)
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val exercises: StateFlow<List<ExerciseEntry>> =
         workoutRepository.observeExercises(sessionId)
@@ -58,6 +63,13 @@ class ActiveWorkoutViewModel @Inject constructor(
                 }
                 _lastPerformance.value = current
             }
+        }
+    }
+
+    fun updateNotes(notes: String) {
+        viewModelScope.launch {
+            val current = workoutRepository.getById(sessionId) ?: return@launch
+            workoutRepository.update(current.copy(notes = notes.takeIf { it.isNotBlank() }))
         }
     }
 

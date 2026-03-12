@@ -24,6 +24,9 @@ class WorkoutRepository @Inject constructor(
     fun observeAll(): Flow<List<WorkoutSession>> =
         sessionDao.observeAll().map { list -> list.map { it.toModel() } }
 
+    fun observeById(id: String): Flow<WorkoutSession?> =
+        sessionDao.observeById(id).map { it?.toModel() }
+
     suspend fun getById(id: String): WorkoutSession? =
         sessionDao.getById(id)?.toModel()
 

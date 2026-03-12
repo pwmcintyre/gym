@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -46,6 +47,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -61,6 +64,7 @@ fun ActiveWorkoutScreen(
     modifier: Modifier = Modifier,
     viewModel: ActiveWorkoutViewModel = hiltViewModel(),
 ) {
+    val session by viewModel.session.collectAsStateWithLifecycle()
     val exercises by viewModel.exercises.collectAsStateWithLifecycle()
     val bodyWeightKg by viewModel.bodyWeightKg.collectAsStateWithLifecycle()
     val knownNames by viewModel.knownExerciseNames.collectAsStateWithLifecycle()
@@ -98,6 +102,12 @@ fun ActiveWorkoutScreen(
                 .padding(innerPadding)
                 .imePadding(),
         ) {
+            item {
+                WorkoutNotesField(
+                    notes = session?.notes ?: "",
+                    onDone = { viewModel.updateNotes(it) },
+                )
+            }
             if (exercises.isEmpty()) {
                 item {
                     Text(
@@ -507,6 +517,25 @@ private fun RenameExerciseDialog(
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
         },
+    )
+}
+
+@Composable
+private fun WorkoutNotesField(notes: String, onDone: (String) -> Unit) {
+    var draft by rememberSaveable(notes) { mutableStateOf(notes) }
+    val focusManager = LocalFocusManager.current
+    OutlinedTextField(
+        value = draft,
+        onValueChange = { draft = it },
+        label = { Text("Workout name / notes") },
+        placeholder = { Text("e.g. Legs — heavy day") },
+        singleLine = true,
+        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+        keyboardActions = KeyboardActions(onDone = {
+            onDone(draft)
+            focusManager.clearFocus()
+        }),
+        modifier = Modifier.fillMaxWidth(),
     )
 }
 
