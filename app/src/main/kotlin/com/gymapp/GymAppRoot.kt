@@ -1,5 +1,6 @@
 package com.gymapp
 
+import android.net.Uri
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -22,6 +23,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.gymapp.feature.history.HistoryScreen
+import com.gymapp.feature.history.ExerciseProgressScreen
 import com.gymapp.feature.history.WorkoutDetailScreen
 import com.gymapp.feature.scan.ScanScreen
 import com.gymapp.feature.settings.SettingsScreen
@@ -35,11 +37,13 @@ private object Routes {
     const val ACTIVE_WORKOUT = "workout/{sessionId}"
     const val HISTORY = "history"
     const val HISTORY_DETAIL = "history/detail/{sessionId}"
+    const val HISTORY_PROGRESS = "history/progress/{exerciseName}"
     const val SCAN = "scan"
     const val SETTINGS = "settings"
 
     fun activeWorkout(sessionId: String) = "workout/$sessionId"
     fun historyDetail(sessionId: String) = "history/detail/$sessionId"
+    fun historyProgress(exerciseName: String) = "history/progress/${Uri.encode(exerciseName)}"
 }
 
 private val bottomNavRoutes = setOf(
@@ -127,6 +131,7 @@ fun GymAppRoot() {
                 composable(Routes.HISTORY) {
                     HistoryScreen(
                         onOpenDetail = { navController.navigate(Routes.historyDetail(it)) },
+                        onOpenProgress = { navController.navigate(Routes.historyProgress(it)) },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
@@ -137,6 +142,17 @@ fun GymAppRoot() {
                 ) {
                     WorkoutDetailScreen(
                         onBack = { navController.popBackStack() },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+
+                composable(
+                    route = Routes.HISTORY_PROGRESS,
+                    arguments = listOf(navArgument("exerciseName") { type = NavType.StringType }),
+                ) {
+                    ExerciseProgressScreen(
+                        onBack = { navController.popBackStack() },
+                        onOpenWorkout = { navController.navigate(Routes.historyDetail(it)) },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }

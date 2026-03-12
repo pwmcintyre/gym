@@ -8,6 +8,7 @@ import androidx.room.Query
 import androidx.room.Update
 import com.gymapp.core.database.entity.ExerciseEntryEntity
 import com.gymapp.core.model.ExerciseProgressSummary
+import com.gymapp.core.model.ExerciseSessionProgress
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -40,6 +41,24 @@ interface ExerciseEntryDao {
         """
     )
     fun observeProgressSummaries(limit: Int): Flow<List<ExerciseProgressSummary>>
+
+    @Query(
+        """
+        SELECT
+            ws.id AS sessionId,
+            ws.date AS sessionDate,
+            COUNT(s.id) AS setCount,
+            MAX(s.weight) AS bestWeight,
+            CAST(SUM(COALESCE(s.weight, 0) * COALESCE(s.reps_performed, 0)) AS REAL) AS totalVolume
+        FROM exercise_entries e
+        INNER JOIN workout_sessions ws ON ws.id = e.workout_session_id
+        LEFT JOIN set_entries s ON s.exercise_entry_id = e.id
+        WHERE e.exercise_name = :exerciseName
+        GROUP BY ws.id, ws.date
+        ORDER BY ws.date DESC
+        """
+    )
+    fun observeProgressSessions(exerciseName: String): Flow<List<ExerciseSessionProgress>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: ExerciseEntryEntity)

@@ -246,8 +246,8 @@ Current direction:
 - Use the current `exerciseName` field as the grouping key for the first increment, then tighten this to canonical movement identity in a follow-up once that path is wired end-to-end.
 
 Current status:
-- Implemented: a `Progress Overview` card on the History screen backed by aggregate Room queries.
-- Remaining: per-movement drill-down, chart visualizations, and clearer PR-specific views.
+- Implemented: a `Progress Overview` card on the History screen backed by aggregate Room queries, plus a tap-through detail screen showing session-by-session stats for each exercise.
+- Remaining: chart visualizations and clearer PR-specific views.
 
 ## Milestone 5 — Workout Suggestions
 

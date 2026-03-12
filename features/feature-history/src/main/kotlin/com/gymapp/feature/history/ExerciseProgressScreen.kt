@@ -11,10 +11,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -26,29 +29,36 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.gymapp.core.model.ExerciseProgressSummary
-import com.gymapp.core.model.WorkoutSession
+import com.gymapp.core.model.ExerciseSessionProgress
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HistoryScreen(
-    onOpenDetail: (sessionId: String) -> Unit,
-    onOpenProgress: (exerciseName: String) -> Unit,
+fun ExerciseProgressScreen(
+    onBack: () -> Unit,
+    onOpenWorkout: (sessionId: String) -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: HistoryViewModel = hiltViewModel(),
+    viewModel: ExerciseProgressViewModel = hiltViewModel(),
 ) {
-    val sessions by viewModel.sessions.collectAsStateWithLifecycle()
-    val progressSummaries by viewModel.progressSummaries.collectAsStateWithLifecycle()
+    val sessionProgress by viewModel.sessionProgress.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { TopAppBar(title = { Text("History") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text(viewModel.exerciseName) },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+            )
+        },
     ) { innerPadding ->
-        if (sessions.isEmpty()) {
+        if (sessionProgress.isEmpty()) {
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
@@ -56,9 +66,10 @@ fun HistoryScreen(
                     .padding(innerPadding),
             ) {
                 Text(
-                    "No workouts logged yet.",
+                    text = "No logged sets yet for this exercise.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 24.dp),
                 )
             }
         } else {
@@ -69,16 +80,17 @@ fun HistoryScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
-                if (progressSummaries.isNotEmpty()) {
-                    item {
-                        ProgressOverviewCard(
-                            progressSummaries = progressSummaries,
-                            onOpenProgress = onOpenProgress,
-                        )
-                    }
+                item {
+                    ExerciseProgressSummaryCard(
+                        exerciseName = viewModel.exerciseName,
+                        sessionProgress = sessionProgress,
+                    )
                 }
-                items(sessions, key = { it.id }) { session ->
-                    HistorySessionCard(session = session, onClick = { onOpenDetail(session.id) })
+                items(sessionProgress, key = { it.sessionId }) { progress ->
+                    ExerciseProgressSessionCard(
+                        progress = progress,
+                        onClick = { onOpenWorkout(progress.sessionId) },
+                    )
                 }
             }
         }
@@ -86,10 +98,13 @@ fun HistoryScreen(
 }
 
 @Composable
-private fun ProgressOverviewCard(
-    progressSummaries: List<ExerciseProgressSummary>,
-    onOpenProgress: (exerciseName: String) -> Unit,
+private fun ExerciseProgressSummaryCard(
+    exerciseName: String,
+    sessionProgress: List<ExerciseSessionProgress>,
 ) {
+    val totalVolume = sessionProgress.sumOf { it.totalVolume.toDouble() }.toFloat()
+    val bestWeight = sessionProgress.maxOfOrNull { it.bestWeight ?: 0f }?.takeIf { it > 0f }
+
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -97,53 +112,34 @@ private fun ProgressOverviewCard(
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             Text(
-                text = "Progress Overview",
+                text = "Progress Snapshot",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = "Recent movements ranked by the latest logged session.",
+                text = exerciseName,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = "${sessionProgress.size} sessions • Best ${bestWeight?.let(::formatHistoryWeight) ?: "—"} • Volume ${formatHistoryVolume(totalVolume)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
             )
-
-            progressSummaries.forEachIndexed { index, summary ->
-                if (index > 0) {
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                }
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onOpenProgress(summary.exerciseName) },
-                ) {
-                    Text(
-                        text = summary.exerciseName,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = buildProgressSummaryLine(summary),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
-                    Text(
-                        text = "Last logged ${formatDate(summary.lastPerformed)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
-                }
-            }
         }
     }
 }
 
 @Composable
-private fun HistorySessionCard(session: WorkoutSession, onClick: () -> Unit) {
+private fun ExerciseProgressSessionCard(
+    progress: ExerciseSessionProgress,
+    onClick: () -> Unit,
+) {
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -153,35 +149,33 @@ private fun HistorySessionCard(session: WorkoutSession, onClick: () -> Unit) {
             .fillMaxWidth()
             .clickable(onClick = onClick),
     ) {
-        Text(
-            text = formatDate(session.date),
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.onSurface,
+        Column(
             modifier = Modifier.padding(16.dp),
-        )
-        val notes = session.notes
-        if (!notes.isNullOrBlank()) {
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
             Text(
-                text = notes,
-                style = MaterialTheme.typography.bodyMedium,
+                text = formatHistoryDate(progress.sessionDate),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "${progress.setCount} sets • Best ${progress.bestWeight?.let(::formatHistoryWeight) ?: "—"} • Volume ${formatHistoryVolume(progress.totalVolume)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = "Open workout details",
+                style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
             )
         }
     }
 }
 
-private fun buildProgressSummaryLine(summary: ExerciseProgressSummary): String = buildString {
-    append("${summary.sessionCount} session")
-    if (summary.sessionCount != 1) append("s")
-    append(" • Best ${summary.bestWeight?.let(::formatWeight) ?: "—"}")
-    append(" • Volume ${formatVolume(summary.totalVolume)}")
-}
-
-private fun formatDate(epochMillis: Long): String =
+private fun formatHistoryDate(epochMillis: Long): String =
     SimpleDateFormat("EEE, MMM d yyyy", Locale.getDefault()).format(Date(epochMillis))
 
-private fun formatWeight(weight: Float): String {
+private fun formatHistoryWeight(weight: Float): String {
     val value = if (weight == weight.toLong().toFloat()) {
         weight.toLong().toString()
     } else {
@@ -190,7 +184,7 @@ private fun formatWeight(weight: Float): String {
     return "$value kg"
 }
 
-private fun formatVolume(volume: Float): String {
+private fun formatHistoryVolume(volume: Float): String {
     val value = if (volume == volume.toLong().toFloat()) {
         volume.toLong().toString()
     } else {
