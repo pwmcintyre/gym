@@ -18,6 +18,9 @@ interface SetEntryDao {
     @Query("SELECT * FROM set_entries WHERE id = :id")
     suspend fun getById(id: String): SetEntryEntity?
 
+    @Query("SELECT * FROM set_entries ORDER BY exercise_entry_id ASC, set_number ASC, id ASC")
+    suspend fun getAllForBackup(): List<SetEntryEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: SetEntryEntity)
 
@@ -35,4 +38,7 @@ interface SetEntryDao {
 
     @Query("DELETE FROM set_entries WHERE exercise_entry_id = :exerciseEntryId")
     suspend fun deleteByExerciseEntry(exerciseEntryId: String)
+
+    @Query("DELETE FROM set_entries")
+    suspend fun deleteAll()
 }

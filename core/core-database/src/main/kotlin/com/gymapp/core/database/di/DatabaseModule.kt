@@ -27,6 +27,10 @@ object DatabaseModule {
         GymDatabase::class.java,
         GymDatabase.DATABASE_NAME,
     )
+        // POC default: prefer launching with a clean local database over crashing
+        // when the on-device schema diverges from the checked-in Room schema.
+        .fallbackToDestructiveMigration()
+        .fallbackToDestructiveMigrationOnDowngrade()
         // TODO: add named Migration objects here as the schema evolves, e.g.:
         //   .addMigrations(MIGRATION_1_2)
         .build()

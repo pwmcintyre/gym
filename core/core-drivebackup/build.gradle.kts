@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.library)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.serialization)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
 }
@@ -27,12 +28,15 @@ android {
 
 dependencies {
     implementation(project(":core:core-model"))
+    implementation(project(":core:core-database"))
+    implementation(libs.bundles.room)
 
     // Google Drive API — scaffold only, no implementation yet
     implementation(libs.google.api.client.android)
     implementation(libs.google.api.services.drive)
     implementation(libs.play.services.auth)
 
+    implementation(libs.kotlinx.serialization.json)
     implementation(libs.hilt.android)
     ksp(libs.hilt.android.compiler)
 

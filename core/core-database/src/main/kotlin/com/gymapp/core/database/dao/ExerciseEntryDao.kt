@@ -18,6 +18,9 @@ interface ExerciseEntryDao {
     @Query("SELECT * FROM exercise_entries WHERE id = :id")
     suspend fun getById(id: String): ExerciseEntryEntity?
 
+    @Query("SELECT * FROM exercise_entries ORDER BY workout_session_id ASC, label ASC, id ASC")
+    suspend fun getAllForBackup(): List<ExerciseEntryEntity>
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: ExerciseEntryEntity)
 
@@ -35,4 +38,7 @@ interface ExerciseEntryDao {
 
     @Query("DELETE FROM exercise_entries WHERE workout_session_id = :sessionId")
     suspend fun deleteBySession(sessionId: String)
+
+    @Query("DELETE FROM exercise_entries")
+    suspend fun deleteAll()
 }

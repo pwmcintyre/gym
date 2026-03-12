@@ -15,6 +15,9 @@ interface ExerciseTemplateDao {
     @Query("SELECT * FROM exercise_templates ORDER BY name ASC")
     fun observeAll(): Flow<List<ExerciseTemplateEntity>>
 
+    @Query("SELECT * FROM exercise_templates ORDER BY name ASC, id ASC")
+    suspend fun getAllForBackup(): List<ExerciseTemplateEntity>
+
     @Query("SELECT * FROM exercise_templates WHERE id = :id")
     suspend fun getById(id: String): ExerciseTemplateEntity?
 
@@ -35,4 +38,7 @@ interface ExerciseTemplateDao {
 
     @Query("DELETE FROM exercise_templates WHERE id = :id")
     suspend fun deleteById(id: String)
+
+    @Query("DELETE FROM exercise_templates")
+    suspend fun deleteAll()
 }

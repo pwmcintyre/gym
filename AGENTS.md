@@ -37,12 +37,12 @@ You may adopt newer tools only if they clearly improve developer velocity or use
 For every task, follow this loop:
 
 1. Understand the current milestone and acceptance criteria.
-2. Check Beads for active and blocked work.
-3. Create or update Beads tasks before making substantial changes.
+2. Check `project.md` for active milestone context and any existing implementation notes.
+3. Update `project.md` before or after substantial changes when milestone scope, status, or follow-up work becomes clearer.
 4. Implement the smallest coherent increment.
 5. Run relevant validation commands.
 6. Fix failures before stopping.
-7. Update documentation or task state.
+7. Update documentation or milestone state.
 8. Commit only when the increment is working and verified.
 
 Do not leave the repository in a partially broken state.
@@ -60,7 +60,7 @@ Do not leave the repository in a partially broken state.
 Each milestone should end with:
 - working code,
 - passing relevant tests,
-- a short note in docs or Beads describing what changed,
+- a short note in `project.md` or docs describing what changed,
 - a git commit.
 
 Suggested commit style:
@@ -70,45 +70,27 @@ Suggested commit style:
 
 ---
 
-## Task tracking with Beads
+## Milestone tracking in project.md
 
-Use `bd` for task tracking.
-
-Beads is the source of truth for:
-- current tasks,
-- dependencies,
-- blocked items,
-- milestone progress,
-- implementation notes.
+Use `project.md` as the source of truth for:
+- current milestone scope,
+- acceptance criteria,
+- milestone status,
+- implementation notes,
+- follow-up work and blockers.
 
 Rules:
-- Before starting meaningful work, inspect current Beads state.
-- Represent each milestone as an epic or parent task.
-- Represent implementation steps as child tasks or dependent tasks.
-- Keep tasks small enough to complete in one focused session.
-- Mark blocked tasks explicitly.
-- When discovering new work, add it to Beads rather than keeping private notes.
-- When completing work, immediately update Beads status.
-- Regularly check in on task graph health: ready tasks, blocked tasks, stale tasks, and scope creep.
+- Before starting meaningful work, inspect the active milestone in `project.md`.
+- Keep milestone notes concise and high-signal.
+- When discovering new work, add a short follow-up note to the relevant milestone section instead of keeping private notes.
+- When blocked, record the blocker and the smallest alternative path in `project.md`.
+- When completing work, immediately update milestone notes so the next session has current context.
 
-Minimum Beads cadence:
-- At session start: review ready tasks.
-- Before coding: confirm the active task.
-- After coding: update status and record any follow-up work.
-- Before ending: ensure the next ready task is visible.
-
-If Beads is not initialized:
-1. initialize it,
-2. create milestone tasks,
-3. create the next actionable child task,
-4. proceed.
-
-Example task shape:
-- Milestone 1: app boots on Pixel device
-  - set up project scaffold
-  - confirm Android build runs
-  - add basic navigation shell
-  - document local run/test workflow
+Preferred note shape:
+- current status,
+- what changed,
+- what remains,
+- any blocker or dependency.
 
 ---
 
@@ -122,7 +104,7 @@ You should:
 - choose sensible defaults,
 - run tests,
 - fix straightforward failures,
-- update tasks,
+- update `project.md`,
 - commit verified progress.
 
 Escalate only for decisions that materially affect:
@@ -249,7 +231,7 @@ Do not:
 - expand scope into future milestones unnecessarily.
 
 If blocked:
-1. record the blocker in Beads,
+1. record the blocker in `project.md`,
 2. capture attempted steps,
 3. identify the smallest alternative path,
 4. continue on unblocked work if possible.
@@ -261,7 +243,7 @@ If blocked:
 At the start of a session:
 - read this file,
 - inspect repository status,
-- inspect Beads ready/blocked tasks,
+- inspect `project.md` milestone status and notes,
 - identify the active milestone,
 - pick the next smallest valuable task,
 - verify available run/test commands,
@@ -273,11 +255,11 @@ At the start of a session:
 
 Before stopping:
 - run relevant validation,
-- update Beads,
+- update `project.md`,
 - update docs if needed,
 - confirm repo state is clean or intentionally staged,
 - commit if a milestone or meaningful verified increment is complete,
-- leave a clear next task in Beads.
+- leave a clear next task in `project.md`.
 
 ---
 
@@ -287,7 +269,6 @@ Before stopping:
 - Android SDK: `~/android-sdk` (set `ANDROID_HOME=~/android-sdk` or relies on `local.properties`)
 - `local.properties` must contain: `sdk.dir=/home/pwm/android-sdk`
 - Java: OpenJDK 17 (`java -version`)
-- Beads: `export PATH="$HOME/.local/bin:$PATH" && bd dolt start` (then `bd status`)
 
 ### Validation
 - full build: `./gradlew assembleDebug --no-daemon`
@@ -300,14 +281,6 @@ Before stopping:
 - Install on device: `adb install app/build/outputs/apk/debug/app-debug.apk`
 - Run on device: `adb shell am start -n com.gymapp/.MainActivity`
 
-### Task tracking
-- beads start: `export PATH="$HOME/.local/bin:$PATH" && bd dolt start`
-- beads status: `bd status`
-- list ready tasks: `bd ready`
-- create task: `bd create --type task --title "..." --body "..." --parent <epic-id>`
-- update task: `bd update <id> --status in_progress|closed`
-- show task: `bd show <id>`
-
 If commands change, update this file immediately.
 
 ---
@@ -317,7 +290,7 @@ If commands change, update this file immediately.
 A task is done only when:
 - the implementation is complete for the scoped task,
 - relevant validation was run successfully,
-- Beads status is updated,
+- `project.md` context is updated,
 - docs are updated if needed,
 - the result is in a clean, reviewable state.
 
@@ -327,116 +300,3 @@ A milestone is done only when:
 - relevant tests/build checks pass,
 - milestone notes are updated,
 - a git commit has been created.
-
-<!-- BEGIN BEADS INTEGRATION -->
-## Issue Tracking with bd (beads)
-
-**IMPORTANT**: This project uses **bd (beads)** for ALL issue tracking. Do NOT use markdown TODOs, task lists, or other tracking methods.
-
-### Why bd?
-
-- Dependency-aware: Track blockers and relationships between issues
-- Git-friendly: Dolt-powered version control with native sync
-- Agent-optimized: JSON output, ready work detection, discovered-from links
-- Prevents duplicate tracking systems and confusion
-
-### Quick Start
-
-**Check for ready work:**
-
-```bash
-bd ready --json
-```
-
-**Create new issues:**
-
-```bash
-bd create "Issue title" --description="Detailed context" -t bug|feature|task -p 0-4 --json
-bd create "Issue title" --description="What this issue is about" -p 1 --deps discovered-from:bd-123 --json
-```
-
-**Claim and update:**
-
-```bash
-bd update <id> --claim --json
-bd update bd-42 --priority 1 --json
-```
-
-**Complete work:**
-
-```bash
-bd close bd-42 --reason "Completed" --json
-```
-
-### Issue Types
-
-- `bug` - Something broken
-- `feature` - New functionality
-- `task` - Work item (tests, docs, refactoring)
-- `epic` - Large feature with subtasks
-- `chore` - Maintenance (dependencies, tooling)
-
-### Priorities
-
-- `0` - Critical (security, data loss, broken builds)
-- `1` - High (major features, important bugs)
-- `2` - Medium (default, nice-to-have)
-- `3` - Low (polish, optimization)
-- `4` - Backlog (future ideas)
-
-### Workflow for AI Agents
-
-1. **Check ready work**: `bd ready` shows unblocked issues
-2. **Claim your task atomically**: `bd update <id> --claim`
-3. **Work on it**: Implement, test, document
-4. **Discover new work?** Create linked issue:
-   - `bd create "Found bug" --description="Details about what was found" -p 1 --deps discovered-from:<parent-id>`
-5. **Complete**: `bd close <id> --reason "Done"`
-
-### Auto-Sync
-
-bd automatically syncs via Dolt:
-
-- Each write auto-commits to Dolt history
-- Use `bd dolt push`/`bd dolt pull` for remote sync
-- No manual export/import needed!
-
-### Important Rules
-
-- ✅ Use bd for ALL task tracking
-- ✅ Always use `--json` flag for programmatic use
-- ✅ Link discovered work with `discovered-from` dependencies
-- ✅ Check `bd ready` before asking "what should I work on?"
-- ❌ Do NOT create markdown TODO lists
-- ❌ Do NOT use external issue trackers
-- ❌ Do NOT duplicate tracking systems
-
-For more details, see README.md and docs/QUICKSTART.md.
-
-## Landing the Plane (Session Completion)
-
-**When ending a work session**, you MUST complete ALL steps below. Work is NOT complete until `git push` succeeds.
-
-**MANDATORY WORKFLOW:**
-
-1. **File issues for remaining work** - Create issues for anything that needs follow-up
-2. **Run quality gates** (if code changed) - Tests, linters, builds
-3. **Update issue status** - Close finished work, update in-progress items
-4. **PUSH TO REMOTE** - This is MANDATORY:
-   ```bash
-   git pull --rebase
-   bd dolt push
-   git push
-   git status  # MUST show "up to date with origin"
-   ```
-5. **Clean up** - Clear stashes, prune remote branches
-6. **Verify** - All changes committed AND pushed
-7. **Hand off** - Provide context for next session
-
-**CRITICAL RULES:**
-- Work is NOT complete until `git push` succeeds
-- NEVER stop before pushing - that leaves work stranded locally
-- NEVER say "ready to push when you are" - YOU must push
-- If push fails, resolve and retry until it succeeds
-
-<!-- END BEADS INTEGRATION -->

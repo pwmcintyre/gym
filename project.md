@@ -9,10 +9,7 @@ The app is optimized for **personal use on a Pixel phone** and prioritizes:
 * Fast logging during workouts
 * Offline operation
 * Durable local storage
-* Optional cloud backup
 * AI-assisted workout extraction from photos
-
-The app **avoids full backend hosting**. All workout data is stored locally, with optional backup to Google Drive.
 
 ---
 
@@ -30,38 +27,21 @@ The app **avoids full backend hosting**. All workout data is stored locally, wit
 
 ## Mobile App
 
-| Component       | Technology                       |
-| --------------- | -------------------------------- |
-| Language        | Kotlin                           |
-| UI              | Jetpack Compose                  |
-| Architecture    | MVVM + Unidirectional Data Flow  |
-| Local Storage   | Room (SQLite)                    |
-| Camera          | CameraX                          |
-| Background Jobs | WorkManager                      |
-| Backup          | Google Drive API (appDataFolder) |
-
----
+| Component     | Technology                      |
+| ------------- | ------------------------------- |
+| Language      | Kotlin                          |
+| UI            | Jetpack Compose + Material3     |
+| Architecture  | MVVM + Unidirectional Data Flow |
+| Local Storage | Room (SQLite)                   |
+| Camera        | CameraX                         |
+| DI            | Hilt                            |
+| Prefs         | Jetpack DataStore               |
 
 ## AI Recognition
 
-Whiteboard parsing will use **OpenAI Vision models**.
+Whiteboard parsing uses **OpenAI Vision (gpt-4o)** called directly from the app. The user supplies their own OpenAI API key via the Settings screen; it is stored locally in DataStore and never leaves the device except in requests to OpenAI.
 
-Because API keys must not be stored in mobile apps, the system will use a **minimal proxy service**.
-
-### Proxy Responsibilities
-
-* Receive image from app
-* Send request to OpenAI
-* Return structured JSON response
-* Enforce request size limits
-
-This proxy does **not store any data**.
-
-Recommended hosting:
-
-* Cloud Run
-* Firebase Functions
-* Any small serverless endpoint
+No proxy or backend server is required.
 
 ---
 
@@ -72,37 +52,71 @@ Android App
     │
     ├── Room Database (source of truth)
     │
-    ├── Google Drive Backup
+    ├── DataStore (API key, settings)
     │
-    ├── CameraX
+    ├── CameraX (photo capture)
     │
-    └── AI Scan Service
-            │
-            └── Proxy Server
-                    │
-                    └── OpenAI Vision Model
+    └── OpenAI Vision API (direct HTTPS call)
 ```
 
 ---
 
-# Core Data Model
+# Core Data Model (ADR-0001)
 
-## ExerciseTemplate
+Exercises are modelled in three distinct layers, per ADR-0001.
 
-Reusable exercise definition.
+## Layer 1 — Movement Identity
+
+The canonical exercise, independent of how it is programmed or modified.
 
 ```kotlin
-ExerciseTemplate
+Movement
 - id
-- name
-- defaultNotes
+- canonicalName       // "Back Squat"
+- aliases             // ["BS", "high bar squat"]
+- equipment           // "barbell"
+- primaryMuscles      // ["quads", "glutes"]
 ```
 
----
+Movement is the **primary grouping key** for analytics and history.
+
+## Layer 2 — Modifiers (Variants)
+
+Variations applied to a movement that produce a distinct variant.
+
+```kotlin
+sealed class ExerciseModifier {
+    Pause(seconds: Int)
+    Tempo(eccentric: Int, isoPause: Int, concentric: Int)
+    Equipment(name: String)
+    Stance(name: String)
+}
+```
+
+Examples: `Back Squat` → `Pause Back Squat`, `High Bar Back Squat`
+
+## Layer 3 — Workout Prescription
+
+How the movement is programmed on a given day.
+
+```kotlin
+ExerciseEntry                    // = ExerciseInstance
+- id
+- workoutSessionId
+- label                          // "A1", "B2" — ordering on the card
+- movementId                     // FK → Movement
+- movementName                   // denormalized for display
+- modifiers: List<ExerciseModifier>
+- targetSets: Int?
+- targetReps: Int?
+- targetModifier: RepModifier    // NONE | MAX (AMRAP)
+- targetRawText: String?
+- notes: String?
+```
+
+Prescription (sets/reps/weight) **does not affect movement identity**.
 
 ## WorkoutSession
-
-A recorded workout.
 
 ```kotlin
 WorkoutSession
@@ -111,57 +125,6 @@ WorkoutSession
 - notes
 - createdAt
 ```
-
----
-
-## ExerciseEntry
-
-Exercise within a workout session.
-
-```kotlin
-ExerciseEntry
-- id
-- workoutSessionId
-- label (A1, B1, etc)
-- exerciseName
-- targetPrescription
-- notes
-```
-
----
-
-## TargetPrescription
-
-Defines planned workout targets.
-
-```kotlin
-TargetPrescription
-- sets: Int?
-- reps: Int?
-- modifier: RepModifier
-- rawText: String?
-```
-
----
-
-## RepModifier
-
-```kotlin
-enum class RepModifier {
-    NONE,
-    MAX
-}
-```
-
-Rules:
-
-| Source Text | Result                   |
-| ----------- | ------------------------ |
-| `3-4 reps`  | reps = 4                 |
-| `MAX`       | modifier = MAX           |
-| `4 x MAX`   | sets = 4, modifier = MAX |
-
----
 
 ## SetEntry
 
@@ -177,97 +140,42 @@ SetEntry
 - notes
 ```
 
----
+## RepModifier
 
-# Storage Strategy
-
-## Source of Truth
-
-All workout data stored locally in **Room database**.
-
-Benefits:
-
-* instant access
-* offline support
-* durable storage
-
----
-
-## Backup
-
-Periodic backup to **Google Drive appDataFolder**.
-
-Characteristics:
-
-* private to the app
-* hidden from user
-* auto-restorable
-
-Backup format:
-
-```
-JSON snapshot
+```kotlin
+enum class RepModifier { NONE, MAX }
 ```
 
-Example:
-
-```json
-{
-  "workouts": [],
-  "exercises": [],
-  "sets": []
-}
-```
-
----
-
-# AI Whiteboard Recognition
-
-## Process
-
-1. User captures photo
-2. Image sent to proxy
-3. Proxy sends image to OpenAI
-4. Model extracts workout structure
-5. App receives JSON
-6. App normalizes output
-7. User reviews and edits
+| Source Text | Result                   |
+| ----------- | ------------------------ |
+| `3-4 reps`  | reps = 4                 |
+| `MAX`       | modifier = MAX           |
+| `4 x MAX`   | sets = 4, modifier = MAX |
 
 ---
 
 # AI Output JSON Schema
 
-Expected response:
+Current schema returned by OpenAI and parsed by the app:
 
 ```json
 {
   "workout_date": null,
   "items": [
     {
-      "label": "A1",
-      "exercise_name": "Back Squat",
+      "movement": "Back Squat",
+      "modifiers": [{"type": "pause", "seconds": 3}],
       "target_sets": 4,
       "target_reps": 8,
       "rep_modifier": "NONE",
-      "notes": "3s pause at bottom",
-      "raw_source_text": "A1 Back Squat 4 x 8 3s pause at bottom"
+      "notes": "",
+      "raw_source_text": "Back Squat 4 x 8 3s pause"
     }
   ]
 }
 ```
 
----
-
-# Normalization Rules
-
-After AI output:
-
-| Input        | Result         |
-| ------------ | -------------- |
-| `3-4 reps`   | reps = 4       |
-| `max`        | modifier = MAX |
-| missing sets | sets = null    |
-| missing reps | reps = null    |
+Supported modifier types: `pause`, `tempo`, `equipment`, `stance`.
 
 All original text preserved in `raw_source_text`.
 
@@ -279,231 +187,109 @@ All original text preserved in `raw_source_text`.
 app/
 
 core/
-    model/
-    database/
-    drivebackup/
-    ai/
-    camera/
+    core-model/       Movement, ExerciseEntry, ExerciseModifier, SetEntry, …
+    core-database/    Room entities, DAOs, repositories
+    core-ai/          OpenAI parser, AiSettings (DataStore)
+    core-camera/      CameraX helpers
 
 features/
-    workouts/
-    history/
-    scan/
-    settings/
+    feature-workouts/ Manual workout logging (create, add exercises, log sets)
+    feature-history/  Past sessions (list + detail + delete)
+    feature-scan/     Camera/gallery → AI parse → review → start workout
+    feature-settings/ OpenAI API key entry
 ```
 
 ---
 
 # Milestones
 
----
+## ✅ Milestone 1 — App Foundation
 
-# Milestone 1 — App Foundation
+Working Android app with persistent storage, navigation shell, Room DB, camera permissions.
 
-Goal: Working Android app with persistent storage.
+## ✅ Milestone 2 — Manual Workout Logging
 
-### Features
+Full manual logging: create session, add exercises with targets, log sets (weight + reps), view history, delete sessions.
 
-* App launches on device
-* Basic navigation
-* Room database initialized
-* Workout data models defined
-* Settings screen
-* Camera permissions
-* Google Drive auth scaffold
+## ✅ Milestone 3 — AI Whiteboard Scan
 
-### Acceptance Criteria
+Camera capture + gallery image picker → direct OpenAI gpt-4o call → review/edit screen → start workout. User supplies their own API key in Settings.
 
-* App installs on Pixel
-* Data persists across restarts
-* Test workout can be saved
+## ✅ Milestone 3.5 — ADR-0001 Data Model
+
+Restructured exercise data into three layers (Movement Identity / Modifiers / Prescription) per ADR-0001. Added `Movement` entity with `findOrCreate` normalization, `ExerciseModifier` sealed class, updated AI parser to extract movement and modifiers separately.
 
 ---
 
-# Milestone 2 — Manual Workout Logging
+# Upcoming Milestones
 
-Goal: Fully usable manual logging experience.
+## Milestone 4 — Progress Tracking
 
-### Features
+Progress charts per movement. PR tracking. Volume trends.
 
-Exercise library.
+## Milestone 5 — Workout Suggestions
 
-Workout creation.
+Auto-progression. Template reuse.
 
-Per-exercise targets.
+## Milestone 6 — Cross-device Sync / Backup
 
-Per-set logging.
+Google Drive backup (appDataFolder). Optional restore.
 
-Workout history.
+Current direction:
+- Store workout state as a versioned JSON snapshot of Room-backed workout tables.
+- Upload that snapshot to Google Drive `appDataFolder`, not Google Sheets.
+- Restore replaces local workout data atomically.
+- OpenAI API keys remain local and are excluded from backup.
 
-Edit past workouts.
+Current implementation target:
+- Settings screen can connect a Google account for Drive backup.
+- User can trigger `Back Up Now` and `Restore Backup` manually.
+- Backup uses a single JSON snapshot file in Drive `appDataFolder`.
+- Restore is explicit and overwrite-based.
 
-### Logging UI
+Current status:
+- Implemented: local snapshot export/import, Google sign-in flow, and manual backup/restore controls in Settings.
+- Verified: app builds, installs, and launches on device with the new backup UI.
+- Remaining: complete end-to-end Drive round-trip verification after Android OAuth + Drive API setup is configured in Google Cloud.
 
-Each exercise shows:
-
-```
-Exercise Name
-Target: 4 x 8
-
-Set 1  Weight  Reps
-Set 2  Weight  Reps
-Set 3  Weight  Reps
-Set 4  Weight  Reps
-```
-
-### Acceptance Criteria
-
-* Multiple exercises per workout
-* Multiple sets per exercise
-* Editing previous sessions
-* Offline operation
-
----
-
-# Milestone 3 — AI Whiteboard Scan
-
-Goal: Generate workouts from whiteboard photos.
-
-### Flow
-
-```
-Scan Workout
-     ↓
-Take Photo
-     ↓
-AI Parse
-     ↓
-Review & Edit
-     ↓
-Start Workout
-```
-
-### Features
-
-* Camera capture
-* Photo import
-* AI parsing
-* Editable preview
-* Convert to workout template
-
-### Acceptance Criteria
-
-* Workout extracted from photo
-* User can correct mistakes
-* Result saved as workout session
-
----
-
-# Non-Functional Requirements
-
-## Performance
-
-| Requirement     | Target     |
-| --------------- | ---------- |
-| App startup     | <2 seconds |
-| Save workout    | instant    |
-| Scan processing | <5 seconds |
-
----
-
-## Reliability
-
-* Local-first
-* Offline logging
-* Background backup retries
-* Atomic database writes
-
----
-
-## Privacy
-
-* No user accounts required
-* Photos not stored after processing
-* AI processing optional in future
-
----
-
-# UX Requirements
-
-### Gym-Optimized Logging
-
-* Large tap targets
-* Minimal typing
-* Fast weight entry
-* Clear set progression
-
----
-
-### Scan Editing
-
-User correction must be easier than retyping.
-
-Example:
-
-```
-A1 Back Squat
-Sets: 4
-Reps: 8
-Notes: 3s pause
-
-[edit]
-```
-
----
-
-# Future Enhancements
-
-Possible future milestones.
-
-## Milestone 4
-
-Progress tracking.
-
-Charts.
-
-PR tracking.
-
----
-
-## Milestone 5
-
-Workout suggestions.
-
-Auto progression.
-
----
-
-## Milestone 6
-
-Cross-device sync.
-
-Shared workouts.
+Setup prerequisite:
+- Enable Google Drive API in the Google Cloud project used for the Android app.
+- Register an Android OAuth client for package `com.gymapp` with the debug SHA-1 used on this machine/device.
+- Until that is configured, the UI can compile and launch but Google sign-in may fail at runtime.
 
 ---
 
 # Key Design Decisions
 
-| Decision       | Reason                   |
-| -------------- | ------------------------ |
-| Native Android | Best performance         |
-| Compose UI     | Modern Android UI        |
-| Room DB        | Reliable offline storage |
-| Drive backup   | No backend required      |
-| OpenAI Vision  | Robust parsing           |
-| JSON export    | Easy debugging           |
+| Decision                  | Reason                                          |
+| ------------------------- | ----------------------------------------------- |
+| Native Android / Compose  | Best performance, modern UI                     |
+| Room DB                   | Reliable offline storage                        |
+| Direct OpenAI call        | No backend to host; user controls their own key |
+| Three-layer exercise model | Stable movement identity across programs (ADR-0001) |
+| DataStore for API key     | Encrypted-by-default local storage              |
+| Drive appDataFolder backup | Hidden app-specific storage; snapshot-friendly; avoids Sheets-as-database |
+| No proxy server           | Personal use; complexity not justified          |
+
+Current POC note:
+- Room currently uses destructive fallback for missing migrations and downgrades so schema churn does not block device testing. Local workout data may be reset after incompatible builds.
 
 ---
 
-# Final Summary
+# Non-Functional Requirements
 
-This system creates a **fast, local-first gym app** that:
+| Requirement     | Target     |
+| --------------- | ---------- |
+| App startup     | <2 seconds |
+| Save workout    | instant    |
+| Scan processing | <10 seconds (OpenAI latency) |
 
-* Runs entirely on-device
-* Stores workouts locally
-* Backs up to Google Drive
-* Uses AI to parse whiteboard workouts
-* Requires almost no backend infrastructure
+---
 
-The architecture is **simple, durable, and scalable** while remaining easy for a coding agent to implement.
+# UX Requirements
 
+* Large tap targets
+* Minimal typing during workouts
+* Fast weight entry
+* Clear set progression display
+* Scan editing easier than retyping
