@@ -20,6 +20,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
@@ -282,7 +283,12 @@ private fun ExerciseCard(
             }
 
             sets.forEach { set ->
-                SetRow(set = set, bodyWeightKg = bodyWeightKg, onUpdate = { viewModel.updateSet(it) })
+                SetRow(
+                    set = set,
+                    bodyWeightKg = bodyWeightKg,
+                    onUpdate = { viewModel.updateSet(it) },
+                    onDelete = { viewModel.deleteSet(set.id) },
+                )
             }
 
             Spacer(modifier = Modifier.height(8.dp))
@@ -308,7 +314,7 @@ private fun ExerciseCard(
 }
 
 @Composable
-private fun SetRow(set: SetEntry, bodyWeightKg: Float?, onUpdate: (SetEntry) -> Unit) {
+private fun SetRow(set: SetEntry, bodyWeightKg: Float?, onUpdate: (SetEntry) -> Unit, onDelete: () -> Unit) {
     var weightText by remember(set.id) { mutableStateOf(set.weight?.let { formatWeight(it) } ?: "") }
     var repsText by remember(set.id) { mutableStateOf(set.repsPerformed?.toString() ?: "") }
 
@@ -376,6 +382,13 @@ private fun SetRow(set: SetEntry, bodyWeightKg: Float?, onUpdate: (SetEntry) -> 
                 singleLine = true,
                 modifier = Modifier.weight(1f),
             )
+            IconButton(onClick = onDelete) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Delete set",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
