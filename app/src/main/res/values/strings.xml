@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">GymApp</string>
+    <string name="tab_workouts">Workouts</string>
+    <string name="tab_history">History</string>
+    <string name="tab_settings">Settings</string>
+</resources>
