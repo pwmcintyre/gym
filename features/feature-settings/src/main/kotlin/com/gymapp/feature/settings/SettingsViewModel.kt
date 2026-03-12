@@ -15,10 +15,10 @@ class SettingsViewModel @Inject constructor(
     private val aiSettings: AiSettings,
 ) : ViewModel() {
 
-    val proxyUrl: StateFlow<String> = aiSettings.proxyUrl
+    val apiKey: StateFlow<String> = aiSettings.apiKey
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
 
-    fun saveProxyUrl(url: String) {
-        viewModelScope.launch { aiSettings.setProxyUrl(url) }
+    fun saveApiKey(key: String) {
+        viewModelScope.launch { aiSettings.setApiKey(key) }
     }
 }

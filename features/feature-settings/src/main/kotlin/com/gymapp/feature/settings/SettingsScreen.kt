@@ -22,6 +22,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -32,8 +33,8 @@ fun SettingsScreen(
     modifier: Modifier = Modifier,
     viewModel: SettingsViewModel = hiltViewModel(),
 ) {
-    val savedUrl by viewModel.proxyUrl.collectAsStateWithLifecycle()
-    var urlDraft by rememberSaveable(savedUrl) { mutableStateOf(savedUrl) }
+    val savedKey by viewModel.apiKey.collectAsStateWithLifecycle()
+    var keyDraft by rememberSaveable(savedKey) { mutableStateOf(savedKey) }
     val focusManager = LocalFocusManager.current
 
     Scaffold(
@@ -48,24 +49,25 @@ fun SettingsScreen(
         ) {
             Text("AI Scan", style = MaterialTheme.typography.titleSmall)
             Text(
-                text = "Proxy URL for whiteboard scan. Deploy the proxy/ server and paste its URL here.",
+                text = "Your OpenAI API key. Get one at platform.openai.com. Stored only on this device.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
             )
             OutlinedTextField(
-                value = urlDraft,
-                onValueChange = { urlDraft = it },
-                label = { Text("Proxy URL") },
-                placeholder = { Text("https://your-proxy.run.app") },
+                value = keyDraft,
+                onValueChange = { keyDraft = it },
+                label = { Text("OpenAI API Key") },
+                placeholder = { Text("sk-...") },
                 singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Uri,
+                    keyboardType = KeyboardType.Password,
                     imeAction = ImeAction.Done,
                 ),
                 keyboardActions = KeyboardActions(
                     onDone = {
-                        viewModel.saveProxyUrl(urlDraft)
+                        viewModel.saveApiKey(keyDraft)
                         focusManager.clearFocus()
                     },
                 ),

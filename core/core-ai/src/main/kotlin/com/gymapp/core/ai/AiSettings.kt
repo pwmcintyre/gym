@@ -19,13 +19,13 @@ class AiSettings @Inject constructor(
     @ApplicationContext private val context: Context,
 ) {
     companion object {
-        private val KEY_PROXY_URL = stringPreferencesKey("proxy_url")
+        private val KEY_API_KEY = stringPreferencesKey("openai_api_key")
     }
 
-    val proxyUrl: Flow<String> = context.dataStore.data
-        .map { prefs -> prefs[KEY_PROXY_URL] ?: "" }
+    val apiKey: Flow<String> = context.dataStore.data
+        .map { prefs -> prefs[KEY_API_KEY] ?: "" }
 
-    suspend fun setProxyUrl(url: String) {
-        context.dataStore.edit { prefs -> prefs[KEY_PROXY_URL] = url.trim() }
+    suspend fun setApiKey(key: String) {
+        context.dataStore.edit { prefs -> prefs[KEY_API_KEY] = key.trim() }
     }
 }
