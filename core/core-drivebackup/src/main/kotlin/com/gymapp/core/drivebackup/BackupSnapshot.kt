@@ -22,6 +22,7 @@ data class BackupSnapshot(
     val setEntries: List<SetEntry>,
 ) {
     companion object {
-        const val CURRENT_SCHEMA_VERSION = 1
+        /** v2: SetEntry gains weightMode field (default BARBELL for old backups). */
+        const val CURRENT_SCHEMA_VERSION = 2
     }
 }

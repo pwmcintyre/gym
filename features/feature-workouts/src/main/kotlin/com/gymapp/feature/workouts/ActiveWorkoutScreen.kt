@@ -76,7 +76,10 @@ fun ActiveWorkoutScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Workout") },
+                title = {
+                    val name = session?.notes?.takeIf { it.isNotBlank() }
+                    Text(name ?: "Workout")
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
