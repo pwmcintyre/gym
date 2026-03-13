@@ -9,7 +9,8 @@ Progress notes:
 - `Floating Action Button (FAB) Optimization` is now implemented on the workouts screen by moving AI into the top bar.
 - `Action Priority` is now implemented via a long-press card menu for secondary session actions.
 - `Data Visualization` is now partially implemented via a set-completion progress bar when a workout has programmed target sets.
-- The next useful slice is improving empty and in-progress states on sessions without clear programmed targets.
+- Empty and non-targeted in-progress sessions now have clearer supporting states (`No movements yet`, `Ready to start logging`, `Logged without set targets`).
+- The next useful slice is tightening the section-header language beyond `Today` / `Yesterday` into more natural date labels.
 
 ---
 

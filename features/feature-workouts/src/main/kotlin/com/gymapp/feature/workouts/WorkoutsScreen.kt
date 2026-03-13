@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SmartToy
+import androidx.compose.material.icons.filled.Timelapse
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -167,6 +168,7 @@ private fun SessionCard(
     onCopyAsTemplate: () -> Unit,
 ) {
     val status = remember(summary) { sessionStatus(summary) }
+    val progressState = remember(summary) { sessionProgressState(summary) }
     var showMenu by rememberSaveable(session.id) { mutableStateOf(false) }
     val nameText: String?
     val nameColor: androidx.compose.ui.graphics.Color
@@ -251,6 +253,11 @@ private fun SessionCard(
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
+                        } else {
+                            SessionStateHint(
+                                progressState = progressState,
+                                modifier = Modifier.padding(top = 8.dp, end = 16.dp),
+                            )
                         }
                     } else {
                         Row(
@@ -348,13 +355,73 @@ private fun SummaryStat(
     }
 }
 
+@Composable
+private fun SessionStateHint(
+    progressState: SessionProgressState,
+    modifier: Modifier = Modifier,
+) {
+    val (icon, text, tint) = when (progressState) {
+        SessionProgressState.EMPTY -> Triple(
+            Icons.AutoMirrored.Filled.DirectionsRun,
+            "Add movements to build this workout",
+            MaterialTheme.colorScheme.outline,
+        )
+        SessionProgressState.READY_TO_LOG -> Triple(
+            Icons.Default.Schedule,
+            "Ready to start logging",
+            MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        SessionProgressState.FLEXIBLE_LOGGING -> Triple(
+            Icons.Default.Timelapse,
+            "Logged without set targets",
+            MaterialTheme.colorScheme.primary,
+        )
+        SessionProgressState.TRACKED -> Triple(
+            Icons.Default.Check,
+            "Target-tracked session",
+            MaterialTheme.colorScheme.primary,
+        )
+    }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = modifier,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.size(14.dp),
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelSmall,
+            color = tint,
+        )
+    }
+}
+
 private enum class SessionStatus(val label: String) {
     PLANNED("Planned"),
     LOGGED("Logged"),
 }
 
+private enum class SessionProgressState {
+    EMPTY,
+    READY_TO_LOG,
+    FLEXIBLE_LOGGING,
+    TRACKED,
+}
+
 private fun sessionStatus(summary: SessionSummary?): SessionStatus =
     if (summary != null && summary.setCount > 0) SessionStatus.LOGGED else SessionStatus.PLANNED
+
+private fun sessionProgressState(summary: SessionSummary?): SessionProgressState = when {
+    summary == null || summary.exerciseCount == 0 -> SessionProgressState.EMPTY
+    summary.targetSetCount > 0 -> SessionProgressState.TRACKED
+    summary.setCount == 0 -> SessionProgressState.READY_TO_LOG
+    else -> SessionProgressState.FLEXIBLE_LOGGING
+}
 
 @Composable
 private fun SessionStatus.containerColor(): Color = when (this) {
