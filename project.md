@@ -440,6 +440,7 @@ Delivered:
 - Updated the workouts-list design backlog notes so the date/highlight pass now explicitly follows the broader design cleanup and uses the workouts list as the reference treatment.
 - Added clearer workout-card state treatment on the Workouts screen: `Planned` vs `Logged` chips, stronger card border contrast for logged sessions, and a fallback `No movements yet` summary for empty cards.
 - Moved the state chip to a right-aligned header position and replaced the low-value duplicate icon with the state icon itself so the right edge now communicates session status instead of a secondary action.
+- Tightened the workout-card header again by collapsing the status treatment down to a single right-edge icon in the old action slot, keeping the green check / grey clock without increasing card height.
 
 Validation: `./gradlew :features:feature-workouts:compileDebugKotlin --no-daemon`, `./gradlew :features:feature-workouts:clean --no-daemon`, and `./gradlew assembleDebug --no-daemon` — BUILD SUCCESSFUL.
 

@@ -21,8 +21,6 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.AssistChip
-import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -186,26 +184,20 @@ private fun SessionCard(
             .clickable(onClick = onClick),
     ) {
         Row(
-            verticalAlignment = Alignment.Top,
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(16.dp),
+                    .padding(start = 16.dp, top = 16.dp, bottom = 16.dp),
             ) {
-                Row(
-                    horizontalArrangement = Arrangement.End,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    StatusChip(status = status, onClick = onClick)
-                }
                 if (nameText != null) {
                     Text(
                         text = nameText,
                         style = MaterialTheme.typography.titleMedium,
                         color = nameColor,
-                        modifier = Modifier.padding(top = 12.dp),
+                        modifier = Modifier.padding(end = 16.dp),
                     )
                 }
                 if (summary != null && summary.exerciseCount > 0) {
@@ -232,19 +224,31 @@ private fun SessionCard(
                         text = annotated,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(
-                            top = if (nameText != null) 4.dp else 16.dp,
-                        ),
+                        modifier = Modifier.padding(top = if (nameText != null) 4.dp else 0.dp, end = 16.dp),
                     )
                 } else {
                     Text(
                         text = "No movements yet",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = if (nameText != null) 4.dp else 12.dp),
+                        modifier = Modifier.padding(top = if (nameText != null) 4.dp else 0.dp, end = 16.dp),
                     )
                 }
             }
+            Icon(
+                imageVector = when (status) {
+                    SessionStatus.PLANNED -> Icons.Default.Schedule
+                    SessionStatus.LOGGED -> Icons.Default.Check
+                },
+                contentDescription = status.label,
+                tint = when (status) {
+                    SessionStatus.PLANNED -> MaterialTheme.colorScheme.outline
+                    SessionStatus.LOGGED -> MaterialTheme.colorScheme.primary
+                },
+                modifier = Modifier
+                    .padding(end = 16.dp)
+                    .size(20.dp),
+            )
         }
     }
 }
@@ -256,29 +260,6 @@ private enum class SessionStatus(val label: String) {
 
 private fun sessionStatus(summary: SessionSummary?): SessionStatus =
     if (summary != null && summary.setCount > 0) SessionStatus.LOGGED else SessionStatus.PLANNED
-
-@Composable
-private fun StatusChip(status: SessionStatus, onClick: () -> Unit) {
-    AssistChip(
-        onClick = onClick,
-        label = { Text(status.label) },
-        leadingIcon = {
-            Icon(
-                imageVector = when (status) {
-                    SessionStatus.PLANNED -> Icons.Default.Schedule
-                    SessionStatus.LOGGED -> Icons.Default.Check
-                },
-                contentDescription = null,
-                modifier = Modifier.size(AssistChipDefaults.IconSize),
-            )
-        },
-        colors = AssistChipDefaults.assistChipColors(
-            containerColor = status.chipContainerColor(),
-            labelColor = status.chipLabelColor(),
-            leadingIconContentColor = status.chipLabelColor(),
-        ),
-    )
-}
 
 @Composable
 private fun SessionStatus.containerColor(): Color = when (this) {
