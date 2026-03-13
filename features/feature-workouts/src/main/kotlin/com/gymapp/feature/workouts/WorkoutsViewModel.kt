@@ -61,6 +61,7 @@ class WorkoutsViewModel @Inject constructor(
                                     )
                                     result.getOrNull()?.trim()?.takeIf { it.isNotBlank() }?.let { label ->
                                         _suggestedNames.value = _suggestedNames.value + (session.id to label)
+                                        workoutRepository.update(session.copy(notes = label))
                                     }
                                 }
                             }
