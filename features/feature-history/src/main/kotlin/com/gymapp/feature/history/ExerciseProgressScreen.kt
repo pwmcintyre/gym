@@ -43,6 +43,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.SpanStyle
@@ -295,13 +296,20 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
     val weights = sessionProgress.mapNotNull { it.bestWeight }.filter { it > 0f }
     val minWeight = weights.minOrNull() ?: 0f
     val maxWeight = weights.maxOrNull()?.takeIf { it > 0f } ?: 1f
-    val range = (maxWeight - minWeight).coerceAtLeast(2.5f)
+    val weightRange = (maxWeight - minWeight).coerceAtLeast(2.5f)
+    val reps = sessionProgress.mapNotNull { it.bestReps }.filter { it > 0 }
+    val minReps = reps.minOrNull() ?: 0
+    val maxReps = reps.maxOrNull()?.coerceAtLeast(1) ?: 1
+    val repsRange = (maxReps - minReps).coerceAtLeast(1)
 
     val lineColor = MaterialTheme.colorScheme.primary
+    val repsLineColor = Color(0xFF9C27B0)
     val axisColor = MaterialTheme.colorScheme.outlineVariant
 
     val firstWeight = sessionProgress.firstNotNullOfOrNull { it.bestWeight }
     val lastWeight = sessionProgress.lastOrNull { it.bestWeight != null }?.bestWeight
+    val firstReps = sessionProgress.firstNotNullOfOrNull { it.bestReps }
+    val lastReps = sessionProgress.lastOrNull { it.bestReps != null }?.bestReps
 
     Card(
         colors = CardDefaults.cardColors(
@@ -315,7 +323,7 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "Weight Trend",
+                text = "Weight + Reps Trend",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -333,12 +341,12 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
                     Text(
                         text = formatWeight(maxWeight, appendUnit = false),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = lineColor,
                     )
                     Text(
                         text = formatWeight(minWeight, appendUnit = false),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = lineColor,
                     )
                 }
 
@@ -371,7 +379,14 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
                         val w = p.bestWeight ?: return@mapIndexedNotNull null
                         if (w <= 0f) return@mapIndexedNotNull null
                         val x = pad + i * step
-                        val y = chartH - pad - ((w - minWeight) / range) * (chartH - pad * 2)
+                        val y = chartH - pad - ((w - minWeight) / weightRange) * (chartH - pad * 2)
+                        Offset(x, y)
+                    }
+                    val repPts = sessionProgress.mapIndexedNotNull { i, p ->
+                        val r = p.bestReps ?: return@mapIndexedNotNull null
+                        if (r <= 0) return@mapIndexedNotNull null
+                        val x = pad + i * step
+                        val y = chartH - pad - ((r - minReps).toFloat() / repsRange.toFloat()) * (chartH - pad * 2)
                         Offset(x, y)
                     }
 
@@ -382,11 +397,55 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
                         }
                         drawPath(path, lineColor, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
                     }
+                    if (repPts.size >= 2) {
+                        val path = Path().apply {
+                            moveTo(repPts.first().x, repPts.first().y)
+                            repPts.drop(1).forEach { lineTo(it.x, it.y) }
+                        }
+                        drawPath(path, repsLineColor, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
+                    }
                     pts.forEach { drawCircle(lineColor, 3.5.dp.toPx(), it) }
+                    repPts.forEach { drawCircle(repsLineColor, 3.5.dp.toPx(), it) }
+                }
+
+                Column(
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.Start,
+                    modifier = Modifier
+                        .width(32.dp)
+                        .height(120.dp)
+                        .padding(start = 4.dp),
+                ) {
+                    Text(
+                        text = maxReps.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = repsLineColor,
+                    )
+                    Text(
+                        text = minReps.toString(),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = repsLineColor,
+                    )
                 }
             }
 
-            // First / last weight labels + date labels
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(start = 44.dp),
+            ) {
+                Text(
+                    text = "Weight",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = lineColor,
+                )
+                Text(
+                    text = "Reps",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = repsLineColor,
+                )
+            }
+
+            // First / last labels + date labels
             Row(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier
@@ -394,11 +453,15 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
                     .padding(start = 44.dp), // align with chart area
             ) {
                 Column(horizontalAlignment = Alignment.Start) {
-                    if (firstWeight != null) {
+                    if (firstWeight != null || firstReps != null) {
                         Text(
-                            formatWeight(firstWeight),
+                            buildString {
+                                firstWeight?.let { append(formatWeight(it)) }
+                                if (firstWeight != null && firstReps != null) append(" • ")
+                                firstReps?.let { append("$it reps") }
+                            },
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                     Text(
@@ -408,11 +471,15 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
                     )
                 }
                 Column(horizontalAlignment = Alignment.End) {
-                    if (lastWeight != null && lastWeight != firstWeight) {
+                    if ((lastWeight != null || lastReps != null) && (lastWeight != firstWeight || lastReps != firstReps)) {
                         Text(
-                            formatWeight(lastWeight),
+                            buildString {
+                                lastWeight?.let { append(formatWeight(it)) }
+                                if (lastWeight != null && lastReps != null) append(" • ")
+                                lastReps?.let { append("$it reps") }
+                            },
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.primary,
+                            color = MaterialTheme.colorScheme.onSurface,
                         )
                     }
                     Text(

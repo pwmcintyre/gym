@@ -52,6 +52,7 @@ interface ExerciseEntryDao {
             ws.date AS sessionDate,
             COUNT(s.id) AS setCount,
             MAX(s.weight) AS bestWeight,
+            MAX(s.reps_performed) AS bestReps,
             CAST(SUM(COALESCE(s.weight, 0) * COALESCE(s.reps_performed, 0)) AS REAL) AS totalVolume,
             COALESCE(SUM(CASE WHEN s.weight_mode = 'BODYWEIGHT' THEN 1 ELSE 0 END), 0) AS bodyweightSetCount
         FROM exercise_entries e
