@@ -2,16 +2,14 @@ package com.gymapp.feature.workouts
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
@@ -28,19 +26,19 @@ import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Timelapse
-import androidx.compose.material3.TextButton
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -108,7 +106,7 @@ fun WorkoutsScreen(
                     .padding(innerPadding)
                     .padding(16.dp),
             ) {
-                WorkoutsHeroCard(
+                WorkoutsStartActions(
                     onNewWorkout = { viewModel.createWorkout(onOpenWorkout) },
                     onSuggestWorkout = { viewModel.createWorkout(onOpenWorkout) },
                     onScanWorkout = onOpenScan,
@@ -129,7 +127,7 @@ fun WorkoutsScreen(
                     .padding(innerPadding),
             ) {
                 item(key = "hero_cta", contentType = "hero") {
-                    WorkoutsHeroCard(
+                    WorkoutsStartActions(
                         onNewWorkout = { viewModel.createWorkout(onOpenWorkout) },
                         onSuggestWorkout = { viewModel.createWorkout(onOpenWorkout) },
                         onScanWorkout = onOpenScan,
@@ -169,55 +167,54 @@ fun WorkoutsScreen(
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun WorkoutsHeroCard(
+private fun WorkoutsStartActions(
     onNewWorkout: () -> Unit,
     onSuggestWorkout: () -> Unit,
     onScanWorkout: () -> Unit,
 ) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(12.dp),
-            modifier = Modifier.padding(16.dp),
-        ) {
-            Text(
-                text = "Start your next workout",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "Create a blank workout, jump into suggestions, or scan a board from the same starting point.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                TextButton(onClick = onNewWorkout) {
-                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.size(4.dp))
-                    Text("New workout")
-                }
-                TextButton(onClick = onSuggestWorkout) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.size(4.dp))
-                    Text("Suggest workout")
-                }
-                TextButton(onClick = onScanWorkout) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
-                    Spacer(modifier = Modifier.size(4.dp))
-                    Text("Scan board")
-                }
-            }
-        }
+        StartActionButton(
+            icon = Icons.Default.Add,
+            contentDescription = "New workout",
+            onClick = onNewWorkout,
+            modifier = Modifier.weight(1f),
+        )
+        StartActionButton(
+            icon = Icons.Default.AutoAwesome,
+            contentDescription = "Suggest workout",
+            onClick = onSuggestWorkout,
+            modifier = Modifier.weight(1f),
+        )
+        StartActionButton(
+            icon = Icons.Default.CameraAlt,
+            contentDescription = "Scan board",
+            onClick = onScanWorkout,
+            modifier = Modifier.weight(1f),
+        )
+    }
+}
+
+@Composable
+private fun StartActionButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Button(
+        onClick = onClick,
+        shape = RoundedCornerShape(18.dp),
+        modifier = modifier.height(56.dp),
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            modifier = Modifier.size(20.dp),
+        )
     }
 }
 
