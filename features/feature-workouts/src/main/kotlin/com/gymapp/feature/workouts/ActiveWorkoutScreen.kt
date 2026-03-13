@@ -128,6 +128,7 @@ fun ActiveWorkoutScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                expandedHeight = 48.dp,
                 title = {
                     val name = session?.notes?.takeIf { it.isNotBlank() }
                     Text(name ?: "Workout")

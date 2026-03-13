@@ -102,6 +102,9 @@ class WorkoutRepository @Inject constructor(
     suspend fun deleteExercise(id: String) =
         exerciseDao.deleteById(id)
 
+    suspend fun renameExerciseGlobally(oldName: String, newName: String) =
+        exerciseDao.renameGlobally(oldName, newName)
+
     /** Copies exercises (label, name, targets) from [sourceSessionId] into [destSessionId]. */
     suspend fun copyExercisesFromSession(sourceSessionId: String, destSessionId: String) {
         val source = exerciseDao.observeBySession(sourceSessionId).first()

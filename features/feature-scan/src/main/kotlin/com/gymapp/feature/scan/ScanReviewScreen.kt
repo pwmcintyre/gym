@@ -59,6 +59,7 @@ fun ScanReviewScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                expandedHeight = 48.dp,
                 title = { Text("Review Workout") },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

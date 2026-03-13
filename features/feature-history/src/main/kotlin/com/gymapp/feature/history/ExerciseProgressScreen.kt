@@ -12,26 +12,33 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -42,7 +49,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymapp.core.model.ExercisePr
 import com.gymapp.core.model.ExerciseSessionProgress
 import com.gymapp.core.model.formatDate
-import com.gymapp.core.model.formatVolume
 import com.gymapp.core.model.formatWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,21 +61,41 @@ fun ExerciseProgressScreen(
 ) {
     val sessionProgress by viewModel.sessionProgress.collectAsStateWithLifecycle()
     val prs by viewModel.prs.collectAsStateWithLifecycle()
+    var showRenameDialog by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                expandedHeight = 48.dp,
                 title = { Text(viewModel.exerciseName) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    IconButton(onClick = { showRenameDialog = true }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Rename movement")
+                    }
+                },
             )
         },
     ) { innerPadding ->
+
+    if (showRenameDialog) {
+        RenameMovementDialog(
+            currentName = viewModel.exerciseName,
+            onConfirm = { newName ->
+                viewModel.renameGlobally(newName) {
+                    showRenameDialog = false
+                    onBack()
+                }
+            },
+            onDismiss = { showRenameDialog = false },
+        )
+    }
         if (sessionProgress.isEmpty()) {
             Box(
                 contentAlignment = Alignment.Center,
@@ -206,12 +232,16 @@ private fun PrChip(pr: ExercisePr, modifier: Modifier = Modifier) {
 
 @Composable
 private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgress>) {
-    val maxVolume = sessionProgress.maxOfOrNull { it.totalVolume }?.takeIf { it > 0f } ?: 1f
-    val maxWeight = sessionProgress.mapNotNull { it.bestWeight }.maxOrNull()?.takeIf { it > 0f } ?: 1f
+    val weights = sessionProgress.mapNotNull { it.bestWeight }.filter { it > 0f }
+    val minWeight = weights.minOrNull() ?: 0f
+    val maxWeight = weights.maxOrNull()?.takeIf { it > 0f } ?: 1f
+    val range = (maxWeight - minWeight).coerceAtLeast(2.5f)
 
-    val barColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
     val lineColor = MaterialTheme.colorScheme.primary
     val axisColor = MaterialTheme.colorScheme.outlineVariant
+
+    val firstWeight = sessionProgress.firstNotNullOfOrNull { it.bestWeight }
+    val lastWeight = sessionProgress.lastOrNull { it.bestWeight != null }?.bestWeight
 
     Card(
         colors = CardDefaults.cardColors(
@@ -225,99 +255,110 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "Volume & Weight Trend",
+                text = "Weight Trend",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    text = "Bars = volume",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
-                )
-                Text(
-                    text = "Line = best weight",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                // Y-axis labels
+                Column(
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.End,
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(120.dp)
+                        .padding(end = 4.dp),
+                ) {
+                    Text(
+                        text = formatWeight(maxWeight, appendUnit = false),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = formatWeight(minWeight, appendUnit = false),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+
+                Canvas(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(120.dp),
+                ) {
+                    val pad = 6.dp.toPx()
+                    val chartH = size.height
+                    val count = sessionProgress.size.coerceAtLeast(1)
+                    val step = if (count > 1) (size.width - pad * 2) / (count - 1) else size.width / 2f
+
+                    // Y-axis line
+                    drawLine(
+                        color = axisColor,
+                        start = Offset(0f, 0f),
+                        end = Offset(0f, chartH),
+                        strokeWidth = 1.dp.toPx(),
+                    )
+                    // Baseline
+                    drawLine(
+                        color = axisColor,
+                        start = Offset(0f, chartH),
+                        end = Offset(size.width, chartH),
+                        strokeWidth = 1.dp.toPx(),
+                    )
+
+                    val pts = sessionProgress.mapIndexedNotNull { i, p ->
+                        val w = p.bestWeight ?: return@mapIndexedNotNull null
+                        if (w <= 0f) return@mapIndexedNotNull null
+                        val x = pad + i * step
+                        val y = chartH - pad - ((w - minWeight) / range) * (chartH - pad * 2)
+                        Offset(x, y)
+                    }
+
+                    if (pts.size >= 2) {
+                        val path = Path().apply {
+                            moveTo(pts.first().x, pts.first().y)
+                            pts.drop(1).forEach { lineTo(it.x, it.y) }
+                        }
+                        drawPath(path, lineColor, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
+                    }
+                    pts.forEach { drawCircle(lineColor, 3.5.dp.toPx(), it) }
+                }
             }
 
-            Canvas(
+            // First / last weight labels + date labels
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(144.dp),
+                    .padding(start = 44.dp), // align with chart area
             ) {
-                val spacing = 12.dp.toPx()
-                val barCount = sessionProgress.size.coerceAtLeast(1)
-                val availableWidth = size.width - (spacing * (barCount + 1))
-                val barWidth = (availableWidth / barCount).coerceAtLeast(8.dp.toPx())
-                val chartHeight = size.height - 8.dp.toPx()
-
-                // Baseline axis
-                drawLine(
-                    color = axisColor,
-                    start = Offset(0f, chartHeight),
-                    end = Offset(size.width, chartHeight),
-                    strokeWidth = 1.dp.toPx(),
-                )
-
-                // Volume bars (subdued)
-                sessionProgress.forEachIndexed { index, progress ->
-                    val left = spacing + index * (barWidth + spacing)
-                    val normalizedHeight = if (progress.totalVolume <= 0f) {
-                        4.dp.toPx()
-                    } else {
-                        (progress.totalVolume / maxVolume) * (chartHeight - 12.dp.toPx())
+                Column(horizontalAlignment = Alignment.Start) {
+                    if (firstWeight != null) {
+                        Text(
+                            formatWeight(firstWeight),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
                     }
-                    drawRoundRect(
-                        color = barColor,
-                        topLeft = Offset(left, chartHeight - normalizedHeight),
-                        size = Size(barWidth, normalizedHeight),
-                        cornerRadius = CornerRadius(6f, 6f),
-                    )
-                }
-
-                // Weight trend line
-                val weightPoints = sessionProgress.mapIndexedNotNull { index, progress ->
-                    val w = progress.bestWeight ?: return@mapIndexedNotNull null
-                    if (w <= 0f) return@mapIndexedNotNull null
-                    val cx = spacing + index * (barWidth + spacing) + barWidth / 2f
-                    val cy = chartHeight - (w / maxWeight) * (chartHeight - 12.dp.toPx())
-                    Offset(cx, cy)
-                }
-
-                if (weightPoints.size >= 2) {
-                    val path = Path().apply {
-                        moveTo(weightPoints.first().x, weightPoints.first().y)
-                        weightPoints.drop(1).forEach { pt -> lineTo(pt.x, pt.y) }
-                    }
-                    drawPath(
-                        path = path,
-                        color = lineColor,
-                        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round),
-                    )
-                }
-
-                // Dots on the weight line
-                weightPoints.forEach { pt ->
-                    drawCircle(color = lineColor, radius = 4.dp.toPx(), center = pt)
-                }
-            }
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                sessionProgress.forEach { progress ->
                     Text(
-                        text = formatDate(progress.sessionDate, "M/d"),
-                        style = MaterialTheme.typography.bodySmall,
+                        formatDate(sessionProgress.first().sessionDate, "M/d"),
+                        style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.weight(1f),
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    if (lastWeight != null && lastWeight != firstWeight) {
+                        Text(
+                            formatWeight(lastWeight),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                        )
+                    }
+                    Text(
+                        formatDate(sessionProgress.last().sessionDate, "M/d"),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
             }
@@ -334,7 +375,6 @@ private fun ExerciseProgressSummaryCard(
     exerciseName: String,
     sessionProgress: List<ExerciseSessionProgress>,
 ) {
-    val totalVolume = sessionProgress.sumOf { it.totalVolume.toDouble() }.toFloat()
     val bestWeight = sessionProgress.mapNotNull { it.bestWeight }.maxOrNull()?.takeIf { it > 0f }
 
     Card(
@@ -360,8 +400,7 @@ private fun ExerciseProgressSummaryCard(
             )
             Text(
                 text = "${sessionProgress.size} session${if (sessionProgress.size != 1) "s" else ""}" +
-                    " • Best ${bestWeight?.let { formatWeight(it) } ?: "—"}" +
-                    " • Volume ${formatVolume(totalVolume)}",
+                    " • Best ${bestWeight?.let { formatWeight(it) } ?: "—"}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -398,8 +437,7 @@ private fun ExerciseProgressSessionCard(
             )
             Text(
                 text = "${progress.setCount} set${if (progress.setCount != 1) "s" else ""}" +
-                    " • Best ${progress.bestWeight?.let { formatWeight(it) } ?: "—"}" +
-                    " • Volume ${formatVolume(progress.totalVolume)}",
+                    " • Best ${progress.bestWeight?.let { formatWeight(it) } ?: "—"}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -410,4 +448,34 @@ private fun ExerciseProgressSessionCard(
             )
         }
     }
+}
+
+@Composable
+private fun RenameMovementDialog(
+    currentName: String,
+    onConfirm: (String) -> Unit,
+    onDismiss: () -> Unit,
+) {
+    var name by rememberSaveable { mutableStateOf(currentName) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Rename movement") },
+        text = {
+            OutlinedTextField(
+                value = name,
+                onValueChange = { name = it },
+                label = { Text("Name") },
+                singleLine = true,
+            )
+        },
+        confirmButton = {
+            Button(
+                onClick = { if (name.isNotBlank()) onConfirm(name) },
+                enabled = name.isNotBlank() && name.trim() != currentName,
+            ) { Text("Rename everywhere") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Cancel") }
+        },
+    )
 }

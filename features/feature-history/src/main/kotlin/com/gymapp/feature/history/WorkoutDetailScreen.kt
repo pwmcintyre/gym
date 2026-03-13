@@ -75,6 +75,7 @@ fun WorkoutDetailScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                expandedHeight = 48.dp,
                 title = { Text(titleText) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

@@ -1,5 +1,12 @@
 # AGENTS.md
 
+## UI language rules
+
+- **Never use the word "volume"** in any user-facing string. Users think in terms of weight lifted (e.g. "90 kg"), not total tonnage. Remove "Volume" labels wherever they appear.
+- After each milestone or fix: commit, push, and deploy (`adb install app/build/outputs/apk/debug/app-debug.apk`).
+
+---
+
 ## Ways of working
 
 - This is a **PoC / personal app**. Do not add database migrations — use Room's `fallbackToDestructiveMigration()` and wipe-on-schema-change. Local data loss during development is acceptable.

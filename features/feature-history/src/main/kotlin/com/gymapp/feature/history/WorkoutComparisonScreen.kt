@@ -56,6 +56,7 @@ fun WorkoutComparisonScreen(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
+                expandedHeight = 48.dp,
                 title = { Text(viewModel.workoutName) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {

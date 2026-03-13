@@ -43,7 +43,6 @@ import com.gymapp.core.model.ExerciseProgressSummary
 import com.gymapp.core.model.SessionSummary
 import com.gymapp.core.model.WorkoutSession
 import com.gymapp.core.model.formatDate
-import com.gymapp.core.model.formatVolume
 import com.gymapp.core.model.formatWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -260,5 +259,4 @@ private fun buildProgressSummaryLine(summary: ExerciseProgressSummary): String =
     append("${summary.sessionCount} session")
     if (summary.sessionCount != 1) append("s")
     append(" • Best ${summary.bestWeight?.let { formatWeight(it) } ?: "—"}")
-    append(" • Volume ${formatVolume(summary.totalVolume)}")
 }

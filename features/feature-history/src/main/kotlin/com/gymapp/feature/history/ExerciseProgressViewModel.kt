@@ -12,12 +12,13 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class ExerciseProgressViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    workoutRepository: WorkoutRepository,
+    private val workoutRepository: WorkoutRepository,
     setRepository: SetRepository,
 ) : ViewModel() {
 
@@ -34,4 +35,11 @@ class ExerciseProgressViewModel @Inject constructor(
     val prs: StateFlow<List<ExercisePr>> =
         setRepository.observePrsByRepCount(exerciseName)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    fun renameGlobally(newName: String, onDone: () -> Unit) {
+        viewModelScope.launch {
+            workoutRepository.renameExerciseGlobally(exerciseName, newName.trim())
+            onDone()
+        }
+    }
 }

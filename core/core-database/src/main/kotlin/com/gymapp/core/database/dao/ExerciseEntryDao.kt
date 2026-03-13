@@ -118,6 +118,10 @@ interface ExerciseEntryDao {
     )
     fun observeExerciseProgressions(workoutName: String): Flow<List<ExerciseWorkoutProgression>>
 
+    /** Renames every occurrence of [oldName] across all sessions. */
+    @Query("UPDATE exercise_entries SET exercise_name = :newName WHERE exercise_name = :oldName")
+    suspend fun renameGlobally(oldName: String, newName: String)
+
     @Query("DELETE FROM exercise_entries")
     suspend fun deleteAll()
 }
