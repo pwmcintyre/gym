@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -110,7 +111,7 @@ fun WorkoutDetailScreen(
             if (exercises.isEmpty()) {
                 item {
                     Text(
-                        "No exercises recorded.",
+                        "No movements recorded.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 32.dp),
@@ -181,8 +182,8 @@ private fun ExerciseDetailCard(
                 )
                 IconButton(onClick = onOpenProgress) {
                     Icon(
-                        Icons.Default.BarChart,
-                        contentDescription = "View progress",
+                        Icons.AutoMirrored.Filled.DirectionsRun,
+                        contentDescription = "View movement",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }

@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -43,6 +44,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymapp.core.model.SessionSummary
 import com.gymapp.core.model.WorkoutSession
 import com.gymapp.core.model.formatDate
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +59,11 @@ fun WorkoutsScreen(
     val sessionSummaries by viewModel.sessionSummaries.collectAsStateWithLifecycle()
     val suggestedNames by viewModel.suggestedNames.collectAsStateWithLifecycle()
     var showAiSheet by rememberSaveable { mutableStateOf(false) }
+
+    val groupedSessions = remember(sessions) {
+        sessions.groupBy { truncateToDay(it.date) }
+            .entries.sortedByDescending { it.key }
+    }
 
     // Configure AI in history mode (no session)
     LaunchedEffect(Unit) {
@@ -103,22 +110,32 @@ fun WorkoutsScreen(
             }
         } else {
             LazyColumn(
-                contentPadding = PaddingValues(16.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
-                items(sessions, key = { it.id }) { session ->
-                    SessionCard(
-                        session = session,
-                        summary = sessionSummaries[session.id],
-                        suggestedName = suggestedNames[session.id],
-                        onClick = { onOpenDetail(session.id) },
-                        onCopyAsTemplate = {
-                            viewModel.createFromTemplate(session.id, onOpenWorkout)
-                        },
-                    )
+                groupedSessions.forEach { (dayMs, daySessions) ->
+                    item(key = "header_$dayMs", contentType = "header") {
+                        Text(
+                            text = dayLabel(dayMs),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                        )
+                    }
+                    items(daySessions, key = { it.id }) { session ->
+                        SessionCard(
+                            session = session,
+                            summary = sessionSummaries[session.id],
+                            suggestedName = suggestedNames[session.id],
+                            onClick = { onOpenDetail(session.id) },
+                            onCopyAsTemplate = {
+                                viewModel.createFromTemplate(session.id, onOpenWorkout)
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -172,23 +189,14 @@ private fun SessionCard(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                // Line 1: date
-                Text(
-                    text = formatDate(session.date, "yyyy-MM-dd"),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
-                )
-                // Line 2: workout name (if any)
                 if (nameText != null) {
                     Text(
                         text = nameText,
                         style = MaterialTheme.typography.titleMedium,
                         color = nameColor,
-                        modifier = Modifier.padding(start = 16.dp, top = 2.dp, end = 16.dp),
+                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
                     )
                 }
-                // Line 3: summary
                 if (summary != null && summary.exerciseCount > 0) {
                     val summaryText = buildString {
                         append("${summary.exerciseCount} movement${if (summary.exerciseCount != 1) "s" else ""}")
@@ -213,10 +221,15 @@ private fun SessionCard(
                         text = annotated,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 4.dp),
+                        modifier = Modifier.padding(
+                            start = 16.dp,
+                            end = 16.dp,
+                            bottom = 16.dp,
+                            top = if (nameText != null) 4.dp else 16.dp,
+                        ),
                     )
                 } else {
-                    Spacer(modifier = Modifier.padding(bottom = 16.dp))
+                    Spacer(modifier = Modifier.padding(bottom = if (nameText != null) 16.dp else 0.dp))
                 }
             }
             IconButton(
@@ -230,5 +243,24 @@ private fun SessionCard(
                 )
             }
         }
+    }
+}
+
+private fun truncateToDay(epochMs: Long): Long {
+    val cal = Calendar.getInstance()
+    cal.timeInMillis = epochMs
+    cal.set(Calendar.HOUR_OF_DAY, 0)
+    cal.set(Calendar.MINUTE, 0)
+    cal.set(Calendar.SECOND, 0)
+    cal.set(Calendar.MILLISECOND, 0)
+    return cal.timeInMillis
+}
+
+private fun dayLabel(epochMs: Long): String {
+    val todayStart = truncateToDay(System.currentTimeMillis())
+    return when {
+        epochMs >= todayStart -> "Today"
+        epochMs >= todayStart - 86_400_000L -> "Yesterday"
+        else -> formatDate(epochMs)
     }
 }
