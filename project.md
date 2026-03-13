@@ -219,6 +219,13 @@ Camera capture + gallery image picker → direct OpenAI gpt-4o call → review/e
 
 Restructured exercise data into three layers (Movement Identity / Modifiers / Prescription) per ADR-0001. Added `Movement` entity with `findOrCreate` normalization, `ExerciseModifier` sealed class, updated AI parser to extract movement and modifiers separately.
 
+## Current UI backlog
+
+- Workouts page is the active UI polish surface.
+- Date-grouped workout history, stronger session-state cues, AI action cleanup, and movement-history date grouping are already shipped.
+- Workout creation now lives on the workouts page: scan moved out of bottom nav, the floating add button is gone, and a top-of-list hero CTA now handles new, suggested, and scanned workout starts.
+- Remaining larger follow-ups still live in `ideas/` and should be handled as separate slices once this creation-flow cleanup lands.
+
 ## ✅ Milestone 3.6 — Theme and Visual Identity
 
 Applied the dark-first "Stealth Training" theme from ADR-0003 across the app shell and core workout flows.

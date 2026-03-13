@@ -2,9 +2,11 @@ package com.gymapp.feature.workouts
 
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AutoAwesome
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
@@ -30,7 +34,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -64,6 +67,7 @@ import java.util.Calendar
 fun WorkoutsScreen(
     onOpenWorkout: (sessionId: String) -> Unit,
     onOpenDetail: (sessionId: String) -> Unit,
+    onOpenScan: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WorkoutsViewModel = hiltViewModel(),
     aiViewModel: AiAssistantViewModel = hiltViewModel(),
@@ -96,27 +100,25 @@ fun WorkoutsScreen(
                 },
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.createWorkout(onOpenWorkout) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "New workout")
-            }
-        },
     ) { innerPadding ->
         if (sessions.isEmpty()) {
-            Box(
-                contentAlignment = Alignment.Center,
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding),
+                    .padding(innerPadding)
+                    .padding(16.dp),
             ) {
+                WorkoutsHeroCard(
+                    onNewWorkout = { viewModel.createWorkout(onOpenWorkout) },
+                    onSuggestWorkout = { viewModel.createWorkout(onOpenWorkout) },
+                    onScanWorkout = onOpenScan,
+                )
                 Text(
-                    "No workouts yet. Tap + to start.",
+                    "No workouts yet. Start with a fresh workout, ask for a suggestion, or scan a board.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 8.dp),
                 )
             }
         } else {
@@ -127,6 +129,13 @@ fun WorkoutsScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
+                item(key = "hero_cta", contentType = "hero") {
+                    WorkoutsHeroCard(
+                        onNewWorkout = { viewModel.createWorkout(onOpenWorkout) },
+                        onSuggestWorkout = { viewModel.createWorkout(onOpenWorkout) },
+                        onScanWorkout = onOpenScan,
+                    )
+                }
                 groupedSessions.forEach { (dayMs, daySessions) ->
                     item(key = "header_$dayMs", contentType = "header") {
                         Text(
@@ -158,6 +167,58 @@ fun WorkoutsScreen(
             onDismiss = { showAiSheet = false },
             viewModel = aiViewModel,
         )
+    }
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun WorkoutsHeroCard(
+    onNewWorkout: () -> Unit,
+    onSuggestWorkout: () -> Unit,
+    onScanWorkout: () -> Unit,
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            modifier = Modifier.padding(16.dp),
+        ) {
+            Text(
+                text = "Start your next workout",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "Create a blank workout, jump into suggestions, or scan a board from the same starting point.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                TextButton(onClick = onNewWorkout) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.size(4.dp))
+                    Text("New workout")
+                }
+                TextButton(onClick = onSuggestWorkout) {
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.size(4.dp))
+                    Text("Suggest workout")
+                }
+                TextButton(onClick = onScanWorkout) {
+                    Icon(Icons.Default.CameraAlt, contentDescription = null, modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.size(4.dp))
+                    Text("Scan board")
+                }
+            }
+        }
     }
 }
 

@@ -50,7 +50,7 @@ private object Routes {
 }
 
 private val bottomNavRoutes = setOf(
-    Routes.WORKOUTS, Routes.MOVEMENTS, Routes.SCAN, Routes.SETTINGS,
+    Routes.WORKOUTS, Routes.MOVEMENTS, Routes.SETTINGS,
 )
 
 @Composable
@@ -118,6 +118,7 @@ fun GymAppRoot() {
                     WorkoutsScreen(
                         onOpenWorkout = { navController.navigate(Routes.activeWorkout(it)) },
                         onOpenDetail = { navController.navigate(Routes.historyDetail(it)) },
+                        onOpenScan = { navController.navigate(Routes.SCAN) },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
