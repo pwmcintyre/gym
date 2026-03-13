@@ -108,7 +108,6 @@ fun WorkoutsScreen(
             ) {
                 WorkoutsStartActions(
                     onNewWorkout = { viewModel.createWorkout(onOpenWorkout) },
-                    onSuggestWorkout = { viewModel.createWorkout(onOpenWorkout) },
                     onScanWorkout = onOpenScan,
                 )
                 Text(
@@ -129,7 +128,6 @@ fun WorkoutsScreen(
                 item(key = "hero_cta", contentType = "hero") {
                     WorkoutsStartActions(
                         onNewWorkout = { viewModel.createWorkout(onOpenWorkout) },
-                        onSuggestWorkout = { viewModel.createWorkout(onOpenWorkout) },
                         onScanWorkout = onOpenScan,
                     )
                 }
@@ -170,7 +168,6 @@ fun WorkoutsScreen(
 @Composable
 private fun WorkoutsStartActions(
     onNewWorkout: () -> Unit,
-    onSuggestWorkout: () -> Unit,
     onScanWorkout: () -> Unit,
 ) {
     Row(
@@ -181,12 +178,6 @@ private fun WorkoutsStartActions(
             icon = Icons.Default.Add,
             contentDescription = "New workout",
             onClick = onNewWorkout,
-            modifier = Modifier.weight(1f),
-        )
-        StartActionButton(
-            icon = Icons.Default.AutoAwesome,
-            contentDescription = "Suggest workout",
-            onClick = onSuggestWorkout,
             modifier = Modifier.weight(1f),
         )
         StartActionButton(
@@ -213,7 +204,7 @@ private fun StartActionButton(
         Icon(
             imageVector = icon,
             contentDescription = contentDescription,
-            modifier = Modifier.size(20.dp),
+            modifier = Modifier.size(26.dp),
         )
     }
 }
