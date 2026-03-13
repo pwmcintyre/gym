@@ -96,6 +96,38 @@ class ActiveWorkoutViewModel @Inject constructor(
                 _lastPerformanceDate.value = currentDates
             }
         }
+
+        // Auto-name the session via AI after exercises settle (debounced 2s)
+        viewModelScope.launch {
+            exercises.collect { exs ->
+                if (exs.isNotEmpty() && session.value?.notes.isNullOrBlank()) {
+                    namingJob?.cancel()
+                    namingJob = launch {
+                        delay(2_000)
+                        if (session.value?.notes.isNullOrBlank()) {
+                            _isNaming.value = true
+                            runCatching {
+                                val names = exs.map { it.exerciseName }
+                                    .filter { it.isNotBlank() }
+                                    .distinct()
+                                val result = aiAssistant.chat(
+                                    model = "gpt-4o-mini",
+                                    systemPrompt = "You are a workout classifier. Given a list of exercises, respond with a single short label (1-3 words, e.g. 'Legs', 'Push', 'Pull', 'Back', 'Chest', 'Full Body'). Respond with ONLY the label.",
+                                    messages = listOf(
+                                        ChatMessage(ChatMessage.Role.USER, "Exercises: ${names.joinToString(", ")}"),
+                                    ),
+                                )
+                                result.getOrNull()?.trim()?.takeIf { it.isNotBlank() }?.let { label ->
+                                    val current = workoutRepository.getById(sessionId) ?: return@let
+                                    workoutRepository.update(current.copy(notes = label))
+                                }
+                            }
+                            _isNaming.value = false
+                        }
+                    }
+                }
+            }
+        }
     }
 
     fun updateNotes(notes: String) {
@@ -177,6 +209,11 @@ class ActiveWorkoutViewModel @Inject constructor(
 
     private val _isSuggesting = MutableStateFlow(false)
     val isSuggesting: StateFlow<Boolean> = _isSuggesting.asStateFlow()
+
+    private val _isNaming = MutableStateFlow(false)
+    val isNaming: StateFlow<Boolean> = _isNaming.asStateFlow()
+
+    private var namingJob: Job? = null
 
     fun suggestWorkout(type: SuggestionType) {
         viewModelScope.launch {

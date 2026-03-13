@@ -95,6 +95,7 @@ fun ActiveWorkoutScreen(
     val lastPerformanceDate by viewModel.lastPerformanceDate.collectAsStateWithLifecycle()
     val restTimer by viewModel.restTimer.collectAsStateWithLifecycle()
     val isSuggesting by viewModel.isSuggesting.collectAsStateWithLifecycle()
+    val isNaming by viewModel.isNaming.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showAddExerciseDialog by rememberSaveable { mutableStateOf(false) }
     var showAiSheet by rememberSaveable { mutableStateOf(false) }
@@ -132,8 +133,15 @@ fun ActiveWorkoutScreen(
             TopAppBar(
                 expandedHeight = 48.dp,
                 title = {
-                    val name = session?.notes?.takeIf { it.isNotBlank() }
-                    Text(name ?: "Workout")
+                    if (isNaming) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    } else {
+                        Text(session?.notes?.takeIf { it.isNotBlank() } ?: "Workout")
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
@@ -205,26 +213,20 @@ fun ActiveWorkoutScreen(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 item {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        WorkoutNotesField(
-                            notes = session?.notes ?: "",
-                            onDone = { viewModel.updateNotes(it) },
+                    TextButton(
+                        onClick = { showDatePicker = true },
+                        modifier = Modifier.padding(start = 4.dp),
+                    ) {
+                        Icon(
+                            Icons.Outlined.Edit,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
                         )
-                        TextButton(
-                            onClick = { showDatePicker = true },
-                            modifier = Modifier.padding(start = 4.dp),
-                        ) {
-                            Icon(
-                                Icons.Outlined.Edit,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = session?.date?.let { formatDate(it) } ?: "Set date",
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                        }
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = session?.date?.let { formatDate(it) } ?: "Set date",
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
                     }
                 }
                 if (exercises.isEmpty()) {
