@@ -419,7 +419,25 @@ Validation: `./gradlew assembleDebug testDebugUnitTest --no-daemon` — BUILD SU
 
 ---
 
+## Milestone 14 — Previous Performance in Exercise Card
 
+Under the target line of each ExerciseCard in the active workout view, show a "Previous" line sourced from the most recent prior session for that exercise.
+
+Desired format:
+```
+Previous: 5 reps × 92.5kg (6 days ago)
+```
+- Numbers (reps, weight, time) use the primary accent colour.
+- "time ago" should be a rough human label: "today", "yesterday", "N days ago", "N weeks ago".
+- If the previous session had multiple sets, show the best set (highest weight, or most reps if bodyweight).
+- Only shown when a prior session exists for this exercise name.
+
+Implementation notes:
+- The last-performance data is already loaded in `ActiveWorkoutViewModel.lastPerformance` as `Map<String, List<SetEntry>>`.
+- The session date for the previous workout is not currently available in `lastPerformance` — either extend the model or add a separate query `observeLastSessionDate(exerciseName)`.
+- The "time ago" label can be computed from the previous session's date relative to now.
+
+---
 
 | Decision                  | Reason                                          |
 | ------------------------- | ----------------------------------------------- |

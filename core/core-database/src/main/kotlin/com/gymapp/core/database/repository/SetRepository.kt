@@ -42,6 +42,9 @@ class SetRepository @Inject constructor(
     suspend fun getPreviousSessionSets(exerciseName: String, excludeSessionId: String): List<SetEntry> =
         setDao.getPreviousSessionSets(exerciseName, excludeSessionId).map { it.toModel() }
 
+    suspend fun getPreviousSessionDate(exerciseName: String, excludeSessionId: String): Long? =
+        setDao.getPreviousSessionDate(exerciseName, excludeSessionId)
+
     fun observePrsByRepCount(exerciseName: String): Flow<List<ExercisePr>> =
         setDao.observePrsByRepCount(exerciseName)
 

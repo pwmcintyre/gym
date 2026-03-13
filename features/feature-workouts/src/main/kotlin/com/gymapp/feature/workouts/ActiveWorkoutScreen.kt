@@ -32,6 +32,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
@@ -46,6 +48,7 @@ import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
@@ -59,8 +62,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -68,6 +74,7 @@ import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.RepModifier
 import com.gymapp.core.model.SetEntry
 import com.gymapp.core.model.WeightMode
+import com.gymapp.core.model.formatDate
 import com.gymapp.core.model.formatWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,10 +90,12 @@ fun ActiveWorkoutScreen(
     val bodyWeightKg by viewModel.bodyWeightKg.collectAsStateWithLifecycle()
     val knownNames by viewModel.knownExerciseNames.collectAsStateWithLifecycle()
     val lastPerformance by viewModel.lastPerformance.collectAsStateWithLifecycle()
+    val lastPerformanceDate by viewModel.lastPerformanceDate.collectAsStateWithLifecycle()
     val restTimer by viewModel.restTimer.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showAddExerciseDialog by rememberSaveable { mutableStateOf(false) }
     var showAiSheet by rememberSaveable { mutableStateOf(false) }
+    var showDatePicker by rememberSaveable { mutableStateOf(false) }
 
     // Configure AI assistant with session context
     val sessionId = session?.id
@@ -192,10 +201,27 @@ fun ActiveWorkoutScreen(
                 modifier = Modifier.fillMaxSize(),
             ) {
                 item {
-                    WorkoutNotesField(
-                        notes = session?.notes ?: "",
-                        onDone = { viewModel.updateNotes(it) },
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        WorkoutNotesField(
+                            notes = session?.notes ?: "",
+                            onDone = { viewModel.updateNotes(it) },
+                        )
+                        TextButton(
+                            onClick = { showDatePicker = true },
+                            modifier = Modifier.padding(start = 4.dp),
+                        ) {
+                            Icon(
+                                Icons.Outlined.Edit,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = session?.date?.let { formatDate(it) } ?: "Set date",
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                        }
+                    }
                 }
                 if (exercises.isEmpty()) {
                     item {
@@ -214,6 +240,7 @@ fun ActiveWorkoutScreen(
                         exercise = exercise,
                         bodyWeightKg = bodyWeightKg,
                         previousSets = lastPerformance[exercise.exerciseName],
+                        previousSessionDate = lastPerformanceDate[exercise.exerciseName],
                         knownNames = knownNames,
                         restTimer = timerForThisExercise,
                         onCancelTimer = { viewModel.cancelRestTimer() },
@@ -242,6 +269,26 @@ fun ActiveWorkoutScreen(
             viewModel = aiViewModel,
         )
     }
+
+    if (showDatePicker) {
+        val datePickerState = rememberDatePickerState(
+            initialSelectedDateMillis = session?.date
+        )
+        DatePickerDialog(
+            onDismissRequest = { showDatePicker = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    datePickerState.selectedDateMillis?.let { viewModel.updateDate(it) }
+                    showDatePicker = false
+                }) { Text("OK") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+            },
+        ) {
+            DatePicker(state = datePickerState)
+        }
+    }
 }
 
 @Composable
@@ -249,24 +296,25 @@ private fun ExerciseCard(
     exercise: ExerciseEntry,
     bodyWeightKg: Float?,
     previousSets: List<SetEntry>?,
+    previousSessionDate: Long?,
     knownNames: List<String>,
     restTimer: RestTimerState.Running?,
     onCancelTimer: () -> Unit,
     viewModel: ActiveWorkoutViewModel,
 ) {
     val sets by viewModel.observeSets(exercise.id).collectAsStateWithLifecycle()
-    var showRenameDialog by remember { mutableStateOf(false) }
+    var showEditDialog by remember { mutableStateOf(false) }
     var showDeleteConfirm by remember { mutableStateOf(false) }
 
-    if (showRenameDialog) {
-        RenameExerciseDialog(
-            current = exercise.exerciseName,
+    if (showEditDialog) {
+        EditExerciseDialog(
+            exercise = exercise,
             knownNames = knownNames,
-            onConfirm = { newName ->
-                viewModel.renameExercise(exercise, newName)
-                showRenameDialog = false
+            onConfirm = { updated ->
+                viewModel.updateExercise(updated)
+                showEditDialog = false
             },
-            onDismiss = { showRenameDialog = false },
+            onDismiss = { showEditDialog = false },
         )
     }
 
@@ -308,7 +356,7 @@ private fun ExerciseCard(
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = { showRenameDialog = true }) {
+                IconButton(onClick = { showEditDialog = true }) {
                     Icon(
                         Icons.Outlined.Edit,
                         contentDescription = "Rename exercise",
@@ -324,41 +372,65 @@ private fun ExerciseCard(
                 }
             }
 
-            val target = buildString {
-                val hasTarget = exercise.targetSets != null ||
-                    exercise.targetReps != null ||
-                    exercise.targetModifier == RepModifier.MAX
-                if (hasTarget) {
+            val hasTarget = exercise.targetSets != null ||
+                exercise.targetReps != null ||
+                exercise.targetModifier == RepModifier.MAX
+            if (hasTarget) {
+                val primaryColor = MaterialTheme.colorScheme.primary
+                val targetText = buildAnnotatedString {
                     append("Target: ")
-                    exercise.targetSets?.let { append("${it}x") }
+                    exercise.targetSets?.let {
+                        withStyle(SpanStyle(color = primaryColor)) { append("$it") }
+                        append(" sets")
+                    }
                     if (exercise.targetModifier == RepModifier.MAX) {
-                        append("MAX")
+                        if (exercise.targetSets != null) append(" × ")
+                        withStyle(SpanStyle(color = primaryColor)) { append("AMRAP") }
                     } else {
-                        exercise.targetReps?.let { append("$it") }
+                        exercise.targetReps?.let {
+                            if (exercise.targetSets != null) append(" × ")
+                            withStyle(SpanStyle(color = primaryColor)) { append("$it") }
+                            append(" reps")
+                        }
                     }
                 }
-            }
-            if (target.isNotBlank()) {
                 Text(
-                    text = target,
+                    text = targetText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
             if (!previousSets.isNullOrEmpty()) {
-                val hint = previousSets.joinToString("  ") { set ->
-                    buildString {
-                        set.weight?.let { append("${formatWeight(it, appendUnit = false)}kg") }
-                        if (set.weight != null && set.repsPerformed != null) append("×")
-                        set.repsPerformed?.let { append("$it") }
-                    }.ifBlank { "—" }
-                }
-                Text(
-                    text = "↑ $hint",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
+                val primaryColor = MaterialTheme.colorScheme.primary
+                // Pick best set: highest weight, or most reps for bodyweight
+                val best = previousSets.maxWithOrNull(
+                    compareBy({ it.weight ?: 0f }, { it.repsPerformed ?: 0 })
                 )
+                if (best != null) {
+                    val timeAgo = previousSessionDate?.let { relativeTimeLabel(it) }
+                    val prevText = buildAnnotatedString {
+                        append("Previous: ")
+                        best.repsPerformed?.let {
+                            withStyle(SpanStyle(color = primaryColor)) { append("$it") }
+                            append(" reps")
+                        }
+                        best.weight?.let {
+                            append(" × ")
+                            withStyle(SpanStyle(color = primaryColor)) { append(formatWeight(it)) }
+                        }
+                        if (timeAgo != null) {
+                            append(" (")
+                            withStyle(SpanStyle(color = primaryColor)) { append(timeAgo) }
+                            append(")")
+                        }
+                    }
+                    Text(
+                        text = prevText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
 
             if (restTimer != null) {
@@ -599,13 +671,18 @@ private fun AddExerciseDialog(
 }
 
 @Composable
-private fun RenameExerciseDialog(
-    current: String,
+private fun EditExerciseDialog(
+    exercise: ExerciseEntry,
     knownNames: List<String>,
-    onConfirm: (String) -> Unit,
+    onConfirm: (ExerciseEntry) -> Unit,
     onDismiss: () -> Unit,
 ) {
-    var name by rememberSaveable { mutableStateOf(current) }
+    var name by rememberSaveable { mutableStateOf(exercise.exerciseName) }
+    var setsText by rememberSaveable { mutableStateOf(exercise.targetSets?.toString() ?: "") }
+    var repsText by rememberSaveable { mutableStateOf(exercise.targetReps?.toString() ?: "") }
+    var isAmrap by rememberSaveable { mutableStateOf(exercise.targetModifier == RepModifier.MAX) }
+    var notes by rememberSaveable { mutableStateOf(exercise.notes ?: "") }
+
     val suggestions = remember(name, knownNames) {
         if (name.isBlank()) emptyList()
         else knownNames.filter { it.contains(name.trim(), ignoreCase = true) && !it.equals(name.trim(), ignoreCase = true) }.take(5)
@@ -613,7 +690,7 @@ private fun RenameExerciseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Rename exercise") },
+        title = { Text("Edit exercise") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
@@ -633,12 +710,53 @@ private fun RenameExerciseDialog(
                         }
                     }
                 }
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedTextField(
+                        value = setsText,
+                        onValueChange = { setsText = it },
+                        label = { Text("Sets") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        modifier = Modifier.weight(1f),
+                    )
+                    OutlinedTextField(
+                        value = repsText,
+                        onValueChange = { repsText = it },
+                        label = { Text("Reps") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        singleLine = true,
+                        enabled = !isAmrap,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+                FilterChip(
+                    selected = isAmrap,
+                    onClick = { isAmrap = !isAmrap },
+                    label = { Text("AMRAP") },
+                )
+                OutlinedTextField(
+                    value = notes,
+                    onValueChange = { notes = it },
+                    label = { Text("Notes") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                )
             }
         },
         confirmButton = {
-            Button(
-                onClick = { if (name.isNotBlank()) onConfirm(name) },
-            ) { Text("Rename") }
+            Button(onClick = {
+                if (name.isNotBlank()) {
+                    onConfirm(
+                        exercise.copy(
+                            exerciseName = name.trim(),
+                            targetSets = setsText.toIntOrNull(),
+                            targetReps = if (isAmrap) null else repsText.toIntOrNull(),
+                            targetModifier = if (isAmrap) RepModifier.MAX else RepModifier.NONE,
+                            notes = notes.takeIf { it.isNotBlank() },
+                        )
+                    )
+                }
+            }) { Text("Save") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Cancel") }
@@ -653,7 +771,7 @@ private fun WorkoutNotesField(notes: String, onDone: (String) -> Unit) {
     OutlinedTextField(
         value = draft,
         onValueChange = { draft = it },
-        label = { Text("Workout name / notes") },
+        label = { Text("Workout name") },
         placeholder = { Text("e.g. Legs — heavy day") },
         singleLine = true,
         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
@@ -759,6 +877,19 @@ private fun RestTimerBanner(timer: RestTimerState.Running, onCancel: () -> Unit)
                 )
             }
         }
+    }
+}
+
+/** Human-readable relative time label from an epoch ms timestamp to now. */
+private fun relativeTimeLabel(epochMs: Long): String {
+    val diffMs = System.currentTimeMillis() - epochMs
+    val days = (diffMs / (1000L * 60 * 60 * 24)).toInt()
+    return when {
+        days <= 0 -> "today"
+        days == 1 -> "yesterday"
+        days < 14 -> "$days days ago"
+        days < 60 -> "${days / 7} weeks ago"
+        else -> "${days / 30} months ago"
     }
 }
 

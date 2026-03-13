@@ -56,6 +56,9 @@ class ActiveWorkoutViewModel @Inject constructor(
     private val _lastPerformance = MutableStateFlow<Map<String, List<SetEntry>>>(emptyMap())
     val lastPerformance: StateFlow<Map<String, List<SetEntry>>> = _lastPerformance.asStateFlow()
 
+    private val _lastPerformanceDate = MutableStateFlow<Map<String, Long>>(emptyMap())
+    val lastPerformanceDate: StateFlow<Map<String, Long>> = _lastPerformanceDate.asStateFlow()
+
     private val _restTimer = MutableStateFlow<RestTimerState>(RestTimerState.Idle)
     val restTimer: StateFlow<RestTimerState> = _restTimer.asStateFlow()
 
@@ -67,6 +70,7 @@ class ActiveWorkoutViewModel @Inject constructor(
         viewModelScope.launch {
             exercises.collect { exerciseList ->
                 val current = _lastPerformance.value.toMutableMap()
+                val currentDates = _lastPerformanceDate.value.toMutableMap()
                 exerciseList.forEach { exercise ->
                     if (exercise.exerciseName !in current) {
                         val prev = setRepository.getPreviousSessionSets(
@@ -75,8 +79,16 @@ class ActiveWorkoutViewModel @Inject constructor(
                         )
                         if (prev.isNotEmpty()) current[exercise.exerciseName] = prev
                     }
+                    if (exercise.exerciseName !in currentDates) {
+                        val date = setRepository.getPreviousSessionDate(
+                            exerciseName = exercise.exerciseName,
+                            excludeSessionId = sessionId,
+                        )
+                        if (date != null) currentDates[exercise.exerciseName] = date
+                    }
                 }
                 _lastPerformance.value = current
+                _lastPerformanceDate.value = currentDates
             }
         }
     }
@@ -88,9 +100,22 @@ class ActiveWorkoutViewModel @Inject constructor(
         }
     }
 
+    fun updateDate(epochMillis: Long) {
+        viewModelScope.launch {
+            val current = workoutRepository.getById(sessionId) ?: return@launch
+            workoutRepository.update(current.copy(date = epochMillis))
+        }
+    }
+
     fun renameExercise(exercise: ExerciseEntry, newName: String) {
         viewModelScope.launch {
             workoutRepository.updateExercise(exercise.copy(exerciseName = newName.trim()))
+        }
+    }
+
+    fun updateExercise(exercise: ExerciseEntry) {
+        viewModelScope.launch {
+            workoutRepository.updateExercise(exercise)
         }
     }
 

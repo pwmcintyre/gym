@@ -69,7 +69,6 @@ fun WorkoutsScreen(
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { TopAppBar(title = { Text("Workouts") }) },
         floatingActionButton = {
             Column(
                 horizontalAlignment = Alignment.End,

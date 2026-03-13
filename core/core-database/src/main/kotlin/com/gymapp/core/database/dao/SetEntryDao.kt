@@ -46,6 +46,18 @@ interface SetEntryDao {
     )
     suspend fun getPreviousSessionSets(exerciseName: String, excludeSessionId: String): List<SetEntryEntity>
 
+    /** Returns the date (epoch ms) of the most recent prior session containing this exercise. */
+    @Query(
+        """
+        SELECT MAX(ws.date)
+        FROM exercise_entries e
+        INNER JOIN workout_sessions ws ON e.workout_session_id = ws.id
+        WHERE e.exercise_name = :exerciseName
+          AND e.workout_session_id != :excludeSessionId
+        """
+    )
+    suspend fun getPreviousSessionDate(exerciseName: String, excludeSessionId: String): Long?
+
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: SetEntryEntity)
 

@@ -68,7 +68,6 @@ fun SettingsScreen(
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { TopAppBar(title = { Text("Settings") }) },
     ) { innerPadding ->
         Column(
             modifier = Modifier

@@ -115,7 +115,6 @@ fun ScanScreen(
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = { TopAppBar(title = { Text("Scan Workout") }) },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { innerPadding ->
         Box(
