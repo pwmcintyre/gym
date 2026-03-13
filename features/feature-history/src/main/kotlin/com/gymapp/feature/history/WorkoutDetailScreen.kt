@@ -44,6 +44,8 @@ import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.RepModifier
 import com.gymapp.core.model.SetEntry
 import com.gymapp.core.model.WeightMode
+import com.gymapp.core.model.formatDate
+import com.gymapp.core.model.formatWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -216,9 +218,9 @@ private fun SetDetailRow(set: SetEntry) {
             modifier = Modifier.width(36.dp),
         )
         val weightLabel = when (set.weightMode) {
-            WeightMode.BODYWEIGHT -> set.weight?.let { "BW ${formatWeight(it)} kg" } ?: "BW"
-            WeightMode.BANDED -> set.weight?.let { "Band ${formatWeight(it)}" } ?: "Band"
-            WeightMode.BARBELL -> set.weight?.let { "${formatWeight(it)} kg" } ?: "—"
+            WeightMode.BODYWEIGHT -> set.weight?.let { "BW ${formatWeight(it, appendUnit = false)} kg" } ?: "BW"
+            WeightMode.BANDED -> set.weight?.let { "Band ${formatWeight(it, appendUnit = false)}" } ?: "Band"
+            WeightMode.BARBELL -> set.weight?.let { formatWeight(it) } ?: "—"
         }
         Text(
             text = weightLabel,
@@ -233,9 +235,3 @@ private fun SetDetailRow(set: SetEntry) {
     }
 }
 
-private fun formatWeight(weight: Float): String =
-    if (weight == weight.toLong().toFloat()) weight.toLong().toString() else weight.toString()
-
-private fun formatDate(epochMillis: Long): String =
-    java.text.SimpleDateFormat("EEE, MMM d yyyy", java.util.Locale.getDefault())
-        .format(java.util.Date(epochMillis))

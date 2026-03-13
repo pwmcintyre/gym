@@ -249,17 +249,20 @@ Deferred: exercise variation management, workouts/history consolidation, banded 
 
 # Upcoming Milestones
 
-## Milestone 4 — Progress Tracking
+## ✅ Milestone 4 — Progress Tracking (complete)
 
 Progress charts per movement. PR tracking. Volume trends.
 
-Current direction:
-- Start with a Room-backed history overview that summarizes recently trained exercises using session count, best logged weight, total volume, and last-performed date.
-- Use the current `exerciseName` field as the grouping key for the first increment, then tighten this to canonical movement identity in a follow-up once that path is wired end-to-end.
+Delivered (initial increment — earlier session):
+- `Progress Overview` card on the Workouts screen backed by aggregate Room queries.
+- Tap-through `ExerciseProgressScreen` showing session-by-session stats and a volume bar chart.
 
-Current status:
-- Implemented: a `Progress Overview` card on the History screen backed by aggregate Room queries, plus a tap-through detail screen showing session-by-session stats and a simple recent-volume chart for each exercise.
-- Remaining: clearer PR-specific views and richer charting if needed.
+Delivered (this session):
+- **Personal Records card** — new `ExercisePr(reps, weight)` model; new `SetEntryDao.observePrsByRepCount()` query (best weight per rep count, all-time); wired through `SetRepository` and `ExerciseProgressViewModel`. Displayed as a grid of `PrChip` tiles on the progress screen (up to 8 PR rows, e.g. 1RM, 2RM, 3RM …).
+- **Weight trend line** — `ExerciseProgressChartCard` now draws volume bars (subdued) behind a solid weight-trend line (best weight per session plotted per-bar) on the same canvas. Legend row identifies bars vs line.
+- Chart window expanded from 6 → 8 sessions.
+
+Validation: `./gradlew assembleDebug testDebugUnitTest --no-daemon` — BUILD SUCCESSFUL.
 
 ## ✅ Milestone 5 — Workout Suggestions
 
@@ -372,11 +375,21 @@ Improvements:
 
 Validation: `./gradlew assembleDebug --no-daemon` and `./gradlew testDebugUnitTest --no-daemon` — BUILD SUCCESSFUL.
 
-Remaining / follow-up:
+## ✅ Milestone 12 — M4 completion + code cleanup
+
+Autonomous session.
+
+Delivered:
+- **M4 Personal Records** — see Milestone 4 section above for full detail.
+- **M4 Weight trend line** — see Milestone 4 section above.
+- **Shared formatting utilities** — new `core/core-model/Formatting.kt` with `formatWeight(Float, appendUnit)`, `formatVolume(Float)`, `formatDate(Long, pattern)`. Removed 5 private copies of `formatWeight` and 3 copies of `formatDate` from `ActiveWorkoutScreen`, `WorkoutDetailScreen`, `WorkoutsScreen`, and `ExerciseProgressScreen`. All callers now import from `com.gymapp.core.model`.
+- **Removed `WorkoutSessionDao.observeInRange()`** — dead query with no callers in the entire codebase. (Keeping `ExerciseTemplateDao` — used by the backup module.)
+
+Validation: `./gradlew assembleDebug testDebugUnitTest --no-daemon` — BUILD SUCCESSFUL.
+
+Remaining:
 - M9 Drive backup 403 blocker (needs user to verify Cloud Console setup).
-- M4 progress tracking: PR-specific view, weight trend line in chart.
-- Code duplication: `formatWeight` (5 copies), `formatDate` (3 copies).
-- Dead infrastructure: `ExerciseTemplateDao`, `WorkoutSessionDao.observeInRange()` (no callers).
+- Dead infrastructure: `ExerciseTemplateDao` kept intentionally (used by backup).
 
 ---
 

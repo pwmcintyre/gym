@@ -37,9 +37,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymapp.core.model.ExerciseProgressSummary
 import com.gymapp.core.model.SessionSummary
 import com.gymapp.core.model.WorkoutSession
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.gymapp.core.model.formatDate
+import com.gymapp.core.model.formatVolume
+import com.gymapp.core.model.formatWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -231,25 +231,4 @@ private fun buildProgressSummaryLine(summary: ExerciseProgressSummary): String =
     if (summary.sessionCount != 1) append("s")
     append(" • Best ${summary.bestWeight?.let { formatWeight(it) } ?: "—"}")
     append(" • Volume ${formatVolume(summary.totalVolume)}")
-}
-
-private fun formatDate(epochMillis: Long): String =
-    SimpleDateFormat("EEE, MMM d yyyy", Locale.getDefault()).format(Date(epochMillis))
-
-private fun formatWeight(weight: Float): String {
-    val value = if (weight == weight.toLong().toFloat()) {
-        weight.toLong().toString()
-    } else {
-        String.format(Locale.getDefault(), "%.1f", weight)
-    }
-    return "$value kg"
-}
-
-private fun formatVolume(volume: Float): String {
-    val value = if (volume == volume.toLong().toFloat()) {
-        volume.toLong().toString()
-    } else {
-        String.format(Locale.getDefault(), "%.1f", volume)
-    }
-    return "$value kg"
 }

@@ -67,6 +67,7 @@ import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.RepModifier
 import com.gymapp.core.model.SetEntry
 import com.gymapp.core.model.WeightMode
+import com.gymapp.core.model.formatWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -320,7 +321,7 @@ private fun ExerciseCard(
             if (!previousSets.isNullOrEmpty()) {
                 val hint = previousSets.joinToString("  ") { set ->
                     buildString {
-                        set.weight?.let { append("${formatWeight(it)}kg") }
+                        set.weight?.let { append("${formatWeight(it, appendUnit = false)}kg") }
                         if (set.weight != null && set.repsPerformed != null) append("×")
                         set.repsPerformed?.let { append("$it") }
                     }.ifBlank { "—" }
@@ -396,7 +397,7 @@ private fun ExerciseCard(
 
 @Composable
 private fun SetRow(set: SetEntry, bodyWeightKg: Float?, onUpdate: (SetEntry) -> Unit, onDelete: () -> Unit) {
-    var weightText by remember(set.id, set.weight) { mutableStateOf(set.weight?.let { formatWeight(it) } ?: "") }
+    var weightText by remember(set.id, set.weight) { mutableStateOf(set.weight?.let { formatWeight(it, appendUnit = false) } ?: "") }
     var repsText by remember(set.id, set.repsPerformed) { mutableStateOf(set.repsPerformed?.toString() ?: "") }
 
     // Sync weightText when mode changes to/from BODYWEIGHT
@@ -740,6 +741,3 @@ private fun nextLabel(exercises: List<ExerciseEntry>): String {
     val num = last.filter { it.isDigit() }.toIntOrNull() ?: 1
     return if (num < 3) "$letter${num + 1}" else "${letter + 1}1"
 }
-
-private fun formatWeight(weight: Float): String =
-    if (weight == weight.toLong().toFloat()) weight.toLong().toString() else weight.toString()

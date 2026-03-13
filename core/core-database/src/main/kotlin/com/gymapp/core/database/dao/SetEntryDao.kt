@@ -7,6 +7,7 @@ import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import com.gymapp.core.database.entity.SetEntryEntity
+import com.gymapp.core.model.ExercisePr
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -65,4 +66,25 @@ interface SetEntryDao {
 
     @Query("DELETE FROM set_entries")
     suspend fun deleteAll()
+
+    /**
+     * Returns the all-time best weight per rep count for the given exercise name,
+     * ordered by rep count ascending (1RM first, then 2RM, 3RM …).
+     * Only counts sets with a positive weight and at least 1 rep.
+     */
+    @Query(
+        """
+        SELECT
+            s.reps_performed AS reps,
+            MAX(s.weight)    AS weight
+        FROM set_entries s
+        INNER JOIN exercise_entries e ON s.exercise_entry_id = e.id
+        WHERE e.exercise_name = :exerciseName
+          AND s.weight > 0
+          AND s.reps_performed > 0
+        GROUP BY s.reps_performed
+        ORDER BY s.reps_performed ASC
+        """
+    )
+    fun observePrsByRepCount(exerciseName: String): Flow<List<ExercisePr>>
 }

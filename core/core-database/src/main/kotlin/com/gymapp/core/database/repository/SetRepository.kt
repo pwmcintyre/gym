@@ -2,6 +2,7 @@ package com.gymapp.core.database.repository
 
 import com.gymapp.core.database.dao.SetEntryDao
 import com.gymapp.core.database.entity.SetEntryEntity
+import com.gymapp.core.model.ExercisePr
 import com.gymapp.core.model.SetEntry
 import com.gymapp.core.model.WeightMode
 import kotlinx.coroutines.flow.Flow
@@ -40,6 +41,9 @@ class SetRepository @Inject constructor(
 
     suspend fun getPreviousSessionSets(exerciseName: String, excludeSessionId: String): List<SetEntry> =
         setDao.getPreviousSessionSets(exerciseName, excludeSessionId).map { it.toModel() }
+
+    fun observePrsByRepCount(exerciseName: String): Flow<List<ExercisePr>> =
+        setDao.observePrsByRepCount(exerciseName)
 
     suspend fun update(set: SetEntry) =
         setDao.update(set.toEntity())

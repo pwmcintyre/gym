@@ -7,11 +7,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
@@ -32,14 +32,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gymapp.core.model.ExercisePr
 import com.gymapp.core.model.ExerciseSessionProgress
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+import com.gymapp.core.model.formatDate
+import com.gymapp.core.model.formatVolume
+import com.gymapp.core.model.formatWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,6 +54,7 @@ fun ExerciseProgressScreen(
     viewModel: ExerciseProgressViewModel = hiltViewModel(),
 ) {
     val sessionProgress by viewModel.sessionProgress.collectAsStateWithLifecycle()
+    val prs by viewModel.prs.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = modifier,
@@ -93,10 +98,15 @@ fun ExerciseProgressScreen(
                         sessionProgress = sessionProgress,
                     )
                 }
+                if (prs.isNotEmpty()) {
+                    item {
+                        ExerciseProgressPrCard(prs = prs)
+                    }
+                }
                 if (sessionProgress.size > 1) {
                     item {
                         ExerciseProgressChartCard(
-                            sessionProgress = sessionProgress.take(6).asReversed(),
+                            sessionProgress = sessionProgress.take(8).asReversed(),
                         )
                     }
                 }
@@ -111,10 +121,96 @@ fun ExerciseProgressScreen(
     }
 }
 
+// ---------------------------------------------------------------------------
+// Personal Records card
+// ---------------------------------------------------------------------------
+
+@Composable
+private fun ExerciseProgressPrCard(prs: List<ExercisePr>) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            Text(
+                text = "Personal Records",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = "All-time best weight per rep count.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            // Show up to 8 PRs in two columns
+            val rows = prs.take(8).chunked(2)
+            rows.forEach { pair ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    pair.forEach { pr ->
+                        PrChip(pr = pr, modifier = Modifier.weight(1f))
+                    }
+                    // Fill second slot if the row only has one item
+                    if (pair.size == 1) {
+                        Box(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PrChip(pr: ExercisePr, modifier: Modifier = Modifier) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface,
+        ),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+        modifier = modifier,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 10.dp),
+        ) {
+            Text(
+                text = formatWeight(pr.weight),
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                text = "${pr.reps} rep${if (pr.reps != 1) "s" else ""}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center,
+            )
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Combined volume-bar + weight-trend chart
+// ---------------------------------------------------------------------------
+
 @Composable
 private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgress>) {
     val maxVolume = sessionProgress.maxOfOrNull { it.totalVolume }?.takeIf { it > 0f } ?: 1f
-    val barColor = MaterialTheme.colorScheme.primary
+    val maxWeight = sessionProgress.mapNotNull { it.bestWeight }.maxOrNull()?.takeIf { it > 0f } ?: 1f
+
+    val barColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+    val lineColor = MaterialTheme.colorScheme.primary
     val axisColor = MaterialTheme.colorScheme.outlineVariant
 
     Card(
@@ -129,15 +225,25 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "Volume Trend",
+                text = "Volume & Weight Trend",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                text = "Recent session volume. Newest session is on the right.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    text = "Bars = volume",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                )
+                Text(
+                    text = "Line = best weight",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
 
             Canvas(
                 modifier = Modifier
@@ -150,6 +256,7 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
                 val barWidth = (availableWidth / barCount).coerceAtLeast(8.dp.toPx())
                 val chartHeight = size.height - 8.dp.toPx()
 
+                // Baseline axis
                 drawLine(
                     color = axisColor,
                     start = Offset(0f, chartHeight),
@@ -157,10 +264,11 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
                     strokeWidth = 1.dp.toPx(),
                 )
 
+                // Volume bars (subdued)
                 sessionProgress.forEachIndexed { index, progress ->
                     val left = spacing + index * (barWidth + spacing)
                     val normalizedHeight = if (progress.totalVolume <= 0f) {
-                        8.dp.toPx()
+                        4.dp.toPx()
                     } else {
                         (progress.totalVolume / maxVolume) * (chartHeight - 12.dp.toPx())
                     }
@@ -168,8 +276,34 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
                         color = barColor,
                         topLeft = Offset(left, chartHeight - normalizedHeight),
                         size = Size(barWidth, normalizedHeight),
-                        cornerRadius = CornerRadius(10f, 10f),
+                        cornerRadius = CornerRadius(6f, 6f),
                     )
+                }
+
+                // Weight trend line
+                val weightPoints = sessionProgress.mapIndexedNotNull { index, progress ->
+                    val w = progress.bestWeight ?: return@mapIndexedNotNull null
+                    if (w <= 0f) return@mapIndexedNotNull null
+                    val cx = spacing + index * (barWidth + spacing) + barWidth / 2f
+                    val cy = chartHeight - (w / maxWeight) * (chartHeight - 12.dp.toPx())
+                    Offset(cx, cy)
+                }
+
+                if (weightPoints.size >= 2) {
+                    val path = Path().apply {
+                        moveTo(weightPoints.first().x, weightPoints.first().y)
+                        weightPoints.drop(1).forEach { pt -> lineTo(pt.x, pt.y) }
+                    }
+                    drawPath(
+                        path = path,
+                        color = lineColor,
+                        style = Stroke(width = 2.dp.toPx(), cap = StrokeCap.Round),
+                    )
+                }
+
+                // Dots on the weight line
+                weightPoints.forEach { pt ->
+                    drawCircle(color = lineColor, radius = 4.dp.toPx(), center = pt)
                 }
             }
 
@@ -179,7 +313,7 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
             ) {
                 sessionProgress.forEach { progress ->
                     Text(
-                        text = formatHistoryShortDate(progress.sessionDate),
+                        text = formatDate(progress.sessionDate, "M/d"),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center,
@@ -191,13 +325,17 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
     }
 }
 
+// ---------------------------------------------------------------------------
+// Summary snapshot card
+// ---------------------------------------------------------------------------
+
 @Composable
 private fun ExerciseProgressSummaryCard(
     exerciseName: String,
     sessionProgress: List<ExerciseSessionProgress>,
 ) {
     val totalVolume = sessionProgress.sumOf { it.totalVolume.toDouble() }.toFloat()
-    val bestWeight = sessionProgress.maxOfOrNull { it.bestWeight ?: 0f }?.takeIf { it > 0f }
+    val bestWeight = sessionProgress.mapNotNull { it.bestWeight }.maxOrNull()?.takeIf { it > 0f }
 
     Card(
         colors = CardDefaults.cardColors(
@@ -221,13 +359,19 @@ private fun ExerciseProgressSummaryCard(
                 color = MaterialTheme.colorScheme.primary,
             )
             Text(
-                text = "${sessionProgress.size} sessions • Best ${bestWeight?.let(::formatHistoryWeight) ?: "—"} • Volume ${formatHistoryVolume(totalVolume)}",
+                text = "${sessionProgress.size} session${if (sessionProgress.size != 1) "s" else ""}" +
+                    " • Best ${bestWeight?.let { formatWeight(it) } ?: "—"}" +
+                    " • Volume ${formatVolume(totalVolume)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }
 }
+
+// ---------------------------------------------------------------------------
+// Per-session history card
+// ---------------------------------------------------------------------------
 
 @Composable
 private fun ExerciseProgressSessionCard(
@@ -248,12 +392,14 @@ private fun ExerciseProgressSessionCard(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = formatHistoryDate(progress.sessionDate),
+                text = formatDate(progress.sessionDate),
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )
             Text(
-                text = "${progress.setCount} sets • Best ${progress.bestWeight?.let(::formatHistoryWeight) ?: "—"} • Volume ${formatHistoryVolume(progress.totalVolume)}",
+                text = "${progress.setCount} set${if (progress.setCount != 1) "s" else ""}" +
+                    " • Best ${progress.bestWeight?.let { formatWeight(it) } ?: "—"}" +
+                    " • Volume ${formatVolume(progress.totalVolume)}",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.primary,
             )
@@ -264,28 +410,4 @@ private fun ExerciseProgressSessionCard(
             )
         }
     }
-}
-
-private fun formatHistoryDate(epochMillis: Long): String =
-    SimpleDateFormat("EEE, MMM d yyyy", Locale.getDefault()).format(Date(epochMillis))
-
-private fun formatHistoryShortDate(epochMillis: Long): String =
-    SimpleDateFormat("M/d", Locale.getDefault()).format(Date(epochMillis))
-
-private fun formatHistoryWeight(weight: Float): String {
-    val value = if (weight == weight.toLong().toFloat()) {
-        weight.toLong().toString()
-    } else {
-        String.format(Locale.getDefault(), "%.1f", weight)
-    }
-    return "$value kg"
-}
-
-private fun formatHistoryVolume(volume: Float): String {
-    val value = if (volume == volume.toLong().toFloat()) {
-        volume.toLong().toString()
-    } else {
-        String.format(Locale.getDefault(), "%.1f", volume)
-    }
-    return "$value kg"
 }

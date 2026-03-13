@@ -24,9 +24,6 @@ interface WorkoutSessionDao {
     @Query("SELECT * FROM workout_sessions ORDER BY created_at ASC, id ASC")
     suspend fun getAllForBackup(): List<WorkoutSessionEntity>
 
-    @Query("SELECT * FROM workout_sessions WHERE date BETWEEN :fromEpochMillis AND :toEpochMillis ORDER BY date DESC")
-    fun observeInRange(fromEpochMillis: Long, toEpochMillis: Long): Flow<List<WorkoutSessionEntity>>
-
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: WorkoutSessionEntity)
 
