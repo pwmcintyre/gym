@@ -489,6 +489,30 @@ Validation: backlog note cleanup only; no code changes.
 
 ---
 
+## ✅ Workout chart design alignment
+
+Autonomous session.
+
+Delivered:
+- Restyled the workout comparison cards to match the refined movement detail chart treatment more closely: stronger chart header, clearer gain summary, y-axis labels, and first/last session anchors instead of a dense row of date labels under every point.
+- This replaces the older mini-chart presentation with the movement-detail visual baseline the backlog called for.
+
+Validation: `./gradlew :features:feature-history:clean :features:feature-history:compileDebugKotlin --no-daemon`, `./gradlew :app:clean :app:compileDebugKotlin --no-daemon`, and `./gradlew assembleDebug --no-daemon` — BUILD SUCCESSFUL.
+
+---
+
+## ✅ Splash polish progress
+
+Autonomous session.
+
+Delivered:
+- Added a proper platform splash theme path for `MainActivity`, using the existing launcher mark and launch palette so startup feels intentional without adding any artificial delay.
+- Added the AndroidX splashscreen dependency and activity hook needed for the splash theme to work correctly on supported devices.
+
+Validation: included in the app/workout chart validation above — BUILD SUCCESSFUL.
+
+---
+
 ## Milestone 14 — Previous Performance in Exercise Card
 
 Under the target line of each ExerciseCard in the active workout view, show a "Previous" line sourced from the most recent prior session for that exercise.

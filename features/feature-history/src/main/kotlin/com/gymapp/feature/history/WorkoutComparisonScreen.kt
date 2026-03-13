@@ -10,10 +10,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.TrendingUp
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -125,30 +127,57 @@ private fun ExerciseProgressionCard(
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
     val lineColor = MaterialTheme.colorScheme.primary
-    val dotColor = MaterialTheme.colorScheme.primary
     val primaryColor = MaterialTheme.colorScheme.primary
+    val axisColor = MaterialTheme.colorScheme.outlineVariant
+    val minWeight = sorted.minOf { it.bestWeight }
+    val maxWeight = sorted.maxOf { it.bestWeight }
+    val range = (maxWeight - minWeight).coerceAtLeast(2.5f)
+    val firstDate = sorted.first().sessionDate
+    val latestDate = sorted.last().sessionDate
 
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             Row(
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(
-                    exerciseName,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    modifier = Modifier.weight(1f),
+                Icon(
+                    imageVector = Icons.AutoMirrored.Filled.TrendingUp,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
                 )
-                Text(
-                    gainLabel,
-                    style = MaterialTheme.typography.titleSmall,
-                    color = gainColor,
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "Progress Trend",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                    )
+                    Text(
+                        text = exerciseName,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                }
+                Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
+                    Text(
+                        text = gainLabel,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = gainColor,
+                    )
+                    Text(
+                        text = "vs first session",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
             }
             Text(
                 buildAnnotatedString {
@@ -162,39 +191,57 @@ private fun ExerciseProgressionCard(
                     }
                     append(" session")
                     if (sorted.size != 1) append("s")
-                    append(" • ")
-                    withStyle(SpanStyle(color = primaryColor)) {
-                        append(formatWeight(first))
-                    }
-                    append(" → ")
-                    withStyle(SpanStyle(color = primaryColor)) {
-                        append(formatWeight(latest))
-                    }
                 },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 2.dp),
             )
 
-            if (sorted.size >= 2) {
-                val minW = sorted.minOf { it.bestWeight }
-                val maxW = sorted.maxOf { it.bestWeight }
-                val range = (maxW - minW).coerceAtLeast(2.5f) // avoid flat line for equal values
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Column(
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = androidx.compose.ui.Alignment.End,
+                    modifier = Modifier
+                        .width(40.dp)
+                        .height(120.dp)
+                        .padding(end = 4.dp),
+                ) {
+                    Text(
+                        text = formatWeight(maxWeight, appendUnit = false),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    Text(
+                        text = formatWeight(minWeight, appendUnit = false),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
 
                 Canvas(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(60.dp)
-                        .padding(top = 8.dp),
+                        .weight(1f)
+                        .height(120.dp),
                 ) {
-                    val w = size.width
-                    val h = size.height
                     val pad = 6.dp.toPx()
-                    val step = if (sorted.size > 1) (w - pad * 2) / (sorted.size - 1) else w
+                    val chartH = size.height
+                    val step = if (sorted.size > 1) (size.width - pad * 2) / (sorted.size - 1) else size.width / 2f
+
+                    drawLine(
+                        color = axisColor,
+                        start = Offset(0f, 0f),
+                        end = Offset(0f, chartH),
+                        strokeWidth = 1.dp.toPx(),
+                    )
+                    drawLine(
+                        color = axisColor,
+                        start = Offset(0f, chartH),
+                        end = Offset(size.width, chartH),
+                        strokeWidth = 1.dp.toPx(),
+                    )
 
                     val pts = sorted.mapIndexed { i, p ->
                         val x = pad + i * step
-                        val y = h - pad - ((p.bestWeight - minW) / range) * (h - pad * 2)
+                        val y = chartH - pad - ((p.bestWeight - minWeight) / range) * (chartH - pad * 2)
                         Offset(x, y)
                     }
 
@@ -203,22 +250,50 @@ private fun ExerciseProgressionCard(
                         pts.drop(1).forEach { lineTo(it.x, it.y) }
                     }
                     drawPath(path, lineColor, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
-                    pts.forEach { drawCircle(dotColor, 3.5.dp.toPx(), it) }
+                    pts.forEach { drawCircle(lineColor, 3.5.dp.toPx(), it) }
                 }
+            }
 
-                // Date labels under the chart
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    sorted.forEach { p ->
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 44.dp),
+            ) {
+                Column(horizontalAlignment = androidx.compose.ui.Alignment.Start) {
+                    Text(
+                        text = formatWeight(first),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = formatDate(firstDate),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Column(horizontalAlignment = androidx.compose.ui.Alignment.End) {
+                    if (latest != first) {
                         Text(
-                            formatDate(p.sessionDate),
+                            text = formatWeight(latest),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = MaterialTheme.colorScheme.primary,
                         )
                     }
+                    Text(
+                        text = formatDate(latestDate),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
+            }
+
+            if (sorted.size >= 3) {
+                Text(
+                    text = "Trend spans ${sorted.size} sessions from ${formatDate(firstDate)} to ${formatDate(latestDate)}.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
         }
     }
