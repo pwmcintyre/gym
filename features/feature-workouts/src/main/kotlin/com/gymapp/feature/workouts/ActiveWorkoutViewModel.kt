@@ -112,9 +112,9 @@ class ActiveWorkoutViewModel @Inject constructor(
                                     .distinct()
                                 val result = aiAssistant.chat(
                                     model = "gpt-4o-mini",
-                                    systemPrompt = "You are a workout classifier. Given a list of exercises, respond with a single short label (1-3 words, e.g. 'Legs', 'Push', 'Pull', 'Back', 'Chest', 'Full Body'). Respond with ONLY the label.",
+                                    systemPrompt = "You are a workout classifier. Given a list of movements, respond with a single short label (1-3 words, e.g. 'Legs', 'Push', 'Pull', 'Back', 'Chest', 'Full Body'). Respond with ONLY the label.",
                                     messages = listOf(
-                                        ChatMessage(ChatMessage.Role.USER, "Exercises: ${names.joinToString(", ")}"),
+                                        ChatMessage(ChatMessage.Role.USER, "Movements: ${names.joinToString(", ")}"),
                                     ),
                                 )
                                 result.getOrNull()?.trim()?.takeIf { it.isNotBlank() }?.let { label ->
@@ -241,9 +241,9 @@ class ActiveWorkoutViewModel @Inject constructor(
                 val result = aiAssistant.chat(
                     model = "gpt-4o-mini",
                     systemPrompt = """
-                        You are a workout planner. Given recent workout history and a goal, suggest 3–6 exercises.
-                        Respond ONLY with one exercise per line in this exact format:
-                        Exercise Name | sets | reps
+                        You are a workout planner. Given recent workout history and a goal, suggest 3–6 movements.
+                        Respond ONLY with one movement per line in this exact format:
+                        Movement Name | sets | reps
                         Use whole numbers for sets and reps. No extra text, no headers, no blank lines.
                     """.trimIndent(),
                     messages = listOf(

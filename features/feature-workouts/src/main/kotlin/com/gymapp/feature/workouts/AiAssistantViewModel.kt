@@ -267,7 +267,7 @@ class AiAssistantViewModel @Inject constructor(
         val contextLines = buildString {
             appendLine("You are a gym coach assistant helping the user log their workout.")
             appendLine()
-            appendLine("Current session exercises:")
+            appendLine("Current session movements:")
             exercises.forEach { ex ->
                 val target = buildString {
                     ex.targetSets?.let { append("${it}x") }
@@ -307,7 +307,7 @@ Always return valid JSON only — no markdown, no explanation outside the JSON."
         val contextLines = buildString {
             appendLine("You are a gym coach assistant. Answer questions about the user's workout history.")
             appendLine()
-            appendLine("Exercise history summary (recent movements):")
+            appendLine("Movement history summary (recent movements):")
             summaries.forEach { s ->
                 appendLine("- ${s.exerciseName}: ${s.sessionCount} session(s), best weight ${s.bestWeight?.let { formatWeight(it) } ?: "unknown"}, last logged ${formatDate(s.lastPerformed)}")
             }

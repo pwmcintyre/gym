@@ -46,11 +46,11 @@ class WorkoutsViewModel @Inject constructor(
                                     if (names.isEmpty()) return@runCatching
                                     val result = aiAssistant.chat(
                                         model = "gpt-4o-mini",
-                                        systemPrompt = "You are a workout classifier. Given a list of exercises, respond with a single short label (1-3 words, e.g. 'Legs', 'Push', 'Pull', 'Back', 'Chest', 'Full Body'). Respond with ONLY the label.",
+                                        systemPrompt = "You are a workout classifier. Given a list of movements, respond with a single short label (1-3 words, e.g. 'Legs', 'Push', 'Pull', 'Back', 'Chest', 'Full Body'). Respond with ONLY the label.",
                                         messages = listOf(
                                             ChatMessage(
                                                 ChatMessage.Role.USER,
-                                                "Exercises: ${names.joinToString(", ")}",
+                                                "Movements: ${names.joinToString(", ")}",
                                             )
                                         ),
                                     )

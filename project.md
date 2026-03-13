@@ -471,7 +471,8 @@ Autonomous session.
 
 Delivered:
 - Tightened remaining user-facing workout/detail copy so visible actions and dialogs keep using `movement` language rather than mixing in `exercise`.
-- Left internal type names, route params, and AI/system-prompt schema keys unchanged to avoid churn without direct UX benefit.
+- Updated assistant/system prompt wording to prefer `movement` where that did not require changing compatibility-sensitive schema keys.
+- Left internal type names, route params, and schema keys unchanged to avoid churn without direct UX benefit.
 
 Validation: `./gradlew :features:feature-workouts:compileDebugKotlin --no-daemon`, `./gradlew :features:feature-history:compileDebugKotlin --no-daemon`, and `./gradlew assembleDebug --no-daemon` — BUILD SUCCESSFUL.
 
