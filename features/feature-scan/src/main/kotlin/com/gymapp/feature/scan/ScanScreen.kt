@@ -32,6 +32,8 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -58,6 +60,10 @@ fun ScanScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val snackbarHostState = remember { SnackbarHostState() }
 
+    // Incremented to force AndroidView to rebind the camera after the picker returns
+    var cameraBindKey by remember { mutableIntStateOf(0) }
+    fun rebindCamera() { cameraBindKey++ }
+
     // --- Camera permission state ---
     var hasCameraPermission by remember {
         mutableStateOf(
@@ -78,6 +84,8 @@ fun ScanScreen(
     val imagePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
+        // Picker has returned — rebind the camera before processing the image
+        rebindCamera()
         if (uri != null) viewModel.parseUri(uri, context.contentResolver)
     }
 
@@ -116,15 +124,18 @@ fun ScanScreen(
                 .padding(innerPadding),
         ) {
             if (hasCameraPermission) {
-                // Camera preview
-                AndroidView(
-                    factory = { ctx ->
-                        PreviewView(ctx).also { previewView ->
-                            viewModel.bindCamera(ctx, lifecycleOwner, previewView.surfaceProvider)
-                        }
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                )
+                // Wrapping in key() forces AndroidView to be recreated (and bindCamera
+                // re-called) whenever cameraBindKey changes — i.e. after the picker returns.
+                key(cameraBindKey) {
+                    AndroidView(
+                        factory = { ctx ->
+                            PreviewView(ctx).also { previewView ->
+                                viewModel.bindCamera(ctx, lifecycleOwner, previewView.surfaceProvider)
+                            }
+                        },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
             } else {
                 // Permission denied — prompt
                 Column(
@@ -176,6 +187,7 @@ fun ScanScreen(
                     // Gallery picker button
                     IconButton(
                         onClick = {
+                            viewModel.unbindCamera()
                             imagePicker.launch(
                                 PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                             )

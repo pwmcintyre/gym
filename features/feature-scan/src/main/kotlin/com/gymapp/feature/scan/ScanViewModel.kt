@@ -54,10 +54,13 @@ class ScanViewModel @Inject constructor(
 
     private var imageCapture: ImageCapture? = null
 
+    private var cameraProvider: ProcessCameraProvider? = null
+
     fun bindCamera(context: Context, lifecycleOwner: LifecycleOwner, surfaceProvider: Preview.SurfaceProvider) {
         val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
         cameraProviderFuture.addListener({
-            val cameraProvider = cameraProviderFuture.get()
+            val provider = cameraProviderFuture.get()
+            cameraProvider = provider
 
             val preview = Preview.Builder().build().also {
                 it.setSurfaceProvider(surfaceProvider)
@@ -67,14 +70,19 @@ class ScanViewModel @Inject constructor(
                 .build()
             imageCapture = capture
 
-            cameraProvider.unbindAll()
-            cameraProvider.bindToLifecycle(
+            provider.unbindAll()
+            provider.bindToLifecycle(
                 lifecycleOwner,
                 CameraSelector.DEFAULT_BACK_CAMERA,
                 preview,
                 capture,
             )
         }, ContextCompat.getMainExecutor(context))
+    }
+
+    /** Release the camera sensor (e.g. while the photo picker is open). */
+    fun unbindCamera() {
+        cameraProvider?.unbindAll()
     }
 
     fun captureAndParse(executor: Executor) {
