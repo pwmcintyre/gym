@@ -15,6 +15,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
+import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Schedule
@@ -201,38 +203,37 @@ private fun SessionCard(
                     )
                 }
                 if (summary != null && summary.exerciseCount > 0) {
-                    val summaryText = buildString {
-                        append("${summary.exerciseCount} movement${if (summary.exerciseCount != 1) "s" else ""}")
-                        append(" · ")
-                        append("${summary.setCount} set${if (summary.setCount != 1) "s" else ""}")
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        modifier = Modifier.padding(top = if (nameText != null) 6.dp else 0.dp, end = 16.dp),
+                    ) {
+                        SummaryStat(
+                            icon = Icons.AutoMirrored.Filled.DirectionsRun,
+                            text = "${summary.exerciseCount} movement${if (summary.exerciseCount != 1) "s" else ""}",
+                        )
+                        SummaryStat(
+                            icon = Icons.Default.FitnessCenter,
+                            text = "${summary.setCount} set${if (summary.setCount != 1) "s" else ""}",
+                        )
                     }
-                    val primaryColor = MaterialTheme.colorScheme.primary
-                    val annotated = buildAnnotatedString {
-                        var i = 0
-                        while (i < summaryText.length) {
-                            if (summaryText[i].isDigit()) {
-                                val start = i
-                                while (i < summaryText.length && summaryText[i].isDigit()) i++
-                                withStyle(SpanStyle(color = primaryColor)) { append(summaryText.substring(start, i)) }
-                            } else {
-                                append(summaryText[i])
-                                i++
-                            }
-                        }
-                    }
-                    Text(
-                        text = annotated,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = if (nameText != null) 4.dp else 0.dp, end = 16.dp),
-                    )
                 } else {
-                    Text(
-                        text = "No movements yet",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = if (nameText != null) 4.dp else 0.dp, end = 16.dp),
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = if (nameText != null) 6.dp else 0.dp, end = 16.dp),
+                    ) {
+                        Icon(
+                            Icons.AutoMirrored.Filled.DirectionsRun,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.outline,
+                            modifier = Modifier.size(14.dp),
+                        )
+                        Text(
+                            text = "No movements yet",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
                 }
             }
             Icon(
@@ -250,6 +251,43 @@ private fun SessionCard(
                     .size(20.dp),
             )
         }
+    }
+}
+
+@Composable
+private fun SummaryStat(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    text: String,
+) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.outline,
+            modifier = Modifier.size(14.dp),
+        )
+        val primaryColor = MaterialTheme.colorScheme.primary
+        val annotated = buildAnnotatedString {
+            var i = 0
+            while (i < text.length) {
+                if (text[i].isDigit()) {
+                    val start = i
+                    while (i < text.length && text[i].isDigit()) i++
+                    withStyle(SpanStyle(color = primaryColor)) { append(text.substring(start, i)) }
+                } else {
+                    append(text[i])
+                    i++
+                }
+            }
+        }
+        Text(
+            text = annotated,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
     }
 }
 

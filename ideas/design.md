@@ -4,7 +4,8 @@ Here are my suggested improvements for your software agent to implement:
 
 Progress notes:
 - `Dynamic Header & Grouping` is already implemented on the workouts list via date section headers.
-- The next useful slice is `Status Distinction & Visual Feedback` on workout cards.
+- `Status Distinction & Visual Feedback` is now partially implemented on workout cards via compact planned/logged status icons and stronger completed-card treatment.
+- The next useful slice is reducing summary text density on workout cards.
 
 ---
 
@@ -54,4 +55,3 @@ The "+" button is large and clear, but the "Robot/AI" icon floating above it cre
 | **Navigation** | Icons are thin. | Increase the weight of the active "Workouts" icon for better accessibility. |
 
 ---
-
