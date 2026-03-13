@@ -40,7 +40,7 @@ fun formatVolume(volume: Float): String = formatWeight(volume)
 /**
  * Formats an epoch-millis timestamp as a human-readable date string.
  *
- * Default pattern: "EEE, MMM d yyyy"  →  "Mon, Jan 6 2025"
+ * Default pattern: "yyyy-MM-dd"  →  "2025-01-06"
  */
-fun formatDate(epochMillis: Long, pattern: String = "EEE, MMM d yyyy"): String =
+fun formatDate(epochMillis: Long, pattern: String = "yyyy-MM-dd"): String =
     SimpleDateFormat(pattern, Locale.getDefault()).format(Date(epochMillis))

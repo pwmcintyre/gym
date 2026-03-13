@@ -32,7 +32,8 @@ interface ExerciseEntryDao {
             COUNT(DISTINCT e.workout_session_id) AS sessionCount,
             MAX(ws.date) AS lastPerformed,
             MAX(s.weight) AS bestWeight,
-            CAST(SUM(COALESCE(s.weight, 0) * COALESCE(s.reps_performed, 0)) AS REAL) AS totalVolume
+            CAST(SUM(COALESCE(s.weight, 0) * COALESCE(s.reps_performed, 0)) AS REAL) AS totalVolume,
+            COALESCE(SUM(CASE WHEN s.weight_mode = 'BODYWEIGHT' THEN 1 ELSE 0 END), 0) AS bodyweightSetCount
         FROM exercise_entries e
         INNER JOIN workout_sessions ws ON ws.id = e.workout_session_id
         LEFT JOIN set_entries s ON s.exercise_entry_id = e.id
@@ -51,7 +52,8 @@ interface ExerciseEntryDao {
             ws.date AS sessionDate,
             COUNT(s.id) AS setCount,
             MAX(s.weight) AS bestWeight,
-            CAST(SUM(COALESCE(s.weight, 0) * COALESCE(s.reps_performed, 0)) AS REAL) AS totalVolume
+            CAST(SUM(COALESCE(s.weight, 0) * COALESCE(s.reps_performed, 0)) AS REAL) AS totalVolume,
+            COALESCE(SUM(CASE WHEN s.weight_mode = 'BODYWEIGHT' THEN 1 ELSE 0 END), 0) AS bodyweightSetCount
         FROM exercise_entries e
         INNER JOIN workout_sessions ws ON ws.id = e.workout_session_id
         LEFT JOIN set_entries s ON s.exercise_entry_id = e.id

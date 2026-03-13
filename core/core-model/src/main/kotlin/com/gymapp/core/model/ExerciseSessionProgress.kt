@@ -6,4 +6,5 @@ data class ExerciseSessionProgress(
     val setCount: Int,
     val bestWeight: Float?,
     val totalVolume: Float,
+    val bodyweightSetCount: Int = 0,
 )

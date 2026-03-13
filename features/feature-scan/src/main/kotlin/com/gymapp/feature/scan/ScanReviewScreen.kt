@@ -103,7 +103,7 @@ fun ScanReviewScreen(
                 ) {
                     Icon(Icons.Default.Add, contentDescription = null)
                     Spacer(modifier = Modifier.width(4.dp))
-                    Text("Add exercise")
+                    Text("Add movement")
                 }
             }
         }
@@ -152,7 +152,7 @@ private fun ReviewItemCard(
                 OutlinedTextField(
                     value = item.exerciseName,
                     onValueChange = { onChanged(item.copy(exerciseName = it)) },
-                    label = { Text("Exercise") },
+                    label = { Text("Movement") },
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )

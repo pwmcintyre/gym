@@ -15,6 +15,6 @@ class MovementsViewModel @Inject constructor(
     workoutRepository: WorkoutRepository,
 ) : ViewModel() {
     val movements: StateFlow<List<ExerciseProgressSummary>> =
-        workoutRepository.observeProgressSummaries()
+        workoutRepository.observeProgressSummaries(limit = Int.MAX_VALUE)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 }

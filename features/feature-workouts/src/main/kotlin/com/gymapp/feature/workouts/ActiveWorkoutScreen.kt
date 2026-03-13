@@ -167,7 +167,7 @@ fun ActiveWorkoutScreen(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = "Add exercise")
+                    Icon(Icons.Default.Add, contentDescription = "Add movement")
                 }
             }
         },
@@ -325,7 +325,7 @@ private fun ExerciseCard(
     if (showDeleteConfirm) {
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
-            title = { Text("Remove exercise?") },
+            title = { Text("Remove movement?") },
             text = { Text("This removes \"${exercise.exerciseName}\" and all its sets.") },
             confirmButton = {
                 Button(onClick = {
@@ -363,14 +363,14 @@ private fun ExerciseCard(
                 IconButton(onClick = { showEditDialog = true }) {
                     Icon(
                         Icons.Outlined.Edit,
-                        contentDescription = "Rename exercise",
+                        contentDescription = "Rename movement",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
                 IconButton(onClick = { showDeleteConfirm = true }) {
                     Icon(
                         Icons.Default.Delete,
-                        contentDescription = "Remove exercise",
+                        contentDescription = "Remove movement",
                         tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -612,7 +612,7 @@ private fun AddExerciseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Exercise") },
+        title = { Text("Add Movement") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
@@ -625,7 +625,7 @@ private fun AddExerciseDialog(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Exercise name") },
+                    label = { Text("Movement name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -717,13 +717,13 @@ private fun EditExerciseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Edit exercise") },
+        title = { Text("Edit movement") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Exercise name") },
+                    label = { Text("Movement name") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -940,7 +940,7 @@ private fun WorkoutSuggestionPanel(
             .padding(top = 32.dp),
     ) {
         Text(
-            "No exercises yet. Tap + to add, or let AI suggest a starting point:",
+            "No movements yet. Tap + to add, or let AI suggest a starting point:",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

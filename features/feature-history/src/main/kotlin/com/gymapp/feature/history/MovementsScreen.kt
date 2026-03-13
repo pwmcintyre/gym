@@ -19,6 +19,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -81,10 +84,25 @@ private fun MovementCard(
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
+            val primaryColor = MaterialTheme.colorScheme.primary
+            val summaryText = buildSummaryLine(movement)
+            val summaryAnnotated = buildAnnotatedString {
+                var i = 0
+                while (i < summaryText.length) {
+                    if (summaryText[i].isDigit()) {
+                        val start = i
+                        while (i < summaryText.length && (summaryText[i].isDigit() || summaryText[i] == '.')) i++
+                        withStyle(SpanStyle(color = primaryColor)) { append(summaryText.substring(start, i)) }
+                    } else {
+                        append(summaryText[i])
+                        i++
+                    }
+                }
+            }
             Text(
-                text = buildSummaryLine(movement),
+                text = summaryAnnotated,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp),
             )
             Text(
@@ -100,5 +118,11 @@ private fun MovementCard(
 private fun buildSummaryLine(movement: ExerciseProgressSummary): String = buildString {
     append("${movement.sessionCount} session")
     if (movement.sessionCount != 1) append("s")
-    append(" • Best ${movement.bestWeight?.let { formatWeight(it) } ?: "—"}")
+    val bw = movement.bestWeight
+    val bestLabel = when {
+        bw != null -> formatWeight(bw)
+        movement.bodyweightSetCount > 0 -> "BW"
+        else -> "—"
+    }
+    append(" • Best $bestLabel")
 }

@@ -191,7 +191,7 @@ private fun SessionCard(
                 // Line 3: summary
                 if (summary != null && summary.exerciseCount > 0) {
                     val summaryText = buildString {
-                        append("${summary.exerciseCount} exercise${if (summary.exerciseCount != 1) "s" else ""}")
+                        append("${summary.exerciseCount} movement${if (summary.exerciseCount != 1) "s" else ""}")
                         append(" · ")
                         append("${summary.setCount} set${if (summary.setCount != 1) "s" else ""}")
                     }

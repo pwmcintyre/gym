@@ -42,7 +42,10 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -104,7 +107,7 @@ fun ExerciseProgressScreen(
                     .padding(innerPadding),
             ) {
                 Text(
-                    text = "No logged sets yet for this exercise.",
+                    text = "No logged sets yet for this movement.",
                     style = MaterialTheme.typography.bodyLarge,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 24.dp),
@@ -376,6 +379,7 @@ private fun ExerciseProgressSummaryCard(
     sessionProgress: List<ExerciseSessionProgress>,
 ) {
     val bestWeight = sessionProgress.mapNotNull { it.bestWeight }.maxOrNull()?.takeIf { it > 0f }
+    val isBodyweight = bestWeight == null && sessionProgress.any { it.bodyweightSetCount > 0 }
 
     Card(
         colors = CardDefaults.cardColors(
@@ -398,9 +402,14 @@ private fun ExerciseProgressSummaryCard(
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
+            val bestLabel = when {
+                bestWeight != null -> formatWeight(bestWeight)
+                isBodyweight -> "BW"
+                else -> "—"
+            }
             Text(
                 text = "${sessionProgress.size} session${if (sessionProgress.size != 1) "s" else ""}" +
-                    " • Best ${bestWeight?.let { formatWeight(it) } ?: "—"}",
+                    " • Best $bestLabel",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -435,11 +444,32 @@ private fun ExerciseProgressSessionCard(
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.onSurface,
             )
+            val primaryColor = MaterialTheme.colorScheme.primary
+            val sessionBestWeight = progress.bestWeight
+            val sessionBestLabel = when {
+                sessionBestWeight != null -> formatWeight(sessionBestWeight)
+                progress.bodyweightSetCount > 0 -> "BW"
+                else -> "—"
+            }
+            val statsText = "${progress.setCount} set${if (progress.setCount != 1) "s" else ""}" +
+                " • Best $sessionBestLabel"
+            val statsAnnotated = buildAnnotatedString {
+                var i = 0
+                while (i < statsText.length) {
+                    if (statsText[i].isDigit()) {
+                        val start = i
+                        while (i < statsText.length && (statsText[i].isDigit() || statsText[i] == '.')) i++
+                        withStyle(SpanStyle(color = primaryColor)) { append(statsText.substring(start, i)) }
+                    } else {
+                        append(statsText[i])
+                        i++
+                    }
+                }
+            }
             Text(
-                text = "${progress.setCount} set${if (progress.setCount != 1) "s" else ""}" +
-                    " • Best ${progress.bestWeight?.let { formatWeight(it) } ?: "—"}",
+                text = statsAnnotated,
                 style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
                 text = "Open workout details",
