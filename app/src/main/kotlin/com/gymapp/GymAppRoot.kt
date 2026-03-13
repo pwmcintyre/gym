@@ -23,6 +23,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.gymapp.feature.history.ExerciseProgressScreen
+import com.gymapp.feature.history.WorkoutComparisonScreen
 import com.gymapp.feature.history.WorkoutDetailScreen
 import com.gymapp.feature.scan.ScanScreen
 import com.gymapp.feature.settings.SettingsScreen
@@ -36,12 +37,14 @@ private object Routes {
     const val ACTIVE_WORKOUT = "workout/{sessionId}"
     const val HISTORY_DETAIL = "history/detail/{sessionId}"
     const val HISTORY_PROGRESS = "history/progress/{exerciseName}"
+    const val WORKOUT_COMPARISON = "history/comparison/{workoutName}"
     const val SCAN = "scan"
     const val SETTINGS = "settings"
 
     fun activeWorkout(sessionId: String) = "workout/$sessionId"
     fun historyDetail(sessionId: String) = "history/detail/$sessionId"
     fun historyProgress(exerciseName: String) = "history/progress/${Uri.encode(exerciseName)}"
+    fun workoutComparison(workoutName: String) = "history/comparison/${Uri.encode(workoutName)}"
 }
 
 private val bottomNavRoutes = setOf(
@@ -135,6 +138,17 @@ fun GymAppRoot() {
                     WorkoutDetailScreen(
                         onBack = { navController.popBackStack() },
                         onEdit = { navController.navigate(Routes.activeWorkout(it)) },
+                        onCompare = { navController.navigate(Routes.workoutComparison(it)) },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+
+                composable(
+                    route = Routes.WORKOUT_COMPARISON,
+                    arguments = listOf(navArgument("workoutName") { type = NavType.StringType }),
+                ) {
+                    WorkoutComparisonScreen(
+                        onBack = { navController.popBackStack() },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }

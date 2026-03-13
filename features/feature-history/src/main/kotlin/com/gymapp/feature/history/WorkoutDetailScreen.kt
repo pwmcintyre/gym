@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.BarChart
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
@@ -53,6 +54,7 @@ import com.gymapp.core.model.formatWeight
 fun WorkoutDetailScreen(
     onBack: () -> Unit,
     onEdit: (sessionId: String) -> Unit,
+    onCompare: (workoutName: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WorkoutDetailViewModel = hiltViewModel(),
 ) {
@@ -76,6 +78,13 @@ fun WorkoutDetailScreen(
                     }
                 },
                 actions = {
+                    // Only show Compare when this session has a name to group by
+                    val sessionName = session?.notes?.takeIf { it.isNotBlank() }
+                    if (sessionName != null) {
+                        IconButton(onClick = { onCompare(sessionName) }) {
+                            Icon(Icons.Default.BarChart, contentDescription = "Compare sessions")
+                        }
+                    }
                     IconButton(onClick = { onEdit(viewModel.sessionId) }) {
                         Icon(Icons.Default.Edit, contentDescription = "Edit workout")
                     }

@@ -40,6 +40,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.gymapp.core.model.ExerciseEntry
+import com.gymapp.core.model.findFuzzyMatches
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -115,12 +116,16 @@ private fun ReviewItemCard(
     onChanged: (ExerciseEntry) -> Unit,
     onRemove: () -> Unit,
 ) {
-    val suggestions = remember(item.exerciseName, knownNames) {
-        if (item.exerciseName.isBlank()) emptyList()
+    val name = item.exerciseName.trim()
+    val prefixSuggestions = remember(name, knownNames) {
+        if (name.isBlank()) emptyList()
         else knownNames.filter {
-            it.contains(item.exerciseName.trim(), ignoreCase = true) &&
-                !it.equals(item.exerciseName.trim(), ignoreCase = true)
-        }.take(5)
+            it.contains(name, ignoreCase = true) && !it.equals(name, ignoreCase = true)
+        }.take(4)
+    }
+    val fuzzySuggestions = remember(name, knownNames) {
+        if (name.isBlank() || prefixSuggestions.isNotEmpty()) emptyList()
+        else findFuzzyMatches(name, knownNames, maxResults = 3)
     }
     Card(
         colors = CardDefaults.cardColors(
@@ -158,12 +163,33 @@ private fun ReviewItemCard(
                     )
                 }
             }
-            if (suggestions.isNotEmpty()) {
+            if (prefixSuggestions.isNotEmpty()) {
                 LazyRow(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     modifier = Modifier.padding(top = 4.dp),
                 ) {
-                    items(suggestions) { suggestion ->
+                    items(prefixSuggestions) { suggestion ->
+                        SuggestionChip(
+                            onClick = { onChanged(item.copy(exerciseName = suggestion)) },
+                            label = { Text(suggestion, style = MaterialTheme.typography.labelSmall) },
+                        )
+                    }
+                }
+            }
+            if (fuzzySuggestions.isNotEmpty()) {
+                LazyRow(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    item {
+                        Text(
+                            "Did you mean:",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(end = 4.dp, top = 6.dp),
+                        )
+                    }
+                    items(fuzzySuggestions) { suggestion ->
                         SuggestionChip(
                             onClick = { onChanged(item.copy(exerciseName = suggestion)) },
                             label = { Text(suggestion, style = MaterialTheme.typography.labelSmall) },

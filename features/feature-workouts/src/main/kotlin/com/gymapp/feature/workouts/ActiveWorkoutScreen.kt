@@ -74,6 +74,7 @@ import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.RepModifier
 import com.gymapp.core.model.SetEntry
 import com.gymapp.core.model.WeightMode
+import com.gymapp.core.model.findFuzzyMatches
 import com.gymapp.core.model.formatDate
 import com.gymapp.core.model.formatWeight
 
@@ -596,9 +597,14 @@ private fun AddExerciseDialog(
     var setsText by rememberSaveable { mutableStateOf("") }
     var repsText by rememberSaveable { mutableStateOf("") }
 
-    val suggestions = remember(name, knownNames) {
-        if (name.isBlank()) emptyList()
-        else knownNames.filter { it.contains(name.trim(), ignoreCase = true) && !it.equals(name.trim(), ignoreCase = true) }.take(5)
+    val trimmedName = name.trim()
+    val suggestions = remember(trimmedName, knownNames) {
+        if (trimmedName.isBlank()) emptyList()
+        else knownNames.filter { it.contains(trimmedName, ignoreCase = true) && !it.equals(trimmedName, ignoreCase = true) }.take(4)
+    }
+    val fuzzySuggestions = remember(trimmedName, knownNames) {
+        if (trimmedName.isBlank() || suggestions.isNotEmpty()) emptyList()
+        else findFuzzyMatches(trimmedName, knownNames, maxResults = 3)
     }
 
     AlertDialog(
@@ -623,6 +629,24 @@ private fun AddExerciseDialog(
                 if (suggestions.isNotEmpty()) {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
                         items(suggestions) { suggestion ->
+                            SuggestionChip(
+                                onClick = { name = suggestion },
+                                label = { Text(suggestion, style = MaterialTheme.typography.labelSmall) },
+                            )
+                        }
+                    }
+                }
+                if (fuzzySuggestions.isNotEmpty()) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        item {
+                            Text(
+                                "Similar:",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(end = 4.dp, top = 6.dp),
+                            )
+                        }
+                        items(fuzzySuggestions) { suggestion ->
                             SuggestionChip(
                                 onClick = { name = suggestion },
                                 label = { Text(suggestion, style = MaterialTheme.typography.labelSmall) },

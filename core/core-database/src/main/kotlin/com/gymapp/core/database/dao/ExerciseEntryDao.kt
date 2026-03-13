@@ -9,6 +9,7 @@ import androidx.room.Update
 import com.gymapp.core.database.entity.ExerciseEntryEntity
 import com.gymapp.core.model.ExerciseProgressSummary
 import com.gymapp.core.model.ExerciseSessionProgress
+import com.gymapp.core.model.ExerciseWorkoutProgression
 import com.gymapp.core.model.SessionSummary
 import kotlinx.coroutines.flow.Flow
 
@@ -94,6 +95,28 @@ interface ExerciseEntryDao {
 
     @Query("DELETE FROM exercise_entries WHERE workout_session_id = :sessionId")
     suspend fun deleteBySession(sessionId: String)
+
+    /**
+     * Returns the best weight per exercise per session for all sessions with the given workout name.
+     * Ordered by exercise name then date ascending (for charting a trend per exercise).
+     */
+    @Query(
+        """
+        SELECT
+            e.exercise_name AS exerciseName,
+            ws.id AS sessionId,
+            ws.date AS sessionDate,
+            MAX(s.weight) AS bestWeight
+        FROM workout_sessions ws
+        INNER JOIN exercise_entries e ON e.workout_session_id = ws.id
+        INNER JOIN set_entries s ON s.exercise_entry_id = e.id
+        WHERE LOWER(TRIM(ws.notes)) = LOWER(TRIM(:workoutName))
+          AND s.weight IS NOT NULL AND s.weight > 0
+        GROUP BY e.exercise_name, ws.id
+        ORDER BY e.exercise_name COLLATE NOCASE ASC, ws.date ASC
+        """
+    )
+    fun observeExerciseProgressions(workoutName: String): Flow<List<ExerciseWorkoutProgression>>
 
     @Query("DELETE FROM exercise_entries")
     suspend fun deleteAll()
