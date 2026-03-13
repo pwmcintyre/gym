@@ -6,7 +6,10 @@ Progress notes:
 - `Dynamic Header & Grouping` is already implemented on the workouts list via date section headers.
 - `Status Distinction & Visual Feedback` is now partially implemented on workout cards via compact planned/logged status icons and stronger completed-card treatment.
 - `Card Content` density is now improved via compact icon-led summary stats for movements and sets.
-- The next useful slice is `Floating Action Button (FAB) Optimization` on the workouts screen.
+- `Floating Action Button (FAB) Optimization` is now implemented on the workouts screen by moving AI into the top bar.
+- `Action Priority` is now implemented via a long-press card menu for secondary session actions.
+- `Data Visualization` is now partially implemented via a set-completion progress bar when a workout has programmed target sets.
+- The next useful slice is improving empty and in-progress states on sessions without clear programmed targets.
 
 ---
 

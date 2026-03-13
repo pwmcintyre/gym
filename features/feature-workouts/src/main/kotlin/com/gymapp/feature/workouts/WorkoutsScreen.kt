@@ -1,7 +1,7 @@
 package com.gymapp.feature.workouts
 
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.FitnessCenter
@@ -23,10 +24,13 @@ import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -52,7 +56,7 @@ import com.gymapp.core.model.WorkoutSession
 import com.gymapp.core.model.formatDate
 import java.util.Calendar
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutsScreen(
     onOpenWorkout: (sessionId: String) -> Unit,
@@ -135,6 +139,9 @@ fun WorkoutsScreen(
                             summary = sessionSummaries[session.id],
                             suggestedName = suggestedNames[session.id],
                             onClick = { onOpenDetail(session.id) },
+                            onCopyAsTemplate = {
+                                viewModel.createFromTemplate(session.id, onOpenWorkout)
+                            },
                         )
                     }
                 }
@@ -150,14 +157,17 @@ fun WorkoutsScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun SessionCard(
     session: WorkoutSession,
     summary: SessionSummary?,
     suggestedName: String?,
     onClick: () -> Unit,
+    onCopyAsTemplate: () -> Unit,
 ) {
     val status = remember(summary) { sessionStatus(summary) }
+    var showMenu by rememberSaveable(session.id) { mutableStateOf(false) }
     val nameText: String?
     val nameColor: androidx.compose.ui.graphics.Color
 
@@ -183,73 +193,120 @@ private fun SessionCard(
         border = BorderStroke(1.dp, status.borderColor()),
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onClick),
+            .combinedClickable(
+                onClick = onClick,
+                onLongClick = { showMenu = true },
+            ),
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(start = 16.dp, top = 16.dp, bottom = 16.dp),
+        Box {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
             ) {
-                if (nameText != null) {
-                    Text(
-                        text = nameText,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = nameColor,
-                        modifier = Modifier.padding(end = 16.dp),
-                    )
-                }
-                if (summary != null && summary.exerciseCount > 0) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        modifier = Modifier.padding(top = if (nameText != null) 6.dp else 0.dp, end = 16.dp),
-                    ) {
-                        SummaryStat(
-                            icon = Icons.AutoMirrored.Filled.DirectionsRun,
-                            text = "${summary.exerciseCount} movement${if (summary.exerciseCount != 1) "s" else ""}",
-                        )
-                        SummaryStat(
-                            icon = Icons.Default.FitnessCenter,
-                            text = "${summary.setCount} set${if (summary.setCount != 1) "s" else ""}",
-                        )
-                    }
-                } else {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = if (nameText != null) 6.dp else 0.dp, end = 16.dp),
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.DirectionsRun,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.outline,
-                            modifier = Modifier.size(14.dp),
-                        )
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 16.dp, top = 16.dp, bottom = 16.dp),
+                ) {
+                    if (nameText != null) {
                         Text(
-                            text = "No movements yet",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            text = nameText,
+                            style = MaterialTheme.typography.titleMedium,
+                            color = nameColor,
+                            modifier = Modifier.padding(end = 16.dp),
                         )
                     }
+                    if (summary != null && summary.exerciseCount > 0) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.padding(top = if (nameText != null) 6.dp else 0.dp, end = 16.dp),
+                        ) {
+                            SummaryStat(
+                                icon = Icons.AutoMirrored.Filled.DirectionsRun,
+                                text = "${summary.exerciseCount} movement${if (summary.exerciseCount != 1) "s" else ""}",
+                            )
+                            SummaryStat(
+                                icon = Icons.Default.FitnessCenter,
+                                text = "${summary.setCount} set${if (summary.setCount != 1) "s" else ""}",
+                            )
+                        }
+                        if (summary.targetSetCount > 0) {
+                            val progress = (summary.setCount.toFloat() / summary.targetSetCount.toFloat())
+                                .coerceIn(0f, 1f)
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 10.dp, end = 16.dp),
+                                verticalArrangement = Arrangement.spacedBy(4.dp),
+                            ) {
+                                LinearProgressIndicator(
+                                    progress = { progress },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    color = MaterialTheme.colorScheme.primary,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                )
+                                Text(
+                                    text = "${summary.setCount} / ${summary.targetSetCount} sets",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
+                    } else {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = if (nameText != null) 6.dp else 0.dp, end = 16.dp),
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.DirectionsRun,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.outline,
+                                modifier = Modifier.size(14.dp),
+                            )
+                            Text(
+                                text = "No movements yet",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
                 }
+                Icon(
+                    imageVector = when (status) {
+                        SessionStatus.PLANNED -> Icons.Default.Schedule
+                        SessionStatus.LOGGED -> Icons.Default.Check
+                    },
+                    contentDescription = status.label,
+                    tint = when (status) {
+                        SessionStatus.PLANNED -> MaterialTheme.colorScheme.outline
+                        SessionStatus.LOGGED -> MaterialTheme.colorScheme.primary
+                    },
+                    modifier = Modifier
+                        .padding(end = 16.dp)
+                        .size(20.dp),
+                )
             }
-            Icon(
-                imageVector = when (status) {
-                    SessionStatus.PLANNED -> Icons.Default.Schedule
-                    SessionStatus.LOGGED -> Icons.Default.Check
-                },
-                contentDescription = status.label,
-                tint = when (status) {
-                    SessionStatus.PLANNED -> MaterialTheme.colorScheme.outline
-                    SessionStatus.LOGGED -> MaterialTheme.colorScheme.primary
-                },
-                modifier = Modifier
-                    .padding(end = 16.dp)
-                    .size(20.dp),
-            )
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { showMenu = false },
+                modifier = Modifier.align(Alignment.TopEnd),
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Copy as new workout") },
+                    onClick = {
+                        showMenu = false
+                        onCopyAsTemplate()
+                    },
+                )
+                DropdownMenuItem(
+                    text = { Text("Open details") },
+                    onClick = {
+                        showMenu = false
+                        onClick()
+                    },
+                )
+            }
         }
     }
 }
@@ -309,18 +366,6 @@ private fun SessionStatus.containerColor(): Color = when (this) {
 private fun SessionStatus.borderColor(): Color = when (this) {
     SessionStatus.PLANNED -> MaterialTheme.colorScheme.outlineVariant
     SessionStatus.LOGGED -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
-}
-
-@Composable
-private fun SessionStatus.chipContainerColor(): Color = when (this) {
-    SessionStatus.PLANNED -> MaterialTheme.colorScheme.secondaryContainer
-    SessionStatus.LOGGED -> MaterialTheme.colorScheme.primaryContainer
-}
-
-@Composable
-private fun SessionStatus.chipLabelColor(): Color = when (this) {
-    SessionStatus.PLANNED -> MaterialTheme.colorScheme.onSecondaryContainer
-    SessionStatus.LOGGED -> MaterialTheme.colorScheme.onPrimaryContainer
 }
 
 private fun truncateToDay(epochMs: Long): Long {

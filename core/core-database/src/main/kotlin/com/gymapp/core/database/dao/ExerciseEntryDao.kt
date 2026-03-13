@@ -72,7 +72,12 @@ interface ExerciseEntryDao {
         SELECT
             e.workout_session_id AS sessionId,
             COUNT(DISTINCT e.id) AS exerciseCount,
-            COUNT(s.id) AS setCount
+            COUNT(s.id) AS setCount,
+            (
+                SELECT COALESCE(SUM(e2.target_sets), 0)
+                FROM exercise_entries e2
+                WHERE e2.workout_session_id = e.workout_session_id
+            ) AS targetSetCount
         FROM exercise_entries e
         LEFT JOIN set_entries s ON s.exercise_entry_id = e.id
         GROUP BY e.workout_session_id

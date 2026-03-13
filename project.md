@@ -443,8 +443,10 @@ Delivered:
 - Tightened the workout-card header again by collapsing the status treatment down to a single right-edge icon in the old action slot, keeping the green check / grey clock without increasing card height.
 - Reduced workout-card summary density by splitting the counts into two compact icon-led stats for movements and sets instead of one longer sentence.
 - Reduced bottom-right clutter on the Workouts screen by moving AI access into the top app bar and leaving the floating action button for the primary "new workout" action only.
+- Moved the secondary session actions into a long-press card menu so tap remains the primary path into workout details while template-copy stays available without adding another visible icon.
+- Added target-set progress to workout cards so sessions with programmed work now show a completion bar and `logged / target` set count at a glance.
 
-Validation: `./gradlew :features:feature-workouts:compileDebugKotlin --no-daemon` and `./gradlew assembleDebug --no-daemon` — BUILD SUCCESSFUL.
+Validation: `./gradlew :core:core-model:clean :core:core-database:clean :features:feature-workouts:clean :features:feature-workouts:compileDebugKotlin --no-daemon` and `./gradlew assembleDebug --no-daemon` — BUILD SUCCESSFUL.
 
 ---
 

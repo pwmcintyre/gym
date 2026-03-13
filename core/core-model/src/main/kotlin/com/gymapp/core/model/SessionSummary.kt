@@ -5,4 +5,5 @@ data class SessionSummary(
     val sessionId: String,
     val exerciseCount: Int,
     val setCount: Int,
+    val targetSetCount: Int,
 )
