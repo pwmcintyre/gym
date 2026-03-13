@@ -315,13 +315,26 @@ Current implementation target:
 
 Current status:
 - Implemented: local snapshot export/import, Google sign-in flow, and manual backup/restore controls in Settings.
-- Verified: app builds, installs, and launches on device with the new backup UI.
-- Remaining: complete end-to-end Drive round-trip verification after Android OAuth + Drive API setup is configured in Google Cloud.
+- Google sign-in now works on device — user can connect their Google account successfully.
+- Drive API enabled in Google Cloud Console for project gym-app-70175.
+- Remaining blocker: 403 Forbidden on Drive API calls — likely because the Drive API was enabled on the Firebase project's Cloud project, but the OAuth client used by the app may be scoped to the old deleted client or the wrong project. Need to verify which Cloud project the enabled Drive API is in, and that it matches the project ID in google-services.json (project_number: 549580093290).
 
-Setup prerequisite:
-- Enable Google Drive API in the Google Cloud project used for the Android app.
-- Register an Android OAuth client for package `com.gymapp` with the debug SHA-1 used on this machine/device.
-- Until that is configured, the UI can compile and launch but Google sign-in may fail at runtime.
+Next session steps:
+1. Verify Google Cloud Console project: confirm Drive API is enabled on the project matching `project_id` in app/google-services.json (should be `gym-app-70175`).
+2. Check OAuth consent screen scopes — ensure `https://www.googleapis.com/auth/drive.appdata` scope is listed.
+3. Check that the test user (your Google account) is added to the OAuth consent screen.
+4. Re-test Back Up Now — expect success.
+5. Test Restore Backup round-trip.
+6. Mark M9 complete and commit.
+
+Setup notes (completed):
+- Firebase Authentication → Google Sign-in enabled → google-services.json now has 2 oauth_client entries.
+- SHA-1 fingerprint conflict resolved by deleting the old OAuth client in the other Cloud project.
+- google-services.json moved to app/ and build verified (BUILD SUCCESSFUL).
+- Drive API enabled in Google Cloud Console.
+- Debug SHA-1: F0:33:07:0B:86:EA:DF:5B:87:F5:78:43:FE:DD:CA:14:D9:3A:DD:B4
+- Firebase project: gym-app-70175 (project number 549580093290)
+- Android OAuth client ID: 549580093290-lubnmlu2p3mp8c8gs2f41eobkevgcga5.apps.googleusercontent.com
 
 ## ✅ Milestone 10 — Rest Timer
 
