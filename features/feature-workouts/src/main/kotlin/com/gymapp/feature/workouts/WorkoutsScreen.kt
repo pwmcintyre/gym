@@ -17,8 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SmartToy
-import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.AssistChip
@@ -26,7 +26,6 @@ import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -136,9 +135,6 @@ fun WorkoutsScreen(
                             summary = sessionSummaries[session.id],
                             suggestedName = suggestedNames[session.id],
                             onClick = { onOpenDetail(session.id) },
-                            onCopyAsTemplate = {
-                                viewModel.createFromTemplate(session.id, onOpenWorkout)
-                            },
                         )
                     }
                 }
@@ -160,7 +156,6 @@ private fun SessionCard(
     summary: SessionSummary?,
     suggestedName: String?,
     onClick: () -> Unit,
-    onCopyAsTemplate: () -> Unit,
 ) {
     val status = remember(summary) { sessionStatus(summary) }
     val nameText: String?
@@ -197,34 +192,20 @@ private fun SessionCard(
             Column(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(start = 16.dp, top = 16.dp, bottom = 16.dp),
+                    .padding(16.dp),
             ) {
-                AssistChip(
-                    onClick = onClick,
-                    label = { Text(status.label) },
-                    leadingIcon = if (status == SessionStatus.LOGGED) {
-                        {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = null,
-                                modifier = Modifier.size(AssistChipDefaults.IconSize),
-                            )
-                        }
-                    } else {
-                        null
-                    },
-                    colors = AssistChipDefaults.assistChipColors(
-                        containerColor = status.chipContainerColor(),
-                        labelColor = status.chipLabelColor(),
-                        leadingIconContentColor = status.chipLabelColor(),
-                    ),
-                )
+                Row(
+                    horizontalArrangement = Arrangement.End,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    StatusChip(status = status, onClick = onClick)
+                }
                 if (nameText != null) {
                     Text(
                         text = nameText,
                         style = MaterialTheme.typography.titleMedium,
                         color = nameColor,
-                        modifier = Modifier.padding(top = 12.dp, end = 16.dp),
+                        modifier = Modifier.padding(top = 12.dp),
                     )
                 }
                 if (summary != null && summary.exerciseCount > 0) {
@@ -252,7 +233,6 @@ private fun SessionCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(
-                            end = 16.dp,
                             top = if (nameText != null) 4.dp else 16.dp,
                         ),
                     )
@@ -261,19 +241,9 @@ private fun SessionCard(
                         text = "No movements yet",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = if (nameText != null) 4.dp else 12.dp, end = 16.dp),
+                        modifier = Modifier.padding(top = if (nameText != null) 4.dp else 12.dp),
                     )
                 }
-            }
-            IconButton(
-                onClick = onCopyAsTemplate,
-                modifier = Modifier.padding(top = 6.dp, end = 4.dp),
-            ) {
-                Icon(
-                    Icons.Outlined.ContentCopy,
-                    contentDescription = "Copy as new workout",
-                    tint = MaterialTheme.colorScheme.outline,
-                )
             }
         }
     }
@@ -286,6 +256,29 @@ private enum class SessionStatus(val label: String) {
 
 private fun sessionStatus(summary: SessionSummary?): SessionStatus =
     if (summary != null && summary.setCount > 0) SessionStatus.LOGGED else SessionStatus.PLANNED
+
+@Composable
+private fun StatusChip(status: SessionStatus, onClick: () -> Unit) {
+    AssistChip(
+        onClick = onClick,
+        label = { Text(status.label) },
+        leadingIcon = {
+            Icon(
+                imageVector = when (status) {
+                    SessionStatus.PLANNED -> Icons.Default.Schedule
+                    SessionStatus.LOGGED -> Icons.Default.Check
+                },
+                contentDescription = null,
+                modifier = Modifier.size(AssistChipDefaults.IconSize),
+            )
+        },
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = status.chipContainerColor(),
+            labelColor = status.chipLabelColor(),
+            leadingIconContentColor = status.chipLabelColor(),
+        ),
+    )
+}
 
 @Composable
 private fun SessionStatus.containerColor(): Color = when (this) {
