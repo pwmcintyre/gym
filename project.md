@@ -516,6 +516,7 @@ Validation: `./gradlew :features:feature-history:clean :features:feature-history
 Autonomous session.
 
 Delivered:
+- Simplified the add-movement entry flow in the active workout screen: suggestion copy is now a larger `Suggestions` section, suggested names use stronger button treatment, and the manual path is labeled `Manually add` instead of relying on a lone plus icon.
 - Added a proper platform splash theme path for `MainActivity`, using the existing launcher mark and launch palette so startup feels intentional without adding any artificial delay.
 - Added the AndroidX splashscreen dependency and activity hook needed for the splash theme to work correctly on supported devices.
 
