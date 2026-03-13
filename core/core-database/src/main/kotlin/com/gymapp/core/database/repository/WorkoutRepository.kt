@@ -10,7 +10,6 @@ import com.gymapp.core.model.ExerciseSessionProgress
 import com.gymapp.core.model.ExerciseWorkoutProgression
 import com.gymapp.core.model.RepModifier
 import com.gymapp.core.model.SessionSummary
-import com.gymapp.core.model.WorkoutComparisonSession
 import com.gymapp.core.model.WorkoutSession
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -61,9 +60,6 @@ class WorkoutRepository @Inject constructor(
 
     fun observeDistinctExerciseNames(): Flow<List<String>> =
         exerciseDao.observeDistinctNames()
-
-    fun observeComparisonSessions(name: String): Flow<List<WorkoutComparisonSession>> =
-        sessionDao.observeComparisonSessions(name)
 
     fun observeExerciseProgressions(workoutName: String): Flow<List<ExerciseWorkoutProgression>> =
         exerciseDao.observeExerciseProgressions(workoutName)

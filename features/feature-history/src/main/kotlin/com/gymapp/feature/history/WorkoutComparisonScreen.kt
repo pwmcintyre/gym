@@ -27,20 +27,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymapp.core.model.ExerciseWorkoutProgression
-import com.gymapp.core.model.WorkoutComparisonSession
 import com.gymapp.core.model.formatDate
-import com.gymapp.core.model.formatVolume
 import com.gymapp.core.model.formatWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -50,10 +45,8 @@ fun WorkoutComparisonScreen(
     modifier: Modifier = Modifier,
     viewModel: WorkoutComparisonViewModel = hiltViewModel(),
 ) {
-    val sessions by viewModel.sessions.collectAsStateWithLifecycle()
     val progressions by viewModel.exerciseProgressions.collectAsStateWithLifecycle()
 
-    // Group progressions by exercise name for the table
     val byExercise = remember(progressions) {
         progressions.groupBy { it.exerciseName }
     }
@@ -72,7 +65,7 @@ fun WorkoutComparisonScreen(
             )
         },
     ) { innerPadding ->
-        if (sessions.size < 2) {
+        if (progressions.isEmpty() || byExercise.values.all { it.size < 2 }) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -86,7 +79,7 @@ fun WorkoutComparisonScreen(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 Text(
-                    "Complete at least 2 sessions named \"${viewModel.workoutName}\" to see comparisons.",
+                    "Complete at least 2 sessions named \"${viewModel.workoutName}\" to see progression.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -99,121 +92,13 @@ fun WorkoutComparisonScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
-                item {
-                    VolumeChartCard(sessions = sessions)
-                }
-                if (byExercise.isNotEmpty()) {
-                    item {
-                        Text(
-                            "Exercise Progression",
-                            style = MaterialTheme.typography.titleSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 4.dp, bottom = 4.dp),
-                        )
-                    }
-                    items(byExercise.entries.toList(), key = { it.key }) { (name, pts) ->
-                        ExerciseProgressionCard(exerciseName = name, points = pts)
-                    }
+                items(byExercise.entries.toList(), key = { it.key }) { (name, pts) ->
+                    ExerciseProgressionCard(exerciseName = name, points = pts)
                 }
             }
         }
     }
 }
-
-// ── Volume bar chart ──────────────────────────────────────────────────────────
-
-@Composable
-private fun VolumeChartCard(sessions: List<WorkoutComparisonSession>) {
-    val maxVolume = sessions.maxOfOrNull { it.totalVolume }?.takeIf { it > 0f } ?: 1f
-    val barColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-    val lineColor = MaterialTheme.colorScheme.primary
-    val axisColor = MaterialTheme.colorScheme.outlineVariant
-
-    Card(
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-        ) {
-            Text(
-                "Volume per session",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                "${sessions.size} sessions",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            val display = sessions.takeLast(12) // show at most 12 bars
-            Canvas(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(140.dp),
-            ) {
-                val spacing = 10.dp.toPx()
-                val count = display.size.coerceAtLeast(1)
-                val availW = size.width - spacing * (count + 1)
-                val barW = (availW / count).coerceAtLeast(8.dp.toPx())
-                val chartH = size.height - 8.dp.toPx()
-
-                drawLine(axisColor, Offset(0f, chartH), Offset(size.width, chartH), 1.dp.toPx())
-
-                val points = mutableListOf<Offset>()
-                display.forEachIndexed { i, session ->
-                    val left = spacing + i * (barW + spacing)
-                    val cx = left + barW / 2f
-                    val h = if (session.totalVolume <= 0f) 4.dp.toPx()
-                             else (session.totalVolume / maxVolume) * (chartH - 12.dp.toPx())
-                    drawRoundRect(
-                        color = barColor,
-                        topLeft = Offset(left, chartH - h),
-                        size = Size(barW, h),
-                        cornerRadius = CornerRadius(4f, 4f),
-                    )
-                    val cy = chartH - (session.totalVolume / maxVolume) * (chartH - 12.dp.toPx())
-                    points.add(Offset(cx, cy))
-                }
-
-                if (points.size >= 2) {
-                    val path = Path().apply {
-                        moveTo(points.first().x, points.first().y)
-                        points.drop(1).forEach { lineTo(it.x, it.y) }
-                    }
-                    drawPath(path, lineColor, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
-                    points.forEach { drawCircle(lineColor, 3.5.dp.toPx(), it) }
-                }
-            }
-
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp), modifier = Modifier.fillMaxWidth()) {
-                sessions.takeLast(12).forEach { s ->
-                    Text(
-                        formatDate(s.sessionDate, "M/d"),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-            }
-
-            // Best and latest volume stats
-            val best = sessions.maxOf { it.totalVolume }
-            val latest = sessions.last().totalVolume
-            Text(
-                "Best: ${formatVolume(best)}  |  Last: ${formatVolume(latest)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-        }
-    }
-}
-
-// ── Per-exercise progression card ─────────────────────────────────────────────
 
 @Composable
 private fun ExerciseProgressionCard(
@@ -221,9 +106,9 @@ private fun ExerciseProgressionCard(
     points: List<ExerciseWorkoutProgression>,
 ) {
     val sorted = points.sortedBy { it.sessionDate }
-    val best = sorted.maxOf { it.bestWeight }
     val first = sorted.first().bestWeight
     val latest = sorted.last().bestWeight
+    val best = sorted.maxOf { it.bestWeight }
     val gain = latest - first
     val gainLabel = when {
         gain > 0f -> "+${formatWeight(gain)}"
@@ -235,6 +120,8 @@ private fun ExerciseProgressionCard(
         gain < 0f -> MaterialTheme.colorScheme.error
         else -> MaterialTheme.colorScheme.onSurfaceVariant
     }
+    val lineColor = MaterialTheme.colorScheme.primary
+    val dotColor = MaterialTheme.colorScheme.primary
 
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -264,6 +151,51 @@ private fun ExerciseProgressionCard(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp),
             )
+
+            if (sorted.size >= 2) {
+                val minW = sorted.minOf { it.bestWeight }
+                val maxW = sorted.maxOf { it.bestWeight }
+                val range = (maxW - minW).coerceAtLeast(2.5f) // avoid flat line for equal values
+
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(60.dp)
+                        .padding(top = 8.dp),
+                ) {
+                    val w = size.width
+                    val h = size.height
+                    val pad = 6.dp.toPx()
+                    val step = if (sorted.size > 1) (w - pad * 2) / (sorted.size - 1) else w
+
+                    val pts = sorted.mapIndexed { i, p ->
+                        val x = pad + i * step
+                        val y = h - pad - ((p.bestWeight - minW) / range) * (h - pad * 2)
+                        Offset(x, y)
+                    }
+
+                    val path = Path().apply {
+                        moveTo(pts.first().x, pts.first().y)
+                        pts.drop(1).forEach { lineTo(it.x, it.y) }
+                    }
+                    drawPath(path, lineColor, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
+                    pts.forEach { drawCircle(dotColor, 3.5.dp.toPx(), it) }
+                }
+
+                // Date labels under the chart
+                Row(
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    sorted.forEach { p ->
+                        Text(
+                            formatDate(p.sessionDate, "M/d"),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
         }
     }
 }

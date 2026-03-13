@@ -39,6 +39,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -54,6 +57,7 @@ import com.gymapp.core.model.formatWeight
 fun WorkoutDetailScreen(
     onBack: () -> Unit,
     onEdit: (sessionId: String) -> Unit,
+    onOpenProgress: (exerciseName: String) -> Unit,
     onCompare: (workoutName: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WorkoutDetailViewModel = hiltViewModel(),
@@ -113,7 +117,11 @@ fun WorkoutDetailScreen(
                 }
             }
             items(exercises, key = { it.id }) { exercise ->
-                ExerciseDetailCard(exercise = exercise, viewModel = viewModel)
+                ExerciseDetailCard(
+                    exercise = exercise,
+                    viewModel = viewModel,
+                    onOpenProgress = { onOpenProgress(exercise.exerciseName) },
+                )
             }
         }
     }
@@ -139,7 +147,11 @@ fun WorkoutDetailScreen(
 }
 
 @Composable
-private fun ExerciseDetailCard(exercise: ExerciseEntry, viewModel: WorkoutDetailViewModel) {
+private fun ExerciseDetailCard(
+    exercise: ExerciseEntry,
+    viewModel: WorkoutDetailViewModel,
+    onOpenProgress: () -> Unit,
+) {
     val sets by viewModel.observeSets(exercise.id).collectAsStateWithLifecycle()
 
     Card(
@@ -151,7 +163,10 @@ private fun ExerciseDetailCard(exercise: ExerciseEntry, viewModel: WorkoutDetail
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
                 Text(
                     text = exercise.label,
                     style = MaterialTheme.typography.labelLarge,
@@ -161,26 +176,41 @@ private fun ExerciseDetailCard(exercise: ExerciseEntry, viewModel: WorkoutDetail
                 Text(
                     text = exercise.exerciseName,
                     style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.weight(1f),
                 )
-            }
-
-            val target = buildString {
-                val hasTarget = exercise.targetSets != null ||
-                    exercise.targetReps != null ||
-                    exercise.targetModifier == RepModifier.MAX
-                if (hasTarget) {
-                    append("Target: ")
-                    exercise.targetSets?.let { append("${it}x") }
-                    if (exercise.targetModifier == RepModifier.MAX) {
-                        append("MAX")
-                    } else {
-                        exercise.targetReps?.let { append("$it") }
-                    }
+                IconButton(onClick = onOpenProgress) {
+                    Icon(
+                        Icons.Default.BarChart,
+                        contentDescription = "View progress",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
-            if (target.isNotBlank()) {
+
+            val hasTarget = exercise.targetSets != null ||
+                exercise.targetReps != null ||
+                exercise.targetModifier == RepModifier.MAX
+            if (hasTarget) {
+                val primaryColor = MaterialTheme.colorScheme.primary
+                val targetText = buildAnnotatedString {
+                    append("Target: ")
+                    exercise.targetSets?.let {
+                        withStyle(SpanStyle(color = primaryColor)) { append("$it") }
+                        append(" sets")
+                    }
+                    if (exercise.targetModifier == RepModifier.MAX) {
+                        if (exercise.targetSets != null) append(" × ")
+                        withStyle(SpanStyle(color = primaryColor)) { append("AMRAP") }
+                    } else {
+                        exercise.targetReps?.let {
+                            if (exercise.targetSets != null) append(" × ")
+                            withStyle(SpanStyle(color = primaryColor)) { append("$it") }
+                            append(" reps")
+                        }
+                    }
+                }
                 Text(
-                    text = target,
+                    text = targetText,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
