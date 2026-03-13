@@ -426,6 +426,13 @@ private fun ExerciseCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            exercise.notes?.takeIf { it.isNotBlank() }?.let { modifierText ->
+                Text(
+                    text = "Modifier: $modifierText",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
 
             if (!previousSets.isNullOrEmpty()) {
                 val primaryColor = MaterialTheme.colorScheme.primary
@@ -794,11 +801,29 @@ private fun EditExerciseDialog(
                     onClick = { isAmrap = !isAmrap },
                     label = { Text("AMRAP") },
                 )
+                Text(
+                    text = "Modifiers",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurface,
+                )
+                LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    items(MODIFIER_SUGGESTIONS) { suggestion ->
+                        ElevatedButton(
+                            onClick = { notes = appendModifierNote(notes, suggestion) },
+                            colors = ButtonDefaults.elevatedButtonColors(
+                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            ),
+                        ) {
+                            Text(suggestion, style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                }
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text("Notes") },
-                    singleLine = true,
+                    label = { Text("Modifier / notes") },
+                    minLines = 2,
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -1043,3 +1068,17 @@ private fun ExerciseEntry.displayLabel(inSuperset: Boolean): String? {
         else -> label
     }
 }
+
+private fun appendModifierNote(existing: String, addition: String): String {
+    val trimmed = existing.trim()
+    if (trimmed.isBlank()) return addition
+    if (trimmed.contains(addition, ignoreCase = true)) return trimmed
+    return "$trimmed; $addition"
+}
+
+private val MODIFIER_SUGGESTIONS = listOf(
+    "2s pause",
+    "3s pause",
+    "Tempo",
+    "Isometric",
+)

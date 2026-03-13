@@ -238,6 +238,13 @@ private fun ExerciseDetailCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
+            exercise.notes?.takeIf { it.isNotBlank() }?.let { modifierText ->
+                Text(
+                    text = "Modifier: $modifierText",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+            }
 
             if (sets.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
