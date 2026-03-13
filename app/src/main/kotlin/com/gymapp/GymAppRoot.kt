@@ -34,7 +34,6 @@ import com.gymapp.ui.theme.GymAppTheme
 private object Routes {
     const val WORKOUTS = "workouts"
     const val ACTIVE_WORKOUT = "workout/{sessionId}"
-    const val HISTORY = "history"
     const val HISTORY_DETAIL = "history/detail/{sessionId}"
     const val HISTORY_PROGRESS = "history/progress/{exerciseName}"
     const val SCAN = "scan"

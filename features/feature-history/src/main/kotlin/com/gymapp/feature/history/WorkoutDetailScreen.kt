@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymapp.core.model.ExerciseEntry
+import com.gymapp.core.model.RepModifier
 import com.gymapp.core.model.SetEntry
 import com.gymapp.core.model.WeightMode
 
@@ -148,10 +149,17 @@ private fun ExerciseDetailCard(exercise: ExerciseEntry, viewModel: WorkoutDetail
             }
 
             val target = buildString {
-                if (exercise.targetSets != null || exercise.targetReps != null) {
+                val hasTarget = exercise.targetSets != null ||
+                    exercise.targetReps != null ||
+                    exercise.targetModifier == RepModifier.MAX
+                if (hasTarget) {
                     append("Target: ")
                     exercise.targetSets?.let { append("${it}x") }
-                    exercise.targetReps?.let { append("$it") } ?: append("MAX")
+                    if (exercise.targetModifier == RepModifier.MAX) {
+                        append("MAX")
+                    } else {
+                        exercise.targetReps?.let { append("$it") }
+                    }
                 }
             }
             if (target.isNotBlank()) {

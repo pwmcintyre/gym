@@ -3,11 +3,9 @@ package com.gymapp.navigation
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.FitnessCenter
-import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.CameraAlt
 import androidx.compose.material.icons.outlined.FitnessCenter
-import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.graphics.vector.ImageVector
 
@@ -25,13 +23,6 @@ sealed class BottomNavDestination(
         label = "Workouts",
         unselectedIcon = Icons.Outlined.FitnessCenter,
         selectedIcon = Icons.Filled.FitnessCenter,
-    )
-
-    data object History : BottomNavDestination(
-        route = "history",
-        label = "History",
-        unselectedIcon = Icons.Outlined.History,
-        selectedIcon = Icons.Filled.History,
     )
 
     data object Scan : BottomNavDestination(

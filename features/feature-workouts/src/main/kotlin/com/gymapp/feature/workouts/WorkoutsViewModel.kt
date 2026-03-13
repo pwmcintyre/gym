@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymapp.core.database.repository.WorkoutRepository
 import com.gymapp.core.model.ExerciseProgressSummary
+import com.gymapp.core.model.SessionSummary
 import com.gymapp.core.model.WorkoutSession
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -23,6 +24,10 @@ class WorkoutsViewModel @Inject constructor(
     val progressSummaries: StateFlow<List<ExerciseProgressSummary>> =
         workoutRepository.observeProgressSummaries()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val sessionSummaries: StateFlow<Map<String, SessionSummary>> =
+        workoutRepository.observeSessionSummaries()
+            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyMap())
 
     fun createWorkout(onCreated: (sessionId: String) -> Unit) {
         viewModelScope.launch {

@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymapp.core.model.ExerciseProgressSummary
+import com.gymapp.core.model.SessionSummary
 import com.gymapp.core.model.WorkoutSession
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -51,6 +52,7 @@ fun WorkoutsScreen(
 ) {
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
     val progressSummaries by viewModel.progressSummaries.collectAsStateWithLifecycle()
+    val sessionSummaries by viewModel.sessionSummaries.collectAsStateWithLifecycle()
 
     Scaffold(
         modifier = modifier,
@@ -98,6 +100,7 @@ fun WorkoutsScreen(
                 items(sessions, key = { it.id }) { session ->
                     SessionCard(
                         session = session,
+                        summary = sessionSummaries[session.id],
                         onClick = { onOpenDetail(session.id) },
                         onCopyAsTemplate = {
                             viewModel.createFromTemplate(session.id, onOpenWorkout)
@@ -167,6 +170,7 @@ private fun ProgressOverviewCard(
 @Composable
 private fun SessionCard(
     session: WorkoutSession,
+    summary: SessionSummary?,
     onClick: () -> Unit,
     onCopyAsTemplate: () -> Unit,
 ) {
@@ -185,16 +189,22 @@ private fun SessionCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = formatDate(session.date),
+                    text = session.notes?.takeIf { it.isNotBlank() } ?: formatDate(session.date),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
                 )
-                val notes = session.notes
-                if (!notes.isNullOrBlank()) {
+                val subtitleParts = buildList {
+                    if (session.notes?.isNotBlank() == true) add(formatDate(session.date))
+                    if (summary != null && summary.exerciseCount > 0) {
+                        add("${summary.exerciseCount} exercise${if (summary.exerciseCount != 1) "s" else ""}")
+                        add("${summary.setCount} set${if (summary.setCount != 1) "s" else ""}")
+                    }
+                }
+                if (subtitleParts.isNotEmpty()) {
                     Text(
-                        text = notes,
-                        style = MaterialTheme.typography.bodyMedium,
+                        text = subtitleParts.joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
                     )

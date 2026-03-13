@@ -78,10 +78,7 @@ fun ScanScreen(
     val imagePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        if (uri != null) {
-            val bytes = context.contentResolver.openInputStream(uri)?.use { it.readBytes() }
-            if (bytes != null) viewModel.parseBytes(bytes)
-        }
+        if (uri != null) viewModel.parseUri(uri, context.contentResolver)
     }
 
     // Show errors in snackbar

@@ -8,6 +8,7 @@ import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.ExerciseProgressSummary
 import com.gymapp.core.model.ExerciseSessionProgress
 import com.gymapp.core.model.RepModifier
+import com.gymapp.core.model.SessionSummary
 import com.gymapp.core.model.WorkoutSession
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -58,6 +59,10 @@ class WorkoutRepository @Inject constructor(
 
     fun observeDistinctExerciseNames(): Flow<List<String>> =
         exerciseDao.observeDistinctNames()
+
+    fun observeSessionSummaries(): Flow<Map<String, SessionSummary>> =
+        exerciseDao.observeSessionSummaries()
+            .map { list -> list.associateBy { it.sessionId } }
 
     suspend fun addExercise(
         sessionId: String,

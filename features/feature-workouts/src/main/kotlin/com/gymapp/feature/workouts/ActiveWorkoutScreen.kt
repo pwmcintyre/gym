@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
@@ -39,12 +40,14 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +55,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
@@ -60,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.gymapp.core.model.ExerciseEntry
+import com.gymapp.core.model.RepModifier
 import com.gymapp.core.model.SetEntry
 import com.gymapp.core.model.WeightMode
 
@@ -124,42 +129,75 @@ fun ActiveWorkoutScreen(
             }
         },
     ) { innerPadding ->
-        LazyColumn(
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp),
+        val listState = rememberLazyListState()
+
+        // Determine if the exercise card with the active rest timer is currently visible
+        val activeTimerExerciseId = (restTimer as? RestTimerState.Running)?.exerciseId
+        val timerCardVisible by remember(activeTimerExerciseId, exercises) {
+            derivedStateOf {
+                if (activeTimerExerciseId == null) true
+                else {
+                    // exercises are at indices 1..N (index 0 = notes field)
+                    val exerciseIndex = exercises.indexOfFirst { it.id == activeTimerExerciseId }
+                    if (exerciseIndex < 0) false
+                    else {
+                        val listIndex = exerciseIndex + 1 // +1 for the notes item
+                        listState.layoutInfo.visibleItemsInfo.any { it.index == listIndex }
+                    }
+                }
+            }
+        }
+
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
                 .imePadding(),
         ) {
-            item {
-                WorkoutNotesField(
-                    notes = session?.notes ?: "",
-                    onDone = { viewModel.updateNotes(it) },
+            // Sticky rest timer banner — shown only when the timer card is scrolled off-screen
+            val runningTimer = restTimer as? RestTimerState.Running
+            if (runningTimer != null && !timerCardVisible) {
+                RestTimerBanner(
+                    timer = runningTimer,
+                    onCancel = { viewModel.cancelRestTimer() },
                 )
             }
-            if (exercises.isEmpty()) {
+
+            LazyColumn(
+                state = listState,
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.fillMaxSize(),
+            ) {
                 item {
-                    Text(
-                        "No exercises yet. Tap + to add one.",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 32.dp),
+                    WorkoutNotesField(
+                        notes = session?.notes ?: "",
+                        onDone = { viewModel.updateNotes(it) },
                     )
                 }
-            }
-            items(exercises, key = { it.id }) { exercise ->
-                val timerForThisExercise = (restTimer as? RestTimerState.Running)
-                    ?.takeIf { it.exerciseId == exercise.id }
-                ExerciseCard(
-                    exercise = exercise,
-                    bodyWeightKg = bodyWeightKg,
-                    previousSets = lastPerformance[exercise.exerciseName],
-                    knownNames = knownNames,
-                    restTimer = timerForThisExercise,
-                    onCancelTimer = { viewModel.cancelRestTimer() },
-                    viewModel = viewModel,
-                )
+                if (exercises.isEmpty()) {
+                    item {
+                        Text(
+                            "No exercises yet. Tap + to add one.",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 32.dp),
+                        )
+                    }
+                }
+                items(exercises, key = { it.id }) { exercise ->
+                    val timerForThisExercise = (restTimer as? RestTimerState.Running)
+                        ?.takeIf { it.exerciseId == exercise.id }
+                    ExerciseCard(
+                        exercise = exercise,
+                        bodyWeightKg = bodyWeightKg,
+                        previousSets = lastPerformance[exercise.exerciseName],
+                        knownNames = knownNames,
+                        restTimer = timerForThisExercise,
+                        onCancelTimer = { viewModel.cancelRestTimer() },
+                        viewModel = viewModel,
+                    )
+                }
             }
         }
     }
@@ -258,11 +296,17 @@ private fun ExerciseCard(
             }
 
             val target = buildString {
-                if (exercise.targetSets != null || exercise.targetReps != null) {
+                val hasTarget = exercise.targetSets != null ||
+                    exercise.targetReps != null ||
+                    exercise.targetModifier == RepModifier.MAX
+                if (hasTarget) {
                     append("Target: ")
                     exercise.targetSets?.let { append("${it}x") }
-                    exercise.targetReps?.let { append("$it") }
-                        ?: append("MAX")
+                    if (exercise.targetModifier == RepModifier.MAX) {
+                        append("MAX")
+                    } else {
+                        exercise.targetReps?.let { append("$it") }
+                    }
                 }
             }
             if (target.isNotBlank()) {
@@ -336,7 +380,7 @@ private fun ExerciseCard(
                         exerciseId = exercise.id,
                         setNumber = sets.size + 1,
                         weight = last?.weight,
-                        reps = null,
+                        reps = last?.repsPerformed,
                         weightMode = last?.weightMode ?: WeightMode.BARBELL,
                     )
                 },
@@ -352,8 +396,8 @@ private fun ExerciseCard(
 
 @Composable
 private fun SetRow(set: SetEntry, bodyWeightKg: Float?, onUpdate: (SetEntry) -> Unit, onDelete: () -> Unit) {
-    var weightText by remember(set.id) { mutableStateOf(set.weight?.let { formatWeight(it) } ?: "") }
-    var repsText by remember(set.id) { mutableStateOf(set.repsPerformed?.toString() ?: "") }
+    var weightText by remember(set.id, set.weight) { mutableStateOf(set.weight?.let { formatWeight(it) } ?: "") }
+    var repsText by remember(set.id, set.repsPerformed) { mutableStateOf(set.repsPerformed?.toString() ?: "") }
 
     // Sync weightText when mode changes to/from BODYWEIGHT
     val currentMode = set.weightMode
@@ -588,7 +632,11 @@ private fun WorkoutNotesField(notes: String, onDone: (String) -> Unit) {
             onDone(draft)
             focusManager.clearFocus()
         }),
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .onFocusChanged { focusState ->
+                if (!focusState.isFocused) onDone(draft)
+            },
     )
 }
 
@@ -634,6 +682,53 @@ private fun RestTimerRow(timer: RestTimerState.Running, onCancel: () -> Unit) {
                 contentDescription = "Cancel rest timer",
                 tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+        }
+    }
+}
+
+/** Compact banner shown at the top of the screen when the rest timer card is scrolled out of view. */
+@Composable
+private fun RestTimerBanner(timer: RestTimerState.Running, onCancel: () -> Unit) {
+    val progress = if (timer.totalSeconds > 0) {
+        timer.remainingSeconds.toFloat() / timer.totalSeconds.toFloat()
+    } else 0f
+    val minutes = timer.remainingSeconds / 60
+    val seconds = timer.remainingSeconds % 60
+    val timeText = "%d:%02d".format(minutes, seconds)
+
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        tonalElevation = 4.dp,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+        ) {
+            CircularProgressIndicator(
+                progress = { progress },
+                modifier = Modifier.size(24.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.primary,
+                trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+            )
+            Text(
+                text = "Resting $timeText",
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.weight(1f),
+            )
+            IconButton(onClick = onCancel, modifier = Modifier.size(32.dp)) {
+                Icon(
+                    Icons.Default.Close,
+                    contentDescription = "Cancel rest timer",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp),
+                )
+            }
         }
     }
 }

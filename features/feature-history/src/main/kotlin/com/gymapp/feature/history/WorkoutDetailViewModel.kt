@@ -32,9 +32,13 @@ class WorkoutDetailViewModel @Inject constructor(
         workoutRepository.observeExercises(sessionId)
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
+    private val setFlowCache = mutableMapOf<String, StateFlow<List<SetEntry>>>()
+
     fun observeSets(exerciseId: String): StateFlow<List<SetEntry>> =
-        setRepository.observeSets(exerciseId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        setFlowCache.getOrPut(exerciseId) {
+            setRepository.observeSets(exerciseId)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        }
 
     fun deleteSession(onDeleted: () -> Unit) {
         viewModelScope.launch {

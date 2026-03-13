@@ -9,6 +9,7 @@ import androidx.room.Update
 import com.gymapp.core.database.entity.ExerciseEntryEntity
 import com.gymapp.core.model.ExerciseProgressSummary
 import com.gymapp.core.model.ExerciseSessionProgress
+import com.gymapp.core.model.SessionSummary
 import kotlinx.coroutines.flow.Flow
 
 @Dao
@@ -62,6 +63,19 @@ interface ExerciseEntryDao {
 
     @Query("SELECT DISTINCT exercise_name FROM exercise_entries WHERE TRIM(exercise_name) != '' ORDER BY exercise_name COLLATE NOCASE ASC")
     fun observeDistinctNames(): Flow<List<String>>
+
+    @Query(
+        """
+        SELECT
+            e.workout_session_id AS sessionId,
+            COUNT(DISTINCT e.id) AS exerciseCount,
+            COUNT(s.id) AS setCount
+        FROM exercise_entries e
+        LEFT JOIN set_entries s ON s.exercise_entry_id = e.id
+        GROUP BY e.workout_session_id
+        """
+    )
+    fun observeSessionSummaries(): Flow<List<SessionSummary>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun insert(entity: ExerciseEntryEntity)

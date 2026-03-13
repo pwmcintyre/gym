@@ -61,6 +61,8 @@ class ActiveWorkoutViewModel @Inject constructor(
 
     private var timerJob: Job? = null
 
+    private val setFlowCache = mutableMapOf<String, StateFlow<List<SetEntry>>>()
+
     init {
         viewModelScope.launch {
             exercises.collect { exerciseList ->
@@ -138,8 +140,10 @@ class ActiveWorkoutViewModel @Inject constructor(
     }
 
     fun observeSets(exerciseId: String): StateFlow<List<SetEntry>> =
-        setRepository.observeSets(exerciseId)
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        setFlowCache.getOrPut(exerciseId) {
+            setRepository.observeSets(exerciseId)
+                .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+        }
 
     fun cancelRestTimer() {
         timerJob?.cancel()

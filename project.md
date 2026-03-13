@@ -352,6 +352,34 @@ Validation: `./gradlew assembleDebug --no-daemon` BUILD SUCCESSFUL.
 
 ---
 
+## ✅ Milestone 11 — QoL / Bug Fix Pass
+
+Autonomous session; no user input required. Build and unit tests passed after all changes.
+
+Fixes:
+- **`RepModifier.MAX` display bug** — `ActiveWorkoutScreen` and `WorkoutDetailScreen` were printing "MAX" for any exercise with `targetReps == null` regardless of `targetModifier`. Fixed to check `targetModifier == RepModifier.MAX` explicitly.
+- **`ScanReviewScreen` keyboard hide** — added `imePadding()` to the `LazyColumn` (same fix previously applied to `ActiveWorkoutScreen`).
+- **Focus-loss save for text fields** — `WorkoutNotesField`, API key field, and body weight field now save on focus loss via `onFocusChanged`, not only on Done key.
+- **Add set copies reps** — `addSet()` now copies `repsPerformed` from the last set in the exercise, not hardcoded `null`.
+- **Gallery image read on main thread** — moved `openInputStream(uri).readBytes()` off the Compose callback into `ScanViewModel.parseUri()` on `Dispatchers.IO`.
+- **`remember` key for set fields** — `SetRow` now uses `remember(set.id, set.weight, set.repsPerformed)` so externally changed values reinitialize the local text state.
+- **Removed dead code** — `BottomNavDestination.History` object and `Routes.HISTORY` constant (left from M7 consolidation).
+
+Improvements:
+- **Session cards show exercise/set count** — `SessionSummary` model + `observeSessionSummaries()` DAO query; cards now display "N exercises · M sets".
+- **Cached `observeSets()` StateFlows** — both `ActiveWorkoutViewModel` and `WorkoutDetailViewModel` use a `mutableMapOf` cache to avoid creating new StateFlows on every recomposition.
+- **Sticky rest timer banner** — when the rest timer is running and its exercise card is scrolled off-screen, a compact `RestTimerBanner` appears at the top of the content area showing the countdown and a cancel button.
+
+Validation: `./gradlew assembleDebug --no-daemon` and `./gradlew testDebugUnitTest --no-daemon` — BUILD SUCCESSFUL.
+
+Remaining / follow-up:
+- M9 Drive backup 403 blocker (needs user to verify Cloud Console setup).
+- M4 progress tracking: PR-specific view, weight trend line in chart.
+- Code duplication: `formatWeight` (5 copies), `formatDate` (3 copies).
+- Dead infrastructure: `ExerciseTemplateDao`, `WorkoutSessionDao.observeInRange()` (no callers).
+
+---
+
 
 
 | Decision                  | Reason                                          |

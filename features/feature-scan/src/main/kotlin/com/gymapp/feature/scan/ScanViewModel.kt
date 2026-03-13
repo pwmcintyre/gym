@@ -1,6 +1,7 @@
 package com.gymapp.feature.scan
 
 import android.content.Context
+import android.net.Uri
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
@@ -21,12 +22,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import java.io.ByteArrayOutputStream
 import java.util.concurrent.Executor
 import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+import kotlinx.coroutines.Dispatchers
 
 data class ScanUiState(
     val isCapturing: Boolean = false,
@@ -158,6 +161,26 @@ class ScanViewModel @Inject constructor(
         _uiState.update { it.copy(isParsing = true, error = null) }
         viewModelScope.launch {
             parser.parse(bytes)
+                .onSuccess { entries -> _uiState.update { it.copy(isParsing = false, reviewItems = entries) } }
+                .onFailure { e -> _uiState.update { it.copy(isParsing = false, error = e.message) } }
+        }
+    }
+
+    /** Read a content URI off the main thread, then parse. */
+    fun parseUri(uri: Uri, contentResolver: android.content.ContentResolver) {
+        _uiState.update { it.copy(isParsing = true, error = null) }
+        viewModelScope.launch {
+            val bytes = runCatching {
+                withContext(Dispatchers.IO) {
+                    contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                        ?: error("Could not open image")
+                }
+            }
+            bytes.onFailure { e ->
+                _uiState.update { it.copy(isParsing = false, error = e.message) }
+                return@launch
+            }
+            parser.parse(bytes.getOrThrow())
                 .onSuccess { entries -> _uiState.update { it.copy(isParsing = false, reviewItems = entries) } }
                 .onFailure { e -> _uiState.update { it.copy(isParsing = false, error = e.message) } }
         }

@@ -34,6 +34,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
@@ -98,10 +99,14 @@ fun SettingsScreen(
                             focusManager.clearFocus()
                         },
                     ),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focusState ->
+                            if (!focusState.isFocused) viewModel.saveApiKey(keyDraft)
+                        },
                 )
                 Text(
-                    text = "Saved when you press Done on the keyboard.",
+                    text = "Saved automatically when you leave the field.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -127,10 +132,16 @@ fun SettingsScreen(
                             focusManager.clearFocus()
                         },
                     ),
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .onFocusChanged { focusState ->
+                            if (!focusState.isFocused) {
+                                bodyWeightDraft.toFloatOrNull()?.let { viewModel.saveBodyWeight(it) }
+                            }
+                        },
                 )
                 Text(
-                    text = "Saved when you press Done on the keyboard.",
+                    text = "Saved automatically when you leave the field.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -229,7 +240,7 @@ fun SettingsScreen(
 
             SettingsSectionCard(title = "Version") {
                 Text(
-                    text = "1.0 — Milestone 9",
+                    text = "1.0 — Milestone 10",
                     style = MaterialTheme.typography.bodyMedium,
                 )
             }
