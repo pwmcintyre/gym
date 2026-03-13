@@ -23,6 +23,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.gymapp.feature.history.ExerciseProgressScreen
+import com.gymapp.feature.history.MovementsScreen
 import com.gymapp.feature.history.WorkoutComparisonScreen
 import com.gymapp.feature.history.WorkoutDetailScreen
 import com.gymapp.feature.scan.ScanScreen
@@ -34,6 +35,7 @@ import com.gymapp.ui.theme.GymAppTheme
 
 private object Routes {
     const val WORKOUTS = "workouts"
+    const val MOVEMENTS = "movements"
     const val ACTIVE_WORKOUT = "workout/{sessionId}"
     const val HISTORY_DETAIL = "history/detail/{sessionId}"
     const val HISTORY_PROGRESS = "history/progress/{exerciseName}"
@@ -48,7 +50,7 @@ private object Routes {
 }
 
 private val bottomNavRoutes = setOf(
-    Routes.WORKOUTS, Routes.SCAN, Routes.SETTINGS,
+    Routes.WORKOUTS, Routes.MOVEMENTS, Routes.SCAN, Routes.SETTINGS,
 )
 
 @Composable
@@ -116,6 +118,12 @@ fun GymAppRoot() {
                     WorkoutsScreen(
                         onOpenWorkout = { navController.navigate(Routes.activeWorkout(it)) },
                         onOpenDetail = { navController.navigate(Routes.historyDetail(it)) },
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
+
+                composable(Routes.MOVEMENTS) {
+                    MovementsScreen(
                         onOpenProgress = { navController.navigate(Routes.historyProgress(it)) },
                         modifier = Modifier.fillMaxSize(),
                     )

@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import com.gymapp.core.ai.AiAssistant
 import com.gymapp.core.ai.ChatMessage
 import com.gymapp.core.database.repository.WorkoutRepository
-import com.gymapp.core.model.ExerciseProgressSummary
 import com.gymapp.core.model.SessionSummary
 import com.gymapp.core.model.WorkoutSession
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -26,10 +25,6 @@ class WorkoutsViewModel @Inject constructor(
 
     val sessions: StateFlow<List<WorkoutSession>> = workoutRepository.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
-
-    val progressSummaries: StateFlow<List<ExerciseProgressSummary>> =
-        workoutRepository.observeProgressSummaries()
-            .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     val sessionSummaries: StateFlow<Map<String, SessionSummary>> =
         workoutRepository.observeSessionSummaries()

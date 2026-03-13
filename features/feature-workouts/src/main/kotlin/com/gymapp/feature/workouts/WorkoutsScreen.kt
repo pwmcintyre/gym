@@ -21,7 +21,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -41,24 +40,20 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.gymapp.core.model.ExerciseProgressSummary
 import com.gymapp.core.model.SessionSummary
 import com.gymapp.core.model.WorkoutSession
 import com.gymapp.core.model.formatDate
-import com.gymapp.core.model.formatWeight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WorkoutsScreen(
     onOpenWorkout: (sessionId: String) -> Unit,
     onOpenDetail: (sessionId: String) -> Unit,
-    onOpenProgress: (exerciseName: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WorkoutsViewModel = hiltViewModel(),
     aiViewModel: AiAssistantViewModel = hiltViewModel(),
 ) {
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
-    val progressSummaries by viewModel.progressSummaries.collectAsStateWithLifecycle()
     val sessionSummaries by viewModel.sessionSummaries.collectAsStateWithLifecycle()
     val suggestedNames by viewModel.suggestedNames.collectAsStateWithLifecycle()
     var showAiSheet by rememberSaveable { mutableStateOf(false) }
@@ -114,14 +109,6 @@ fun WorkoutsScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
-                if (progressSummaries.isNotEmpty()) {
-                    item {
-                        ProgressOverviewCard(
-                            progressSummaries = progressSummaries,
-                            onOpenProgress = onOpenProgress,
-                        )
-                    }
-                }
                 items(sessions, key = { it.id }) { session ->
                     SessionCard(
                         session = session,
@@ -146,61 +133,6 @@ fun WorkoutsScreen(
 }
 
 @Composable
-private fun ProgressOverviewCard(
-    progressSummaries: List<ExerciseProgressSummary>,
-    onOpenProgress: (exerciseName: String) -> Unit,
-) {
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = "Progress Overview",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = "Recent movements ranked by the latest logged session.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp),
-            )
-
-            progressSummaries.forEachIndexed { index, summary ->
-                if (index > 0) HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onOpenProgress(summary.exerciseName) },
-                ) {
-                    Text(
-                        text = summary.exerciseName,
-                        style = MaterialTheme.typography.titleSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Text(
-                        text = buildProgressSummaryLine(summary),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
-                    Text(
-                        text = "Last logged ${formatDate(summary.lastPerformed)}",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 2.dp),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun SessionCard(
     session: WorkoutSession,
     summary: SessionSummary?,
@@ -208,21 +140,21 @@ private fun SessionCard(
     onClick: () -> Unit,
     onCopyAsTemplate: () -> Unit,
 ) {
-    val titleText: String
-    val titleColor: androidx.compose.ui.graphics.Color
+    val nameText: String?
+    val nameColor: androidx.compose.ui.graphics.Color
 
     when {
         !session.notes.isNullOrBlank() -> {
-            titleText = session.notes!!
-            titleColor = MaterialTheme.colorScheme.onSurface
+            nameText = session.notes!!
+            nameColor = MaterialTheme.colorScheme.onSurface
         }
         suggestedName != null -> {
-            titleText = suggestedName
-            titleColor = MaterialTheme.colorScheme.onSurfaceVariant
+            nameText = suggestedName
+            nameColor = MaterialTheme.colorScheme.onSurfaceVariant
         }
         else -> {
-            titleText = formatDate(session.date, "yyyy-MM-dd")
-            titleColor = MaterialTheme.colorScheme.onSurface
+            nameText = null
+            nameColor = MaterialTheme.colorScheme.onSurface
         }
     }
 
@@ -240,31 +172,39 @@ private fun SessionCard(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Column(modifier = Modifier.weight(1f)) {
+                // Line 1: date
                 Text(
-                    text = titleText,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = titleColor,
+                    text = formatDate(session.date, "yyyy-MM-dd"),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
                 )
-                val subtitleParts = buildList {
-                    add(formatDate(session.date, "yyyy-MM-dd"))
-                    if (summary != null && summary.exerciseCount > 0) {
-                        add("${summary.exerciseCount} exercise${if (summary.exerciseCount != 1) "s" else ""}")
-                        add("${summary.setCount} set${if (summary.setCount != 1) "s" else ""}")
-                    }
+                // Line 2: workout name (if any)
+                if (nameText != null) {
+                    Text(
+                        text = nameText,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = nameColor,
+                        modifier = Modifier.padding(start = 16.dp, top = 2.dp, end = 16.dp),
+                    )
                 }
-                if (subtitleParts.isNotEmpty()) {
-                    val text = subtitleParts.joinToString(" · ")
+                // Line 3: summary
+                if (summary != null && summary.exerciseCount > 0) {
+                    val summaryText = buildString {
+                        append("${summary.exerciseCount} exercise${if (summary.exerciseCount != 1) "s" else ""}")
+                        append(" · ")
+                        append("${summary.setCount} set${if (summary.setCount != 1) "s" else ""}")
+                    }
                     val primaryColor = MaterialTheme.colorScheme.primary
                     val annotated = buildAnnotatedString {
                         var i = 0
-                        while (i < text.length) {
-                            if (text[i].isDigit()) {
+                        while (i < summaryText.length) {
+                            if (summaryText[i].isDigit()) {
                                 val start = i
-                                while (i < text.length && text[i].isDigit()) i++
-                                withStyle(SpanStyle(color = primaryColor)) { append(text.substring(start, i)) }
+                                while (i < summaryText.length && summaryText[i].isDigit()) i++
+                                withStyle(SpanStyle(color = primaryColor)) { append(summaryText.substring(start, i)) }
                             } else {
-                                append(text[i])
+                                append(summaryText[i])
                                 i++
                             }
                         }
@@ -273,7 +213,7 @@ private fun SessionCard(
                         text = annotated,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),
+                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp, top = 4.dp),
                     )
                 } else {
                     Spacer(modifier = Modifier.padding(bottom = 16.dp))
@@ -291,10 +231,4 @@ private fun SessionCard(
             }
         }
     }
-}
-
-private fun buildProgressSummaryLine(summary: ExerciseProgressSummary): String = buildString {
-    append("${summary.sessionCount} session")
-    if (summary.sessionCount != 1) append("s")
-    append(" • Best ${summary.bestWeight?.let { formatWeight(it) } ?: "—"}")
 }

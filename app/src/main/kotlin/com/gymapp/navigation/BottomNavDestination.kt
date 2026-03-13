@@ -2,6 +2,8 @@ package com.gymapp.navigation
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.automirrored.filled.DirectionsRun
+import androidx.compose.material.icons.automirrored.outlined.DirectionsRun
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.outlined.CameraAlt
@@ -25,6 +27,13 @@ sealed class BottomNavDestination(
         selectedIcon = Icons.Filled.FitnessCenter,
     )
 
+    data object Movements : BottomNavDestination(
+        route = "movements",
+        label = "Movements",
+        unselectedIcon = Icons.AutoMirrored.Outlined.DirectionsRun,
+        selectedIcon = Icons.AutoMirrored.Filled.DirectionsRun,
+    )
+
     data object Scan : BottomNavDestination(
         route = "scan",
         label = "Scan",
@@ -42,6 +51,7 @@ sealed class BottomNavDestination(
 
 val bottomNavDestinations: List<BottomNavDestination> = listOf(
     BottomNavDestination.Workouts,
+    BottomNavDestination.Movements,
     BottomNavDestination.Scan,
     BottomNavDestination.Settings,
 )
