@@ -22,7 +22,7 @@ class WorkoutDetailViewModel @Inject constructor(
     private val setRepository: SetRepository,
 ) : ViewModel() {
 
-    private val sessionId: String = checkNotNull(savedStateHandle["sessionId"])
+    val sessionId: String = checkNotNull(savedStateHandle["sessionId"])
 
     val session: StateFlow<WorkoutSession?> =
         workoutRepository.observeById(sessionId)

@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -51,6 +52,7 @@ import com.gymapp.core.model.formatWeight
 @Composable
 fun WorkoutDetailScreen(
     onBack: () -> Unit,
+    onEdit: (sessionId: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WorkoutDetailViewModel = hiltViewModel(),
 ) {
@@ -74,6 +76,9 @@ fun WorkoutDetailScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { onEdit(viewModel.sessionId) }) {
+                        Icon(Icons.Default.Edit, contentDescription = "Edit workout")
+                    }
                     IconButton(onClick = { showDeleteDialog = true }) {
                         Icon(Icons.Default.Delete, contentDescription = "Delete workout")
                     }

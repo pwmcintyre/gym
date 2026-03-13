@@ -134,6 +134,7 @@ fun GymAppRoot() {
                 ) {
                     WorkoutDetailScreen(
                         onBack = { navController.popBackStack() },
+                        onEdit = { navController.navigate(Routes.activeWorkout(it)) },
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
