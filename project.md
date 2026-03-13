@@ -465,6 +465,18 @@ Validation: `./gradlew :features:feature-history:compileDebugKotlin --no-daemon`
 
 ---
 
+## ✅ Movement terminology progress
+
+Autonomous session.
+
+Delivered:
+- Tightened remaining user-facing workout/detail copy so visible actions and dialogs keep using `movement` language rather than mixing in `exercise`.
+- Left internal type names, route params, and AI/system-prompt schema keys unchanged to avoid churn without direct UX benefit.
+
+Validation: `./gradlew :features:feature-workouts:compileDebugKotlin --no-daemon`, `./gradlew :features:feature-history:compileDebugKotlin --no-daemon`, and `./gradlew assembleDebug --no-daemon` — BUILD SUCCESSFUL.
+
+---
+
 ## Milestone 14 — Previous Performance in Exercise Card
 
 Under the target line of each ExerciseCard in the active workout view, show a "Previous" line sourced from the most recent prior session for that exercise.

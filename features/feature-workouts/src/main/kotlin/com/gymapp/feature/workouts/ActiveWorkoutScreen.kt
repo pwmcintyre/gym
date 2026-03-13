@@ -326,7 +326,7 @@ private fun ExerciseCard(
         AlertDialog(
             onDismissRequest = { showDeleteConfirm = false },
             title = { Text("Remove movement?") },
-            text = { Text("This removes \"${exercise.exerciseName}\" and all its sets.") },
+            text = { Text("This removes \"${exercise.exerciseName}\" and all its logged sets.") },
             confirmButton = {
                 Button(onClick = {
                     viewModel.removeExercise(exercise.id)
@@ -612,7 +612,7 @@ private fun AddExerciseDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Add Movement") },
+        title = { Text("Add movement") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 OutlinedTextField(

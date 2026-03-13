@@ -88,7 +88,7 @@ fun WorkoutDetailScreen(
                     val sessionName = session?.notes?.takeIf { it.isNotBlank() }
                     if (sessionName != null) {
                         IconButton(onClick = { onCompare(sessionName) }) {
-                            Icon(Icons.Default.BarChart, contentDescription = "Compare sessions")
+                        Icon(Icons.Default.BarChart, contentDescription = "Compare movement progress")
                         }
                     }
                     IconButton(onClick = { onEdit(viewModel.sessionId) }) {
@@ -280,4 +280,3 @@ private fun SetDetailRow(set: SetEntry) {
         )
     }
 }
-

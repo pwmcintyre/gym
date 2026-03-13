@@ -14,3 +14,8 @@ Implementation notes:
 - Prioritize user-facing copy first.
 - Only rename internal types or database fields if the UX benefit justifies the churn.
 - Keep third-party or protocol-specific terminology unchanged when required.
+
+Progress notes:
+- The main workout and history surfaces now consistently use `movement` in visible card actions, empty states, dialogs, and list summaries.
+- Remaining `exercise` references are mostly internal model/API names and AI/system-prompt context rather than visible UI copy.
+- The next useful slice would be auditing assistant-visible/generated text and any residual settings/help copy, then deciding whether internal renames are worth the churn.
