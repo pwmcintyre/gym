@@ -17,7 +17,9 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -173,6 +175,7 @@ fun ExerciseProgressScreen(
 
 @Composable
 private fun ExerciseProgressPrCard(prs: List<ExercisePr>) {
+    val absoluteBest = prs.maxWithOrNull(compareBy<ExercisePr> { it.weight }.thenBy { it.reps })
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -202,7 +205,11 @@ private fun ExerciseProgressPrCard(prs: List<ExercisePr>) {
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     pair.forEach { pr ->
-                        PrChip(pr = pr, modifier = Modifier.weight(1f))
+                        PrChip(
+                            pr = pr,
+                            isAbsoluteBest = pr == absoluteBest,
+                            modifier = Modifier.weight(1f),
+                        )
                     }
                     // Fill second slot if the row only has one item
                     if (pair.size == 1) {
@@ -215,12 +222,27 @@ private fun ExerciseProgressPrCard(prs: List<ExercisePr>) {
 }
 
 @Composable
-private fun PrChip(pr: ExercisePr, modifier: Modifier = Modifier) {
+private fun PrChip(
+    pr: ExercisePr,
+    isAbsoluteBest: Boolean,
+    modifier: Modifier = Modifier,
+) {
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = if (isAbsoluteBest) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surface
+            },
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+        border = BorderStroke(
+            1.dp,
+            if (isAbsoluteBest) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
+            },
+        ),
         modifier = modifier,
     ) {
         Column(
@@ -230,6 +252,24 @@ private fun PrChip(pr: ExercisePr, modifier: Modifier = Modifier) {
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp, vertical = 10.dp),
         ) {
+            if (isAbsoluteBest) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.EmojiEvents,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                    )
+                    Text(
+                        text = "Top record",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        textAlign = TextAlign.Center,
+                    )
+                }
+            }
             Text(
                 text = formatWeight(pr.weight),
                 style = MaterialTheme.typography.titleSmall,
@@ -452,41 +492,53 @@ private fun ExerciseProgressSessionCard(
             .fillMaxWidth()
             .clickable(onClick = onClick),
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
         ) {
-            val primaryColor = MaterialTheme.colorScheme.primary
-            val sessionBestWeight = progress.bestWeight
-            val sessionBestLabel = when {
-                sessionBestWeight != null -> formatWeight(sessionBestWeight)
-                progress.bodyweightSetCount > 0 -> "BW"
-                else -> "—"
-            }
-            val statsText = "${progress.setCount} set${if (progress.setCount != 1) "s" else ""}" +
-                " • Best $sessionBestLabel"
-            val statsAnnotated = buildAnnotatedString {
-                var i = 0
-                while (i < statsText.length) {
-                    if (statsText[i].isDigit()) {
-                        val start = i
-                        while (i < statsText.length && (statsText[i].isDigit() || statsText[i] == '.')) i++
-                        withStyle(SpanStyle(color = primaryColor)) { append(statsText.substring(start, i)) }
-                    } else {
-                        append(statsText[i])
-                        i++
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.weight(1f),
+            ) {
+                val primaryColor = MaterialTheme.colorScheme.primary
+                val sessionBestWeight = progress.bestWeight
+                val sessionBestLabel = when {
+                    sessionBestWeight != null -> formatWeight(sessionBestWeight)
+                    progress.bodyweightSetCount > 0 -> "BW"
+                    else -> "—"
+                }
+                val statsText = "${progress.setCount} set${if (progress.setCount != 1) "s" else ""}" +
+                    " • Best $sessionBestLabel"
+                val statsAnnotated = buildAnnotatedString {
+                    var i = 0
+                    while (i < statsText.length) {
+                        if (statsText[i].isDigit()) {
+                            val start = i
+                            while (i < statsText.length && (statsText[i].isDigit() || statsText[i] == '.')) i++
+                            withStyle(SpanStyle(color = primaryColor)) { append(statsText.substring(start, i)) }
+                        } else {
+                            append(statsText[i])
+                            i++
+                        }
                     }
                 }
+                Text(
+                    text = statsAnnotated,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Text(
+                    text = "View workout details",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
             }
-            Text(
-                text = statsAnnotated,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            Text(
-                text = "Open workout details",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
     }

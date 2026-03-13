@@ -513,6 +513,22 @@ Validation: included in the app/workout chart validation above — BUILD SUCCESS
 
 ---
 
+## ✅ Design2 progress
+
+Autonomous session.
+
+Delivered:
+- Upgraded the movement detail PR section so the absolute top record stands out with stronger visual treatment and a trophy badge instead of all PR chips reading equally.
+- Replaced the low-value “Open workout details” copy in movement session cards with a standard chevron disclosure treatment while keeping the cards tappable.
+- Added an explicit `Start` CTA to planned and in-progress workout cards so zero-set sessions no longer read as passive placeholders.
+
+Validation: `./gradlew :features:feature-history:compileDebugKotlin --no-daemon`, `./gradlew :features:feature-workouts:compileDebugKotlin --no-daemon`, and `./gradlew assembleDebug --no-daemon` — BUILD SUCCESSFUL.
+
+Remaining:
+- The leftover `design2` suggestions now require broader interaction/product decisions rather than small visual cleanup: skeleton launch UX, alternate landing destination, tappable chart points, and AI insight badges.
+
+---
+
 ## Milestone 14 — Previous Performance in Exercise Card
 
 Under the target line of each ExerciseCard in the active workout view, show a "Previous" line sourced from the most recent prior session for that exercise.

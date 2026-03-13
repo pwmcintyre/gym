@@ -20,9 +20,11 @@ import androidx.compose.material.icons.automirrored.filled.DirectionsRun
 import androidx.compose.material.icons.filled.FitnessCenter
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Timelapse
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
@@ -140,6 +142,7 @@ fun WorkoutsScreen(
                             summary = sessionSummaries[session.id],
                             suggestedName = suggestedNames[session.id],
                             onClick = { onOpenDetail(session.id) },
+                            onStartWorkout = { onOpenWorkout(session.id) },
                             onCopyAsTemplate = {
                                 viewModel.createFromTemplate(session.id, onOpenWorkout)
                             },
@@ -165,6 +168,7 @@ private fun SessionCard(
     summary: SessionSummary?,
     suggestedName: String?,
     onClick: () -> Unit,
+    onStartWorkout: () -> Unit,
     onCopyAsTemplate: () -> Unit,
 ) {
     val status = remember(summary) { sessionStatus(summary) }
@@ -259,6 +263,19 @@ private fun SessionCard(
                                 modifier = Modifier.padding(top = 8.dp, end = 16.dp),
                             )
                         }
+                        if (status != SessionStatus.COMPLETED) {
+                            TextButton(
+                                onClick = onStartWorkout,
+                                modifier = Modifier.padding(top = 4.dp),
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PlayArrow,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp),
+                                )
+                                Text("Start")
+                            }
+                        }
                     } else {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -276,6 +293,17 @@ private fun SessionCard(
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                             )
+                        }
+                        TextButton(
+                            onClick = onStartWorkout,
+                            modifier = Modifier.padding(top = 4.dp),
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                            )
+                            Text("Start")
                         }
                     }
                 }
