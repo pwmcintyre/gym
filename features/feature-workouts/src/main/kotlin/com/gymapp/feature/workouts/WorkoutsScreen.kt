@@ -201,11 +201,23 @@ private fun StartActionButton(
         shape = RoundedCornerShape(18.dp),
         modifier = modifier.height(56.dp),
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            modifier = Modifier.size(26.dp),
-        )
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = contentDescription,
+                modifier = Modifier.size(24.dp),
+            )
+            Text(
+                text = when (contentDescription) {
+                    "New workout" -> "New"
+                    "Scan board" -> "Scan"
+                    else -> contentDescription
+                },
+            )
+        }
     }
 }
 
