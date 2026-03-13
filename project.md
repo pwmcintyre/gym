@@ -478,6 +478,17 @@ Validation: `./gradlew :features:feature-workouts:compileDebugKotlin --no-daemon
 
 ---
 
+## ✅ Backlog cleanup — stale idea pruning
+
+Autonomous session.
+
+Delivered:
+- Removed the stale workouts-list reorder note because date section headers replaced the original “put the date first on each card” idea with a better grouping treatment.
+
+Validation: backlog note cleanup only; no code changes.
+
+---
+
 ## Milestone 14 — Previous Performance in Exercise Card
 
 Under the target line of each ExerciseCard in the active workout view, show a "Previous" line sourced from the most recent prior session for that exercise.
