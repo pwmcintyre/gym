@@ -229,6 +229,7 @@ Restructured exercise data into three layers (Movement Identity / Modifiers / Pr
 - Whiteboard-style labels such as `A1` and `A2` are now grouped visually as lightweight supersets in active-workout and workout-detail screens, without changing storage or scan parsing.
 - Movement trend charts now support point selection with an `Open workout` action, so chart interaction can jump directly to the underlying session instead of acting as a static graphic.
 - Workout editing now exposes modifier-oriented quick inputs using the existing movement notes field, and saved modifier text is visible on active-workout and workout-detail cards instead of hiding inside the editor.
+- The workouts landing screen now surfaces a `Today's focus` card when there is a session dated today, giving the page a more directed entry state without changing navigation.
 - Remaining larger follow-ups still live in `ideas/` and should be handled as separate slices once this creation-flow cleanup lands.
 
 ## ✅ Milestone 3.6 — Theme and Visual Identity

@@ -79,6 +79,20 @@ fun WorkoutsScreen(
         sessions.groupBy { truncateToDay(it.date) }
             .entries.sortedByDescending { it.key }
     }
+    val todaysFocus = remember(groupedSessions, sessionSummaries, suggestedNames) {
+        val todayKey = truncateToDay(System.currentTimeMillis())
+        val todaySessions = groupedSessions.firstOrNull { it.key == todayKey }?.value.orEmpty()
+        val prioritized = todaySessions.firstOrNull {
+            sessionStatus(sessionSummaries[it.id]) != SessionStatus.COMPLETED
+        } ?: todaySessions.firstOrNull()
+        prioritized?.let { session ->
+            FocusSession(
+                session = session,
+                name = session.notes?.takeIf { it.isNotBlank() } ?: suggestedNames[session.id],
+                status = sessionStatus(sessionSummaries[session.id]),
+            )
+        }
+    }
 
     // Configure AI in history mode (no session)
     LaunchedEffect(Unit) {
@@ -125,6 +139,17 @@ fun WorkoutsScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
+                todaysFocus?.let { focus ->
+                    item(key = "today_focus", contentType = "focus") {
+                        TodaysFocusCard(
+                            focus = focus,
+                            onOpen = {
+                                if (focus.status == SessionStatus.COMPLETED) onOpenDetail(focus.session.id)
+                                else onOpenWorkout(focus.session.id)
+                            },
+                        )
+                    }
+                }
                 item(key = "hero_cta", contentType = "hero") {
                     WorkoutsStartActions(
                         onNewWorkout = { viewModel.createWorkout(onOpenWorkout) },
@@ -217,6 +242,68 @@ private fun StartActionButton(
                     else -> contentDescription
                 },
             )
+        }
+    }
+}
+
+@Composable
+private fun TodaysFocusCard(
+    focus: FocusSession,
+    onOpen: () -> Unit,
+) {
+    Card(
+        colors = CardDefaults.cardColors(
+            containerColor = when (focus.status) {
+                SessionStatus.PLANNED -> MaterialTheme.colorScheme.primaryContainer
+                SessionStatus.IN_PROGRESS -> MaterialTheme.colorScheme.tertiaryContainer
+                SessionStatus.COMPLETED -> MaterialTheme.colorScheme.surfaceVariant
+            },
+        ),
+        border = BorderStroke(
+            1.dp,
+            when (focus.status) {
+                SessionStatus.PLANNED -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+                SessionStatus.IN_PROGRESS -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.45f)
+                SessionStatus.COMPLETED -> MaterialTheme.colorScheme.outlineVariant
+            },
+        ),
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(16.dp),
+        ) {
+            Text(
+                text = "Today's focus",
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = focus.name ?: "Workout ready",
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+            Text(
+                text = when (focus.status) {
+                    SessionStatus.PLANNED -> "Planned for today"
+                    SessionStatus.IN_PROGRESS -> "In progress today"
+                    SessionStatus.COMPLETED -> "Completed today"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            TextButton(onClick = onOpen) {
+                Icon(
+                    imageVector = if (focus.status == SessionStatus.COMPLETED) {
+                        Icons.Default.Check
+                    } else {
+                        Icons.Default.PlayArrow
+                    },
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                )
+                Text(if (focus.status == SessionStatus.COMPLETED) "Open details" else "Start")
+            }
         }
     }
 }
@@ -501,6 +588,12 @@ private enum class SessionStatus(val label: String) {
     IN_PROGRESS("In progress"),
     COMPLETED("Completed"),
 }
+
+private data class FocusSession(
+    val session: WorkoutSession,
+    val name: String?,
+    val status: SessionStatus,
+)
 
 private enum class SessionProgressState {
     EMPTY,

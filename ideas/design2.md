@@ -9,7 +9,7 @@ Reason:
 Scope:
 - Tappable chart-point previews are now shipped on the movement progress chart: tapping a point selects that session and exposes an `Open workout` action.
 - Explore lightweight AI insight states on the workouts page only if they add clear value without cluttering the screen.
-- Optionally test a more directed landing experience such as a `Today's focus` state if it can be done without complicating navigation.
+- A lightweight `Today's focus` state is now shipped on the workouts page when a session exists for today.
 
 Implementation notes:
 - Do not revive the older PR-card direction that elevated one record above the other; the current preferred direction is two equal headline metrics.
