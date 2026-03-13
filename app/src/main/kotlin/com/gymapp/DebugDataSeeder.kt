@@ -2,7 +2,6 @@ package com.gymapp
 
 import com.gymapp.core.database.repository.SetRepository
 import com.gymapp.core.database.repository.WorkoutRepository
-import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.RepModifier
 import com.gymapp.core.model.WeightMode
 import kotlinx.coroutines.flow.first
@@ -11,7 +10,7 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Seeds realistic sample workout data spanning ~5 weeks on first launch (debug builds only).
+ * Seeds realistic sample workout data on first launch (debug builds only).
  * No-ops if the database already contains sessions.
  */
 @Singleton
@@ -38,107 +37,233 @@ class DebugDataSeeder @Inject constructor(
             return cal.timeInMillis
         }
 
-        // 5-week PPL block — progressive overload each week
-        // Week 5 (oldest)
-        seedSession(daysAgo(34), "Legs") {
-            ex("Back Squat", 4, 5) { sets(80f, 80f, 82.5f, 82.5f, reps = 5, lastReps = 4) }
-            ex("Romanian Deadlift", 3, 10) { sets(60f, 60f, 60f, reps = 10, lastReps = 9) }
-            ex("Leg Press", 3, 12) { sets(100f, 100f, 100f, reps = 12, lastReps = 11) }
-        }
-        seedSession(daysAgo(32), "Push") {
-            ex("Bench Press", 4, 8) { sets(60f, 62.5f, 62.5f, 62.5f, reps = 8, lastReps = 6) }
-            ex("Overhead Press", 3, 8) { sets(37.5f, 37.5f, 37.5f, reps = 8, lastReps = 7) }
-            ex("Tricep Pushdown", 3, 12) { sets(25f, 25f, 25f, reps = 12, lastReps = 10) }
-        }
-        seedSession(daysAgo(30), "Pull") {
-            ex("Deadlift", 3, 5) { sets(100f, 102.5f, 105f, reps = 5, lastReps = 4) }
-            ex("Barbell Row", 4, 8) { sets(60f, 60f, 62.5f, 62.5f, reps = 8, lastReps = 7) }
-            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(75f, 8, 7, 6) }
-        }
+        seedTriphasicRoutine(::daysAgo)
+    }
 
-        // Week 4
-        seedSession(daysAgo(27), "Legs") {
-            ex("Back Squat", 4, 5) { sets(82.5f, 82.5f, 85f, 85f, reps = 5, lastReps = 4) }
-            ex("Romanian Deadlift", 3, 10) { sets(62.5f, 62.5f, 62.5f, reps = 10) }
-            ex("Leg Press", 3, 12) { sets(100f, 102.5f, 102.5f, reps = 12) }
-        }
-        seedSession(daysAgo(25), "Push") {
-            ex("Bench Press", 4, 8) { sets(62.5f, 62.5f, 65f, 65f, reps = 8, lastReps = 6) }
-            ex("Overhead Press", 3, 8) { sets(37.5f, 40f, 40f, reps = 8, lastReps = 6) }
-            ex("Dumbbell Fly", 3, 12) { sets(14f, 14f, 14f, reps = 12, lastReps = 11) }
-        }
-        seedSession(daysAgo(23), "Pull") {
-            ex("Deadlift", 3, 5) { sets(105f, 105f, 107.5f, reps = 5, lastReps = 4) }
-            ex("Barbell Row", 4, 8) { sets(62.5f, 62.5f, 65f, 65f, reps = 8, lastReps = 7) }
-            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(75f, 9, 8, 7) }
-        }
+    private suspend fun seedTriphasicRoutine(daysAgo: (Int) -> Long) {
+        val weeks = listOf(
+            TriphasicWeekSpec(weekNumber = 1, mondayDaysAgo = 27, progressionReps = 8),
+            TriphasicWeekSpec(weekNumber = 2, mondayDaysAgo = 20, progressionReps = 8),
+            TriphasicWeekSpec(weekNumber = 3, mondayDaysAgo = 13, progressionReps = 6),
+            TriphasicWeekSpec(weekNumber = 4, mondayDaysAgo = 6, progressionReps = 4),
+        )
 
-        // Week 3
-        seedSession(daysAgo(20), "Legs") {
-            ex("Back Squat", 4, 5) { sets(85f, 85f, 85f, 87.5f, reps = 5, lastReps = 4) }
-            ex("Romanian Deadlift", 3, 10) { sets(65f, 65f, 65f, reps = 10, lastReps = 9) }
-            ex("Leg Press", 3, 12) { sets(105f, 105f, 105f, reps = 12, lastReps = 11) }
-        }
-        seedSession(daysAgo(18), "Push") {
-            ex("Bench Press", 4, 8) { sets(65f, 65f, 65f, 67.5f, reps = 8, lastReps = 6) }
-            ex("Overhead Press", 3, 8) { sets(40f, 40f, 40f, reps = 8, lastReps = 7) }
-            ex("Tricep Pushdown", 3, 12) { sets(27.5f, 27.5f, 27.5f, reps = 12, lastReps = 10) }
-        }
-        seedSession(daysAgo(16), "Pull") {
-            ex("Deadlift", 3, 5) { sets(107.5f, 110f, 110f, reps = 5, lastReps = 4) }
-            ex("Barbell Row", 4, 8) { sets(65f, 65f, 67.5f, 67.5f, reps = 8, lastReps = 7) }
-            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(75f, 10, 8, 7) }
-        }
-
-        // Week 2
-        seedSession(daysAgo(13), "Legs") {
-            ex("Back Squat", 4, 5) { sets(87.5f, 87.5f, 90f, 90f, reps = 5, lastReps = 4) }
-            ex("Romanian Deadlift", 3, 10) { sets(65f, 67.5f, 67.5f, reps = 10, lastReps = 9) }
-            ex("Leg Press", 3, 12) { sets(107.5f, 107.5f, 110f, reps = 12, lastReps = 11) }
-        }
-        seedSession(daysAgo(11), "Push") {
-            ex("Bench Press", 4, 8) { sets(67.5f, 67.5f, 67.5f, 70f, reps = 8, lastReps = 5) }
-            ex("Overhead Press", 3, 8) { sets(40f, 42.5f, 42.5f, reps = 8, lastReps = 6) }
-            ex("Dumbbell Fly", 3, 12) { sets(15f, 15f, 15f, reps = 12, lastReps = 10) }
-        }
-        seedSession(daysAgo(9), "Pull") {
-            ex("Deadlift", 3, 5) { sets(110f, 112.5f, 112.5f, reps = 5) }
-            ex("Barbell Row", 4, 8) { sets(67.5f, 70f, 70f, 70f, reps = 8, lastReps = 7) }
-            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(75f, 10, 9, 8) }
-        }
-
-        // Week 1 (most recent)
-        seedSession(daysAgo(6), "Legs") {
-            ex("Back Squat", 4, 5) { sets(90f, 90f, 92.5f, 92.5f, reps = 5, lastReps = 4) }
-            ex("Romanian Deadlift", 3, 10) { sets(67.5f, 67.5f, 70f, reps = 10, lastReps = 9) }
-            ex("Leg Press", 3, 12) { sets(110f, 110f, 112.5f, reps = 12, lastReps = 11) }
-        }
-        seedSession(daysAgo(4), "Push") {
-            ex("Bench Press", 4, 8) { sets(70f, 70f, 70f, 72.5f, reps = 8, lastReps = 5) }
-            ex("Overhead Press", 3, 8) { sets(42.5f, 42.5f, 42.5f, reps = 8, lastReps = 7) }
-            ex("Tricep Pushdown", 3, 12) { sets(30f, 30f, 30f, reps = 12, lastReps = 10) }
-        }
-        seedSession(daysAgo(2), "Pull") {
-            ex("Deadlift", 3, 5) { sets(112.5f, 115f, 115f, reps = 5, lastReps = 4) }
-            ex("Barbell Row", 4, 8) { sets(70f, 70f, 72.5f, 72.5f, reps = 8, lastReps = 7) }
-            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(75f, 11, 9, 8) }
+        weeks.forEach { week ->
+            seedPosteriorChain(daysAgo(week.mondayDaysAgo), week)
+            seedChest(daysAgo(week.mondayDaysAgo - 1), week)
+            seedWednesday(daysAgo(week.mondayDaysAgo - 2), week)
+            seedLegs(daysAgo(week.mondayDaysAgo - 3), week)
+            seedShoulders(daysAgo(week.mondayDaysAgo - 4), week)
         }
     }
 
-    // ── DSL ──────────────────────────────────────────────────────────────────
+    private suspend fun seedPosteriorChain(date: Long, week: TriphasicWeekSpec) {
+        seedSession(date, "Week ${week.weekNumber} - Posterior Chain") {
+            ex("A1", "Barbell Hip Thrusts", 4, week.progressionReps) {
+                repeatedSets(weight = 110f + (week.weekNumber - 1) * 10f, count = 4, reps = week.progressionReps)
+            }
+            ex(
+                label = "B1",
+                name = "Paused Barbell Deadlift (Isometric)",
+                targetSets = 4,
+                targetReps = 3,
+                notes = "2-sec pause above the knee on the way up; 2-sec pause above the knee on the way down",
+            ) {
+                repeatedSets(weight = 90f + (week.weekNumber - 1) * 7.5f, count = 4, reps = 3)
+            }
+            ex("C1", "DB Lateral Step Ups", 4, 12, notes = "12 each leg") {
+                repeatedSets(weight = 18f + (week.weekNumber - 1) * 2f, count = 4, reps = 12, lastReps = 10)
+            }
+            ex(
+                label = "C2",
+                name = "Paused DB Goblet Squat with Glute Band (HEAVY)",
+                targetSets = 4,
+                targetReps = 10,
+                notes = "3-sec pause at the bottom of the squat",
+            ) {
+                repeatedSets(weight = 24f + (week.weekNumber - 1) * 2f, count = 4, reps = 10, lastReps = 8)
+            }
+            ex("D1", "Weighted Plank", 4, null, RepModifier.MAX, notes = "Max hold") {
+                repeatedSets(weight = 15f + (week.weekNumber - 1) * 5f, count = 4, reps = 45 + (week.weekNumber - 1) * 5)
+            }
+        }
+    }
+
+    private suspend fun seedChest(date: Long, week: TriphasicWeekSpec) {
+        seedSession(date, "Week ${week.weekNumber} - Chest") {
+            ex("A1", "Incline Barbell Bench Press (2-up on incline)", 4, week.progressionReps) {
+                repeatedSets(weight = 55f + (week.weekNumber - 1) * 5f, count = 4, reps = week.progressionReps)
+            }
+            ex(
+                label = "B1",
+                name = "Paused DB Bench Press (Flat)",
+                targetSets = 4,
+                targetReps = 8,
+                notes = "3-sec pause at the bottom; target range 6-8",
+            ) {
+                repeatedSets(weight = 24f + (week.weekNumber - 1) * 2f, count = 4, reps = 8, lastReps = 6)
+            }
+            ex(
+                label = "C1",
+                name = "Paused Pull Ups",
+                targetSets = 4,
+                targetReps = 6,
+                notes = "2-sec pause when chin passes the bar; alternative: Paused TRX Row 8-10",
+            ) {
+                bodyweightSets(SEEDED_BODY_WEIGHT_KG, 6 + week.weekNumber, 5 + week.weekNumber, 4 + week.weekNumber, 4 + week.weekNumber)
+            }
+            ex("C2", "Banded Face Pulls", 4, 15) {
+                bandedSets(15, 15, 14, 14)
+            }
+            ex("D1", "Swiss Ball Jackknifes", 4, 12) {
+                repeatedSets(weight = 0f, count = 4, reps = 12, mode = WeightMode.BODYWEIGHT, bodyWeightKg = SEEDED_BODY_WEIGHT_KG)
+            }
+            ex("D2", "Hollow Hold", 4, null, RepModifier.MAX, notes = "Max hold") {
+                bodyweightSets(SEEDED_BODY_WEIGHT_KG, 30 + week.weekNumber * 2, 28 + week.weekNumber * 2, 26 + week.weekNumber * 2, 24 + week.weekNumber * 2)
+            }
+        }
+    }
+
+    private suspend fun seedWednesday(date: Long, week: TriphasicWeekSpec) {
+        seedSession(date, "Week ${week.weekNumber} - Wednesday") {
+            ex(
+                label = "A1",
+                name = "BB Curl (Iso Hold + Max Reps)",
+                targetSets = 4,
+                targetReps = null,
+                targetModifier = RepModifier.MAX,
+                notes = "20-30s iso hold into max reps (aim for 10+)",
+            ) {
+                repeatedSets(weight = 20f + (week.weekNumber - 1) * 2.5f, count = 4, reps = 12, lastReps = 10)
+            }
+            ex(
+                label = "A2",
+                name = "DB California Press + Neutral Press",
+                targetSets = 4,
+                targetReps = 8,
+                notes = "6-8 California press into max neutral press",
+            ) {
+                repeatedSets(weight = 14f + (week.weekNumber - 1) * 2f, count = 4, reps = 8, lastReps = 6)
+            }
+            ex("C1", "Seated Zottman Curl", 4, 12, notes = "10-12") {
+                repeatedSets(weight = 12f + (week.weekNumber - 1), count = 4, reps = 12, lastReps = 10)
+            }
+            ex("C2", "Banded Tricep Kickbacks", 4, 15) {
+                bandedSets(15, 15, 14, 14)
+            }
+            ex("D1", "Kneeling Plate Windmill", 4, 10, notes = "10 each side") {
+                repeatedSets(weight = 10f, count = 4, reps = 10)
+            }
+            ex("D2", "DB Straight Arm Plank Pull Through (HEAVY)", 4, 20) {
+                repeatedSets(weight = 20f + (week.weekNumber - 1) * 2f, count = 4, reps = 20, lastReps = 18)
+            }
+            ex("D3", "Seated Tuck Arm Raises (with plates)", 4, 15, notes = "12-15") {
+                repeatedSets(weight = 5f + (week.weekNumber - 1), count = 4, reps = 15, lastReps = 12)
+            }
+        }
+    }
+
+    private suspend fun seedLegs(date: Long, week: TriphasicWeekSpec) {
+        seedSession(date, "Week ${week.weekNumber} - Legs") {
+            ex(
+                label = "A1",
+                name = "BB Front Squat",
+                targetSets = 4,
+                targetReps = week.progressionReps,
+                notes = "Alternative option: Zercher Squat",
+            ) {
+                repeatedSets(weight = 70f + (week.weekNumber - 1) * 7.5f, count = 4, reps = week.progressionReps)
+            }
+            ex(
+                label = "B1",
+                name = "Paused BB Back Squat",
+                targetSets = 4,
+                targetReps = 3,
+                notes = "3-sec pause at the bottom",
+            ) {
+                repeatedSets(weight = 80f + (week.weekNumber - 1) * 7.5f, count = 4, reps = 3)
+            }
+            ex("C1", "DB B-Stance Split Squat", 4, 10, notes = "10 each leg") {
+                repeatedSets(weight = 20f + (week.weekNumber - 1) * 2f, count = 4, reps = 10, lastReps = 8)
+            }
+            ex("C2", "KB Goblet Sumo Squat", 4, 12) {
+                repeatedSets(weight = 28f + (week.weekNumber - 1) * 4f, count = 4, reps = 12, lastReps = 10)
+            }
+            ex(
+                label = "D1",
+                name = "Bulgarian Split Squat Iso Hold (DB or bodyweight)",
+                targetSets = 4,
+                targetReps = null,
+                targetModifier = RepModifier.MAX,
+                notes = "Max hold each leg",
+            ) {
+                bodyweightSets(SEEDED_BODY_WEIGHT_KG, 35 + week.weekNumber * 2, 34 + week.weekNumber * 2, 32 + week.weekNumber * 2, 30 + week.weekNumber * 2)
+            }
+            ex("D2", "Banded Woodchop", 4, 10, notes = "10 each side") {
+                bandedSets(10, 10, 10, 10)
+            }
+        }
+    }
+
+    private suspend fun seedShoulders(date: Long, week: TriphasicWeekSpec) {
+        seedSession(date, "Week ${week.weekNumber} - Shoulders") {
+            ex("A1", "DB Shoulder Press (Seated)", 4, week.progressionReps) {
+                repeatedSets(weight = 20f + (week.weekNumber - 1) * 2f, count = 4, reps = week.progressionReps)
+            }
+            ex(
+                label = "B1",
+                name = "Paused Standing Single DB Shoulder Press",
+                targetSets = 4,
+                targetReps = 8,
+                notes = "2-sec pause at lockout; target range 6-8",
+            ) {
+                repeatedSets(weight = 16f + (week.weekNumber - 1) * 2f, count = 4, reps = 8, lastReps = 6)
+            }
+            ex(
+                label = "B2",
+                name = "Pull Ups (Muscle Endurance)",
+                targetSets = 4,
+                targetReps = null,
+                targetModifier = RepModifier.MAX,
+                notes = "Use bands, aim for 10",
+            ) {
+                bodyweightSets(SEEDED_BODY_WEIGHT_KG, 10 + week.weekNumber, 9 + week.weekNumber, 8 + week.weekNumber, 8 + week.weekNumber)
+            }
+            ex(
+                label = "C1",
+                name = "Paused Single Arm DB Row",
+                targetSets = 3,
+                targetReps = 10,
+                notes = "2-sec pause at the top; target range 8-10",
+            ) {
+                repeatedSets(weight = 24f + (week.weekNumber - 1) * 2f, count = 3, reps = 10, lastReps = 8)
+            }
+            ex(
+                label = "C2",
+                name = "Plate Front Raise + Truck Driver",
+                targetSets = 3,
+                targetReps = 15,
+                notes = "1 rep = raise + rotation; target range 12-15",
+            ) {
+                repeatedSets(weight = 10f + (week.weekNumber - 1) * 2f, count = 3, reps = 15, lastReps = 12)
+            }
+            ex("C3", "Prone Plate Windmill Passes", 3, 8, notes = "6-8 each direction") {
+                repeatedSets(weight = 5f + (week.weekNumber - 1), count = 3, reps = 8, lastReps = 6)
+            }
+        }
+    }
 
     private inner class SessionScope(val sessionId: String) {
-        private val labels = listOf("A1", "B1", "C1", "A2", "B2", "C2")
-        private var labelIdx = 0
-
         suspend fun ex(
+            label: String,
             name: String,
             targetSets: Int,
             targetReps: Int?,
             targetModifier: RepModifier = RepModifier.NONE,
+            notes: String? = null,
+            targetRawText: String? = null,
             block: suspend ExerciseScope.() -> Unit,
         ) {
-            val label = labels.getOrElse(labelIdx++) { "Z$labelIdx" }
             val entry = workoutRepository.addExercise(
                 sessionId = sessionId,
                 label = label,
@@ -146,6 +271,8 @@ class DebugDataSeeder @Inject constructor(
                 targetSets = targetSets,
                 targetReps = targetReps,
                 targetModifier = targetModifier,
+                targetRawText = targetRawText,
+                notes = notes,
             )
             ExerciseScope(entry.id).block()
         }
@@ -154,22 +281,51 @@ class DebugDataSeeder @Inject constructor(
     private inner class ExerciseScope(val exerciseId: String) {
         private var setNum = 1
 
-        /** All sets at the given weights; first N-1 at [reps], last at [lastReps] (defaults to [reps]). */
-        suspend fun sets(vararg weights: Float, reps: Int, lastReps: Int = reps) {
-            weights.forEachIndexed { i, w ->
-                val r = if (i == weights.lastIndex) lastReps else reps
-                setRepository.addSet(exerciseId, setNum++, repsPerformed = r, weight = w)
-            }
-        }
-
-        suspend fun bwSets(bodyWeightKg: Float, vararg repCounts: Int) {
-            repCounts.forEach { r ->
+        suspend fun repeatedSets(
+            weight: Float,
+            count: Int,
+            reps: Int,
+            lastReps: Int = reps,
+            mode: WeightMode = WeightMode.BARBELL,
+            bodyWeightKg: Float? = null,
+        ) {
+            repeat(count) { index ->
+                val loggedWeight = when (mode) {
+                    WeightMode.BODYWEIGHT -> bodyWeightKg
+                    WeightMode.BANDED -> null
+                    WeightMode.BARBELL -> weight
+                }
+                val loggedReps = if (index == count - 1) lastReps else reps
                 setRepository.addSet(
                     exerciseEntryId = exerciseId,
                     setNumber = setNum++,
-                    repsPerformed = r,
+                    repsPerformed = loggedReps,
+                    weight = loggedWeight,
+                    weightMode = mode,
+                )
+            }
+        }
+
+        suspend fun bodyweightSets(bodyWeightKg: Float, vararg repCounts: Int) {
+            repCounts.forEach { reps ->
+                setRepository.addSet(
+                    exerciseEntryId = exerciseId,
+                    setNumber = setNum++,
+                    repsPerformed = reps,
                     weight = bodyWeightKg,
                     weightMode = WeightMode.BODYWEIGHT,
+                )
+            }
+        }
+
+        suspend fun bandedSets(vararg repCounts: Int) {
+            repCounts.forEach { reps ->
+                setRepository.addSet(
+                    exerciseEntryId = exerciseId,
+                    setNumber = setNum++,
+                    repsPerformed = reps,
+                    weight = null,
+                    weightMode = WeightMode.BANDED,
                 )
             }
         }
@@ -185,7 +341,7 @@ class DebugDataSeeder @Inject constructor(
     }
 
     private suspend fun backfillSeededBodyweightSamples(existingSessions: List<com.gymapp.core.model.WorkoutSession>) {
-        if (!looksLikeSeededPplBlock(existingSessions)) return
+        if (!looksLikeOldSeededPplBlock(existingSessions)) return
 
         existingSessions.forEach { session ->
             val exercises = workoutRepository.observeExercises(session.id).first()
@@ -202,11 +358,17 @@ class DebugDataSeeder @Inject constructor(
         }
     }
 
-    private fun looksLikeSeededPplBlock(sessions: List<com.gymapp.core.model.WorkoutSession>): Boolean {
+    private fun looksLikeOldSeededPplBlock(sessions: List<com.gymapp.core.model.WorkoutSession>): Boolean {
         if (sessions.size != 15) return false
         val workoutNames = sessions.mapNotNull { it.notes }.toSet()
         return workoutNames == setOf("Legs", "Push", "Pull")
     }
+
+    private data class TriphasicWeekSpec(
+        val weekNumber: Int,
+        val mondayDaysAgo: Int,
+        val progressionReps: Int,
+    )
 
     private companion object {
         const val SEEDED_BODY_WEIGHT_KG = 75f
