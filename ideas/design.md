@@ -5,7 +5,8 @@ Here are my suggested improvements for your software agent to implement:
 Progress notes:
 - `Dynamic Header & Grouping` is already implemented on the workouts list via date section headers.
 - `Status Distinction & Visual Feedback` is now partially implemented on workout cards via compact planned/logged status icons and stronger completed-card treatment.
-- The next useful slice is reducing summary text density on workout cards.
+- `Card Content` density is now improved via compact icon-led summary stats for movements and sets.
+- The next useful slice is `Floating Action Button (FAB) Optimization` on the workouts screen.
 
 ---
 

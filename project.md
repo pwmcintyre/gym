@@ -442,6 +442,7 @@ Delivered:
 - Moved the state chip to a right-aligned header position and replaced the low-value duplicate icon with the state icon itself so the right edge now communicates session status instead of a secondary action.
 - Tightened the workout-card header again by collapsing the status treatment down to a single right-edge icon in the old action slot, keeping the green check / grey clock without increasing card height.
 - Reduced workout-card summary density by splitting the counts into two compact icon-led stats for movements and sets instead of one longer sentence.
+- Reduced bottom-right clutter on the Workouts screen by moving AI access into the top app bar and leaving the floating action button for the primary "new workout" action only.
 
 Validation: `./gradlew :features:feature-workouts:compileDebugKotlin --no-daemon` and `./gradlew assembleDebug --no-daemon` — BUILD SUCCESSFUL.
 
