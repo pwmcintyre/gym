@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
@@ -48,7 +47,6 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -176,7 +174,8 @@ fun ExerciseProgressScreen(
 
 @Composable
 private fun ExerciseProgressPrCard(prs: List<ExercisePr>) {
-    val absoluteBest = prs.maxWithOrNull(compareBy<ExercisePr> { it.weight }.thenBy { it.reps })
+    val topWeight = prs.maxWithOrNull(compareBy<ExercisePr> { it.weight }.thenBy { it.reps })
+    val topReps = prs.maxWithOrNull(compareBy<ExercisePr> { it.reps }.thenBy { it.weight })
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -193,56 +192,45 @@ private fun ExerciseProgressPrCard(prs: List<ExercisePr>) {
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
-            Text(
-                text = "All-time best weight per rep count.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-            // Show up to 8 PRs in two columns
-            val rows = prs.take(8).chunked(2)
-            rows.forEach { pair ->
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.fillMaxWidth(),
-                ) {
-                    pair.forEach { pr ->
-                        PrChip(
-                            pr = pr,
-                            isAbsoluteBest = pr == absoluteBest,
-                            modifier = Modifier.weight(1f),
-                        )
-                    }
-                    // Fill second slot if the row only has one item
-                    if (pair.size == 1) {
-                        Box(modifier = Modifier.weight(1f))
-                    }
-                }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                topWeight?.let { pr ->
+                    PrSummaryMetric(
+                        label = "Top weight",
+                        value = formatWeight(pr.weight),
+                        supporting = "${pr.reps} rep${if (pr.reps != 1) "s" else ""}",
+                        modifier = Modifier.weight(1f),
+                    )
+                } ?: Box(modifier = Modifier.weight(1f))
+                topReps?.let { pr ->
+                    PrSummaryMetric(
+                        label = "Top reps",
+                        value = "${pr.reps}",
+                        supporting = formatWeight(pr.weight),
+                        modifier = Modifier.weight(1f),
+                    )
+                } ?: Box(modifier = Modifier.weight(1f))
             }
         }
     }
 }
 
 @Composable
-private fun PrChip(
-    pr: ExercisePr,
-    isAbsoluteBest: Boolean,
+private fun PrSummaryMetric(
+    label: String,
+    value: String,
+    supporting: String,
     modifier: Modifier = Modifier,
 ) {
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = if (isAbsoluteBest) {
-                MaterialTheme.colorScheme.primaryContainer
-            } else {
-                MaterialTheme.colorScheme.surface
-            },
+            containerColor = MaterialTheme.colorScheme.surface,
         ),
         border = BorderStroke(
             1.dp,
-            if (isAbsoluteBest) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)
-            },
+            MaterialTheme.colorScheme.outlineVariant,
         ),
         modifier = modifier,
     ) {
@@ -253,35 +241,20 @@ private fun PrChip(
                 .fillMaxWidth()
                 .padding(horizontal = 8.dp, vertical = 10.dp),
         ) {
-            if (isAbsoluteBest) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(4.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.EmojiEvents,
-                        contentDescription = null,
-                        tint = MaterialTheme.colorScheme.primary,
-                    )
-                    Text(
-                        text = "Top record",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.primary,
-                        textAlign = TextAlign.Center,
-                    )
-                }
-            }
             Text(
-                text = formatWeight(pr.weight),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-                textAlign = TextAlign.Center,
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Text(
-                text = "${pr.reps} rep${if (pr.reps != 1) "s" else ""}",
+                text = value,
+                style = MaterialTheme.typography.titleSmall,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = supporting,
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                textAlign = TextAlign.Center,
             )
         }
     }
