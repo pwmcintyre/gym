@@ -106,7 +106,12 @@ private fun MovementCard(
                 modifier = Modifier.padding(top = 2.dp),
             )
             Text(
-                text = "Last logged ${formatDate(movement.lastPerformed)}",
+                text = buildAnnotatedString {
+                    append("Last logged ")
+                    withStyle(SpanStyle(color = primaryColor)) {
+                        append(formatDate(movement.lastPerformed))
+                    }
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp),

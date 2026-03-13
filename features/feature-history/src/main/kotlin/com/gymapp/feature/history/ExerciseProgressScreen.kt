@@ -345,7 +345,7 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
                         )
                     }
                     Text(
-                        formatDate(sessionProgress.first().sessionDate, "M/d"),
+                        formatDate(sessionProgress.first().sessionDate),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -359,7 +359,7 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
                         )
                     }
                     Text(
-                        formatDate(sessionProgress.last().sessionDate, "M/d"),
+                        formatDate(sessionProgress.last().sessionDate),
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -440,9 +440,13 @@ private fun ExerciseProgressSessionCard(
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
             Text(
-                text = formatDate(progress.sessionDate),
+                text = buildAnnotatedString {
+                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+                        append(formatDate(progress.sessionDate))
+                    }
+                },
                 style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             val primaryColor = MaterialTheme.colorScheme.primary
             val sessionBestWeight = progress.bestWeight

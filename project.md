@@ -419,6 +419,19 @@ Validation: `./gradlew assembleDebug testDebugUnitTest --no-daemon` — BUILD SU
 
 ---
 
+## ✅ Backlog cleanup — 2026-03-13
+
+Autonomous session.
+
+Delivered:
+- **Exact date normalization** — movement history and workout-comparison chart labels now use the shared exact `YYYY-MM-DD` formatter instead of mixed short `M/d` labels.
+- **Value-first emphasis pass** — movement list "Last logged" rows, movement session cards, and workout-comparison summaries now accent only the data values rather than styling the whole sentence uniformly.
+- **Backlog cleanup** — removed stale idea notes for the already-shipped Movements tab split and shared movement detail routing so `ideas/` only reflects pending work.
+
+Validation: `./gradlew :features:feature-history:clean --no-daemon`, `./gradlew testDebugUnitTest --no-daemon`, and `./gradlew assembleDebug --no-daemon` — BUILD SUCCESSFUL.
+
+---
+
 ## Milestone 14 — Previous Performance in Exercise Card
 
 Under the target line of each ExerciseCard in the active workout view, show a "Previous" line sourced from the most recent prior session for that exercise.

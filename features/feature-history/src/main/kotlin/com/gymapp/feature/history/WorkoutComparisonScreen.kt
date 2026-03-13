@@ -31,6 +31,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -123,6 +126,7 @@ private fun ExerciseProgressionCard(
     }
     val lineColor = MaterialTheme.colorScheme.primary
     val dotColor = MaterialTheme.colorScheme.primary
+    val primaryColor = MaterialTheme.colorScheme.primary
 
     Card(
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
@@ -147,7 +151,26 @@ private fun ExerciseProgressionCard(
                 )
             }
             Text(
-                "Best: ${formatWeight(best)}  •  ${sorted.size} session${if (sorted.size != 1) "s" else ""}  •  ${formatWeight(first)} → ${formatWeight(latest)}",
+                buildAnnotatedString {
+                    append("Best ")
+                    withStyle(SpanStyle(color = primaryColor)) {
+                        append(formatWeight(best))
+                    }
+                    append(" • ")
+                    withStyle(SpanStyle(color = primaryColor)) {
+                        append(sorted.size.toString())
+                    }
+                    append(" session")
+                    if (sorted.size != 1) append("s")
+                    append(" • ")
+                    withStyle(SpanStyle(color = primaryColor)) {
+                        append(formatWeight(first))
+                    }
+                    append(" → ")
+                    withStyle(SpanStyle(color = primaryColor)) {
+                        append(formatWeight(latest))
+                    }
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 2.dp),
@@ -190,7 +213,7 @@ private fun ExerciseProgressionCard(
                 ) {
                     sorted.forEach { p ->
                         Text(
-                            formatDate(p.sessionDate, "M/d"),
+                            formatDate(p.sessionDate),
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
