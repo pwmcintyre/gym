@@ -22,11 +22,12 @@ class UserSettings @Inject constructor(
     companion object {
         private val KEY_BODY_WEIGHT = floatPreferencesKey("body_weight_kg")
         private val KEY_REST_TIMER_SECONDS = intPreferencesKey("rest_timer_seconds")
+        const val DEFAULT_BODY_WEIGHT_KG = 75f
         const val DEFAULT_REST_TIMER_SECONDS = 90
     }
 
     val bodyWeightKg: Flow<Float?> = context.userDataStore.data
-        .map { prefs -> prefs[KEY_BODY_WEIGHT] }
+        .map { prefs -> prefs[KEY_BODY_WEIGHT] ?: DEFAULT_BODY_WEIGHT_KG }
 
     val restTimerSeconds: Flow<Int> = context.userDataStore.data
         .map { prefs -> prefs[KEY_REST_TIMER_SECONDS] ?: DEFAULT_REST_TIMER_SECONDS }

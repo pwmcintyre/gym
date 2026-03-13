@@ -36,7 +36,7 @@ class SettingsViewModel @Inject constructor(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
 
     val bodyWeightKg: StateFlow<Float?> = userSettings.bodyWeightKg
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UserSettings.DEFAULT_BODY_WEIGHT_KG)
 
     val restTimerSeconds: StateFlow<Int> = userSettings.restTimerSeconds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 90)
