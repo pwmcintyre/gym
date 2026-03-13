@@ -227,6 +227,7 @@ Restructured exercise data into three layers (Movement Identity / Modifiers / Pr
 - User-facing `exercise` terminology has now been exhausted on the shipped UI; remaining `exercise` references are internal model names, route args, or compatibility-sensitive schema fields.
 - Movement detail personal records are now reduced to two headline metrics: top weight and top reps, instead of a dense all-PR grid.
 - Whiteboard-style labels such as `A1` and `A2` are now grouped visually as lightweight supersets in active-workout and workout-detail screens, without changing storage or scan parsing.
+- Movement trend charts now support point selection with an `Open workout` action, so chart interaction can jump directly to the underlying session instead of acting as a static graphic.
 - Remaining larger follow-ups still live in `ideas/` and should be handled as separate slices once this creation-flow cleanup lands.
 
 ## ✅ Milestone 3.6 — Theme and Visual Identity

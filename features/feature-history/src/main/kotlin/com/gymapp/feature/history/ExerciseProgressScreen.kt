@@ -3,6 +3,7 @@ package com.gymapp.feature.history
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,6 +46,7 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -141,6 +143,7 @@ fun ExerciseProgressScreen(
                     item {
                         ExerciseProgressChartCard(
                             sessionProgress = sessionProgress.take(8).asReversed(),
+                            onOpenWorkout = onOpenWorkout,
                         )
                     }
                 }
@@ -291,7 +294,10 @@ private fun PrSummaryMetric(
 // ---------------------------------------------------------------------------
 
 @Composable
-private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgress>) {
+private fun ExerciseProgressChartCard(
+    sessionProgress: List<ExerciseSessionProgress>,
+    onOpenWorkout: (sessionId: String) -> Unit,
+) {
     val weights = sessionProgress.mapNotNull { it.bestWeight }.filter { it > 0f }
     val minWeight = weights.minOrNull() ?: 0f
     val maxWeight = weights.maxOrNull()?.takeIf { it > 0f } ?: 1f
@@ -309,6 +315,10 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
     val lastWeight = sessionProgress.lastOrNull { it.bestWeight != null }?.bestWeight
     val firstReps = sessionProgress.firstNotNullOfOrNull { it.bestReps }
     val lastReps = sessionProgress.lastOrNull { it.bestReps != null }?.bestReps
+    var selectedSessionId by rememberSaveable(sessionProgress) { mutableStateOf<String?>(null) }
+    val selectedSession = remember(selectedSessionId, sessionProgress) {
+        sessionProgress.firstOrNull { it.sessionId == selectedSessionId }
+    }
 
     Card(
         colors = CardDefaults.cardColors(
@@ -352,7 +362,22 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
                 Canvas(
                     modifier = Modifier
                         .weight(1f)
-                        .height(120.dp),
+                        .height(120.dp)
+                        .pointerInput(sessionProgress) {
+                            detectTapGestures { tapOffset ->
+                                val count = sessionProgress.size.coerceAtLeast(1)
+                                val horizontalPaddingPx = 6.dp.toPx()
+                                val availableWidth = size.width - horizontalPaddingPx * 2
+                                val step = if (count > 1) availableWidth / (count - 1) else 0f
+                                val rawIndex = if (count == 1 || step == 0f) {
+                                    0
+                                } else {
+                                    ((tapOffset.x - horizontalPaddingPx) / step).toInt()
+                                }
+                                val index = rawIndex.coerceIn(0, count - 1)
+                                selectedSessionId = sessionProgress[index].sessionId
+                            }
+                        },
                 ) {
                     val pad = 6.dp.toPx()
                     val chartH = size.height
@@ -403,8 +428,22 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
                         }
                         drawPath(path, repsLineColor, style = Stroke(2.dp.toPx(), cap = StrokeCap.Round))
                     }
-                    pts.forEach { drawCircle(lineColor, 3.5.dp.toPx(), it) }
-                    repPts.forEach { drawCircle(repsLineColor, 3.5.dp.toPx(), it) }
+                    pts.forEachIndexed { index, point ->
+                        val selected = sessionProgress.getOrNull(index)?.sessionId == selectedSessionId
+                        drawCircle(
+                            color = lineColor,
+                            radius = if (selected) 5.dp.toPx() else 3.5.dp.toPx(),
+                            center = point,
+                        )
+                    }
+                    repPts.forEachIndexed { index, point ->
+                        val selected = sessionProgress.getOrNull(index)?.sessionId == selectedSessionId
+                        drawCircle(
+                            color = repsLineColor,
+                            radius = if (selected) 5.dp.toPx() else 3.5.dp.toPx(),
+                            center = point,
+                        )
+                    }
                 }
 
                 Column(
@@ -442,6 +481,50 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
                     style = MaterialTheme.typography.labelSmall,
                     color = repsLineColor,
                 )
+            }
+
+            selectedSession?.let { session ->
+                Card(
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                    ),
+                    border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp),
+                    ) {
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(2.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text(
+                                text = formatDate(session.sessionDate),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            Text(
+                                text = buildString {
+                                    session.bestWeight?.let { append(formatWeight(it)) }
+                                    if (session.bestWeight != null && session.bestReps != null) append(" • ")
+                                    session.bestReps?.let { append("$it reps") }
+                                    if (session.bestWeight == null && session.bestReps == null) {
+                                        append("${session.setCount} sets")
+                                    }
+                                },
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                        TextButton(onClick = { onOpenWorkout(session.sessionId) }) {
+                            Text("Open workout")
+                        }
+                    }
+                }
             }
 
             // First / last labels + date labels
