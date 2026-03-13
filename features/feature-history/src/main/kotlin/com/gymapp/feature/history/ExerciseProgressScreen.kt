@@ -129,15 +129,12 @@ fun ExerciseProgressScreen(
                     .fillMaxSize()
                     .padding(innerPadding),
             ) {
-                item {
-                    ExerciseProgressSummaryCard(
-                        exerciseName = viewModel.exerciseName,
-                        sessionProgress = sessionProgress,
-                    )
-                }
                 if (prs.isNotEmpty()) {
                     item {
-                        ExerciseProgressPrCard(prs = prs)
+                        ExerciseProgressPrCard(
+                            prs = prs,
+                            sessionProgress = sessionProgress,
+                        )
                     }
                 }
                 if (sessionProgress.size > 1) {
@@ -146,6 +143,14 @@ fun ExerciseProgressScreen(
                             sessionProgress = sessionProgress.take(8).asReversed(),
                         )
                     }
+                }
+                item(key = "history_header", contentType = "header") {
+                    Text(
+                        text = "History",
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                    )
                 }
                 groupedSessionProgress.forEach { (dayMs, daySessions) ->
                     item(key = "header_$dayMs", contentType = "header") {
@@ -168,14 +173,25 @@ fun ExerciseProgressScreen(
     }
 }
 
-// ---------------------------------------------------------------------------
-// Personal Records card
-// ---------------------------------------------------------------------------
-
 @Composable
-private fun ExerciseProgressPrCard(prs: List<ExercisePr>) {
+private fun ExerciseProgressPrCard(
+    prs: List<ExercisePr>,
+    sessionProgress: List<ExerciseSessionProgress>,
+) {
     val topWeight = prs.maxWithOrNull(compareBy<ExercisePr> { it.weight }.thenBy { it.reps })
     val topReps = prs.maxWithOrNull(compareBy<ExercisePr> { it.reps }.thenBy { it.weight })
+    val topWeightDate = topWeight?.let { pr ->
+        sessionProgress
+            .filter { it.bestWeight == pr.weight }
+            .maxByOrNull { it.sessionDate }
+            ?.sessionDate
+    }
+    val topRepsDate = topReps?.let { pr ->
+        sessionProgress
+            .filter { it.bestReps == pr.reps }
+            .maxByOrNull { it.sessionDate }
+            ?.sessionDate
+    }
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -188,7 +204,7 @@ private fun ExerciseProgressPrCard(prs: List<ExercisePr>) {
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "Personal Records",
+                text = "Personal Best",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -201,6 +217,7 @@ private fun ExerciseProgressPrCard(prs: List<ExercisePr>) {
                         label = "Top weight",
                         value = formatWeight(pr.weight),
                         supporting = "${pr.reps} rep${if (pr.reps != 1) "s" else ""}",
+                        date = topWeightDate,
                         modifier = Modifier.weight(1f),
                     )
                 } ?: Box(modifier = Modifier.weight(1f))
@@ -209,6 +226,7 @@ private fun ExerciseProgressPrCard(prs: List<ExercisePr>) {
                         label = "Top reps",
                         value = "${pr.reps}",
                         supporting = formatWeight(pr.weight),
+                        date = topRepsDate,
                         modifier = Modifier.weight(1f),
                     )
                 } ?: Box(modifier = Modifier.weight(1f))
@@ -222,6 +240,7 @@ private fun PrSummaryMetric(
     label: String,
     value: String,
     supporting: String,
+    date: Long?,
     modifier: Modifier = Modifier,
 ) {
     Card(
@@ -256,6 +275,13 @@ private fun PrSummaryMetric(
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
+            date?.let {
+                Text(
+                    text = formatDate(it),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
         }
     }
 }
@@ -296,7 +322,7 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             Text(
-                text = "Weight + Reps Trend",
+                text = "Trend",
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface,
             )
@@ -465,58 +491,6 @@ private fun ExerciseProgressChartCard(sessionProgress: List<ExerciseSessionProgr
         }
     }
 }
-
-// ---------------------------------------------------------------------------
-// Summary snapshot card
-// ---------------------------------------------------------------------------
-
-@Composable
-private fun ExerciseProgressSummaryCard(
-    exerciseName: String,
-    sessionProgress: List<ExerciseSessionProgress>,
-) {
-    val bestWeight = sessionProgress.mapNotNull { it.bestWeight }.maxOrNull()?.takeIf { it > 0f }
-    val isBodyweight = bestWeight == null && sessionProgress.any { it.bodyweightSetCount > 0 }
-
-    Card(
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
-        ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
-        ) {
-            Text(
-                text = "Progress Snapshot",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurface,
-            )
-            Text(
-                text = exerciseName,
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            val bestLabel = when {
-                bestWeight != null -> formatWeight(bestWeight)
-                isBodyweight -> "BW"
-                else -> "—"
-            }
-            Text(
-                text = "${sessionProgress.size} session${if (sessionProgress.size != 1) "s" else ""}" +
-                    " • Best $bestLabel",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-        }
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Per-session history card
-// ---------------------------------------------------------------------------
 
 @Composable
 private fun ExerciseProgressSessionCard(
