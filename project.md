@@ -453,6 +453,18 @@ Validation: `./gradlew :features:feature-workouts:compileDebugKotlin --no-daemon
 
 ---
 
+## ✅ Date / highlight consistency progress
+
+Autonomous session.
+
+Delivered:
+- Brought movement detail session history into line with the workouts list by grouping movement sessions under natural-language date headers instead of repeating a full date inside every card.
+- Kept the per-session cards focused on the actual movement stats and navigation affordance, letting the section header carry the date context.
+
+Validation: `./gradlew :features:feature-history:compileDebugKotlin --no-daemon` and `./gradlew assembleDebug --no-daemon` — BUILD SUCCESSFUL.
+
+---
+
 ## Milestone 14 — Previous Performance in Exercise Card
 
 Under the target line of each ExerciseCard in the active workout view, show a "Previous" line sourced from the most recent prior session for that exercise.

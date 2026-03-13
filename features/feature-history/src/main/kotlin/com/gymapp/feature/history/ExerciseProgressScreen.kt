@@ -33,6 +33,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -53,6 +54,7 @@ import com.gymapp.core.model.ExercisePr
 import com.gymapp.core.model.ExerciseSessionProgress
 import com.gymapp.core.model.formatDate
 import com.gymapp.core.model.formatWeight
+import java.util.Calendar
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -64,6 +66,11 @@ fun ExerciseProgressScreen(
 ) {
     val sessionProgress by viewModel.sessionProgress.collectAsStateWithLifecycle()
     val prs by viewModel.prs.collectAsStateWithLifecycle()
+    val groupedSessionProgress = remember(sessionProgress) {
+        sessionProgress.groupBy { truncateToDay(it.sessionDate) }
+            .entries
+            .sortedByDescending { it.key }
+    }
     var showRenameDialog by rememberSaveable { mutableStateOf(false) }
 
     Scaffold(
@@ -139,11 +146,21 @@ fun ExerciseProgressScreen(
                         )
                     }
                 }
-                items(sessionProgress, key = { it.sessionId }) { progress ->
-                    ExerciseProgressSessionCard(
-                        progress = progress,
-                        onClick = { onOpenWorkout(progress.sessionId) },
-                    )
+                groupedSessionProgress.forEach { (dayMs, daySessions) ->
+                    item(key = "header_$dayMs", contentType = "header") {
+                        Text(
+                            text = dayLabel(dayMs),
+                            style = MaterialTheme.typography.labelLarge,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
+                        )
+                    }
+                    items(daySessions, key = { it.sessionId }) { progress ->
+                        ExerciseProgressSessionCard(
+                            progress = progress,
+                            onClick = { onOpenWorkout(progress.sessionId) },
+                        )
+                    }
                 }
             }
         }
@@ -439,15 +456,6 @@ private fun ExerciseProgressSessionCard(
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp),
         ) {
-            Text(
-                text = buildAnnotatedString {
-                    withStyle(SpanStyle(color = MaterialTheme.colorScheme.primary)) {
-                        append(formatDate(progress.sessionDate))
-                    }
-                },
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
             val primaryColor = MaterialTheme.colorScheme.primary
             val sessionBestWeight = progress.bestWeight
             val sessionBestLabel = when {
@@ -512,4 +520,28 @@ private fun RenameMovementDialog(
             TextButton(onClick = onDismiss) { Text("Cancel") }
         },
     )
+}
+
+private fun truncateToDay(epochMs: Long): Long {
+    val cal = Calendar.getInstance()
+    cal.timeInMillis = epochMs
+    cal.set(Calendar.HOUR_OF_DAY, 0)
+    cal.set(Calendar.MINUTE, 0)
+    cal.set(Calendar.SECOND, 0)
+    cal.set(Calendar.MILLISECOND, 0)
+    return cal.timeInMillis
+}
+
+private fun dayLabel(epochMs: Long): String {
+    val todayStart = truncateToDay(System.currentTimeMillis())
+    val daysAgo = ((todayStart - epochMs) / 86_400_000L).toInt()
+    val todayYear = Calendar.getInstance().apply { timeInMillis = todayStart }.get(Calendar.YEAR)
+    val labelYear = Calendar.getInstance().apply { timeInMillis = epochMs }.get(Calendar.YEAR)
+    return when {
+        epochMs >= todayStart -> "Today"
+        epochMs >= todayStart - 86_400_000L -> "Yesterday"
+        daysAgo in 2..6 -> formatDate(epochMs, "EEEE")
+        labelYear == todayYear -> formatDate(epochMs, "EEEE, MMM d")
+        else -> formatDate(epochMs, "EEEE, MMM d, yyyy")
+    }
 }
