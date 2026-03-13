@@ -971,7 +971,12 @@ private fun SuggestionButton(label: String, subtitle: String, onClick: () -> Uni
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(modifier = Modifier.padding(vertical = 4.dp)) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 4.dp),
+        ) {
             Text(label, style = MaterialTheme.typography.titleSmall)
             Text(
                 subtitle,
