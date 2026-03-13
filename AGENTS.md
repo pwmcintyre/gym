@@ -16,7 +16,8 @@
 - If the user interrupts with a totally off-topic suggestion during another task, and it does not sound urgent, do not derail the current task. Capture it in `ideas/<slug>.md` as a short actionable note and return to the current work.
 - If the user prefixes a request with `idea:` or otherwise clearly frames it as an idea, document it in `ideas/<slug>.md` instead of implementing it unless they explicitly ask for implementation.
 - If the user later asks to "make progress", "continue", or otherwise work unguided, review pending files in `ideas/` and use them as guidance alongside `project.md` and milestone order.
-- Delete an `ideas/<slug>.md` file once that idea has been implemented and verified.
+- Once an idea from `ideas/<slug>.md` has been implemented and verified, delete that idea file in the same task. Do not leave implemented ideas sitting in `ideas/`.
+- An idea file remaining in `ideas/` means the idea is still pending, not done.
 
 ---
 
@@ -64,6 +65,7 @@ For every task, follow this loop:
 6. Fix failures before stopping.
 7. Update documentation or milestone state.
 8. Commit only when the increment is working and verified.
+9. If the task implemented an idea from `ideas/`, delete that idea file before finishing.
 
 Do not leave the repository in a partially broken state.
 
@@ -278,6 +280,7 @@ Before stopping:
 - run relevant validation,
 - update `project.md`,
 - update docs if needed,
+- delete any `ideas/<slug>.md` files that were implemented in this session,
 - confirm repo state is clean or intentionally staged,
 - commit if a milestone or meaningful verified increment is complete,
 - leave a clear next task in `project.md`.
