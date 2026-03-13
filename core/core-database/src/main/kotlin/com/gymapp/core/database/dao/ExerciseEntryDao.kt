@@ -122,6 +122,9 @@ interface ExerciseEntryDao {
     @Query("UPDATE exercise_entries SET exercise_name = :newName WHERE exercise_name = :oldName")
     suspend fun renameGlobally(oldName: String, newName: String)
 
+    @Query("SELECT DISTINCT exercise_name FROM exercise_entries WHERE workout_session_id = :sessionId AND TRIM(exercise_name) != '' ORDER BY label ASC")
+    suspend fun getExerciseNamesForSession(sessionId: String): List<String>
+
     @Query("DELETE FROM exercise_entries")
     suspend fun deleteAll()
 }

@@ -27,7 +27,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -36,6 +35,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -58,6 +60,7 @@ fun WorkoutsScreen(
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
     val progressSummaries by viewModel.progressSummaries.collectAsStateWithLifecycle()
     val sessionSummaries by viewModel.sessionSummaries.collectAsStateWithLifecycle()
+    val suggestedNames by viewModel.suggestedNames.collectAsStateWithLifecycle()
     var showAiSheet by rememberSaveable { mutableStateOf(false) }
 
     // Configure AI in history mode (no session)
@@ -123,6 +126,7 @@ fun WorkoutsScreen(
                     SessionCard(
                         session = session,
                         summary = sessionSummaries[session.id],
+                        suggestedName = suggestedNames[session.id],
                         onClick = { onOpenDetail(session.id) },
                         onCopyAsTemplate = {
                             viewModel.createFromTemplate(session.id, onOpenWorkout)
@@ -200,9 +204,28 @@ private fun ProgressOverviewCard(
 private fun SessionCard(
     session: WorkoutSession,
     summary: SessionSummary?,
+    suggestedName: String?,
     onClick: () -> Unit,
     onCopyAsTemplate: () -> Unit,
 ) {
+    val titleText: String
+    val titleColor: androidx.compose.ui.graphics.Color
+
+    when {
+        !session.notes.isNullOrBlank() -> {
+            titleText = session.notes!!
+            titleColor = MaterialTheme.colorScheme.onSurface
+        }
+        suggestedName != null -> {
+            titleText = suggestedName
+            titleColor = MaterialTheme.colorScheme.onSurfaceVariant
+        }
+        else -> {
+            titleText = formatDate(session.date, "yyyy-MM-dd")
+            titleColor = MaterialTheme.colorScheme.onSurface
+        }
+    }
+
     Card(
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -218,21 +241,36 @@ private fun SessionCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = session.notes?.takeIf { it.isNotBlank() } ?: formatDate(session.date),
+                    text = titleText,
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    color = titleColor,
                     modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
                 )
                 val subtitleParts = buildList {
-                    if (session.notes?.isNotBlank() == true) add(formatDate(session.date))
+                    add(formatDate(session.date, "yyyy-MM-dd"))
                     if (summary != null && summary.exerciseCount > 0) {
                         add("${summary.exerciseCount} exercise${if (summary.exerciseCount != 1) "s" else ""}")
                         add("${summary.setCount} set${if (summary.setCount != 1) "s" else ""}")
                     }
                 }
                 if (subtitleParts.isNotEmpty()) {
+                    val text = subtitleParts.joinToString(" · ")
+                    val primaryColor = MaterialTheme.colorScheme.primary
+                    val annotated = buildAnnotatedString {
+                        var i = 0
+                        while (i < text.length) {
+                            if (text[i].isDigit()) {
+                                val start = i
+                                while (i < text.length && text[i].isDigit()) i++
+                                withStyle(SpanStyle(color = primaryColor)) { append(text.substring(start, i)) }
+                            } else {
+                                append(text[i])
+                                i++
+                            }
+                        }
+                    }
                     Text(
-                        text = subtitleParts.joinToString(" · "),
+                        text = annotated,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 16.dp),

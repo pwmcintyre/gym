@@ -43,13 +43,14 @@ class AiAssistant @Inject constructor(
     suspend fun chat(
         systemPrompt: String,
         messages: List<ChatMessage>,
+        model: String = "gpt-4o",
     ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
             val apiKey = aiSettings.apiKey.first()
             require(apiKey.isNotBlank()) { "OpenAI API key not configured. Set it in Settings." }
 
             val requestJson = buildJsonObject {
-                put("model", "gpt-4o")
+                put("model", model)
                 put("max_tokens", 1024)
                 put("messages", buildJsonArray {
                     // System context

@@ -102,6 +102,9 @@ class WorkoutRepository @Inject constructor(
     suspend fun deleteExercise(id: String) =
         exerciseDao.deleteById(id)
 
+    suspend fun getExerciseNames(sessionId: String): List<String> =
+        exerciseDao.getExerciseNamesForSession(sessionId)
+
     suspend fun renameExerciseGlobally(oldName: String, newName: String) =
         exerciseDao.renameGlobally(oldName, newName)
 
