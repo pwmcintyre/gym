@@ -282,12 +282,14 @@ private fun SessionCard(
                 Icon(
                     imageVector = when (status) {
                         SessionStatus.PLANNED -> Icons.Default.Schedule
-                        SessionStatus.LOGGED -> Icons.Default.Check
+                        SessionStatus.IN_PROGRESS -> Icons.Default.Timelapse
+                        SessionStatus.COMPLETED -> Icons.Default.Check
                     },
                     contentDescription = status.label,
                     tint = when (status) {
                         SessionStatus.PLANNED -> MaterialTheme.colorScheme.outline
-                        SessionStatus.LOGGED -> MaterialTheme.colorScheme.primary
+                        SessionStatus.IN_PROGRESS -> MaterialTheme.colorScheme.tertiary
+                        SessionStatus.COMPLETED -> MaterialTheme.colorScheme.primary
                     },
                     modifier = Modifier
                         .padding(end = 16.dp)
@@ -371,6 +373,11 @@ private fun SessionStateHint(
             "Ready to start logging",
             MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        SessionProgressState.IN_PROGRESS -> Triple(
+            Icons.Default.Timelapse,
+            "Workout in progress",
+            MaterialTheme.colorScheme.tertiary,
+        )
         SessionProgressState.FLEXIBLE_LOGGING -> Triple(
             Icons.Default.Timelapse,
             "Logged without set targets",
@@ -403,21 +410,27 @@ private fun SessionStateHint(
 
 private enum class SessionStatus(val label: String) {
     PLANNED("Planned"),
-    LOGGED("Logged"),
+    IN_PROGRESS("In progress"),
+    COMPLETED("Completed"),
 }
 
 private enum class SessionProgressState {
     EMPTY,
     READY_TO_LOG,
+    IN_PROGRESS,
     FLEXIBLE_LOGGING,
     TRACKED,
 }
 
-private fun sessionStatus(summary: SessionSummary?): SessionStatus =
-    if (summary != null && summary.setCount > 0) SessionStatus.LOGGED else SessionStatus.PLANNED
+private fun sessionStatus(summary: SessionSummary?): SessionStatus = when {
+    summary == null || summary.setCount == 0 -> SessionStatus.PLANNED
+    summary.targetSetCount > 0 && summary.setCount < summary.targetSetCount -> SessionStatus.IN_PROGRESS
+    else -> SessionStatus.COMPLETED
+}
 
 private fun sessionProgressState(summary: SessionSummary?): SessionProgressState = when {
     summary == null || summary.exerciseCount == 0 -> SessionProgressState.EMPTY
+    summary.targetSetCount > 0 && summary.setCount < summary.targetSetCount -> SessionProgressState.IN_PROGRESS
     summary.targetSetCount > 0 -> SessionProgressState.TRACKED
     summary.setCount == 0 -> SessionProgressState.READY_TO_LOG
     else -> SessionProgressState.FLEXIBLE_LOGGING
@@ -426,13 +439,15 @@ private fun sessionProgressState(summary: SessionSummary?): SessionProgressState
 @Composable
 private fun SessionStatus.containerColor(): Color = when (this) {
     SessionStatus.PLANNED -> MaterialTheme.colorScheme.surfaceVariant
-    SessionStatus.LOGGED -> MaterialTheme.colorScheme.surface
+    SessionStatus.IN_PROGRESS -> MaterialTheme.colorScheme.tertiaryContainer.copy(alpha = 0.35f)
+    SessionStatus.COMPLETED -> MaterialTheme.colorScheme.surface
 }
 
 @Composable
 private fun SessionStatus.borderColor(): Color = when (this) {
     SessionStatus.PLANNED -> MaterialTheme.colorScheme.outlineVariant
-    SessionStatus.LOGGED -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+    SessionStatus.IN_PROGRESS -> MaterialTheme.colorScheme.tertiary.copy(alpha = 0.45f)
+    SessionStatus.COMPLETED -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
 }
 
 private fun truncateToDay(epochMs: Long): Long {

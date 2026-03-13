@@ -11,7 +11,8 @@ Progress notes:
 - `Data Visualization` is now partially implemented via a set-completion progress bar when a workout has programmed target sets.
 - Empty and non-targeted in-progress sessions now have clearer supporting states (`No movements yet`, `Ready to start logging`, `Logged without set targets`).
 - Section headers now use more natural labels: `Today`, `Yesterday`, weekday names for recent sessions, and fuller weekday/date labels for older sessions.
-- The next useful slice is deciding whether workout cards need a stronger explicit in-progress treatment beyond the current compact status icon and supporting copy.
+- Workout cards now have a stronger explicit `In progress` treatment via a distinct right-edge icon and warmer card/border treatment for partially completed target-tracked sessions.
+- The next useful slice is deciding whether the workouts list needs any more design work at all, or whether effort should move to the next backlog area.
 
 ---
 

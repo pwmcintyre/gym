@@ -447,6 +447,7 @@ Delivered:
 - Added target-set progress to workout cards so sessions with programmed work now show a completion bar and `logged / target` set count at a glance.
 - Clarified non-targeted card states so workouts without programmed set goals now distinguish `No movements yet`, `Ready to start logging`, and `Logged without set targets`.
 - Tightened workout-list section headers so they now read as `Today`, `Yesterday`, weekday-only for recent sessions, and fuller weekday/date labels for older history instead of raw ISO dates.
+- Split active target-tracked sessions out from completed ones so partially logged workouts now get a distinct in-progress icon and warmer card emphasis instead of looking fully done.
 
 Validation: `./gradlew :features:feature-workouts:compileDebugKotlin --no-daemon` and `./gradlew assembleDebug --no-daemon` — BUILD SUCCESSFUL.
 
