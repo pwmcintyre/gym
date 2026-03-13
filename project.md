@@ -432,6 +432,19 @@ Validation: `./gradlew :features:feature-history:clean --no-daemon`, `./gradlew 
 
 ---
 
+## ✅ Design progress — workouts list status treatment
+
+Autonomous session.
+
+Delivered:
+- Updated the workouts-list design backlog notes so the date/highlight pass now explicitly follows the broader design cleanup and uses the workouts list as the reference treatment.
+- Added clearer workout-card state treatment on the Workouts screen: `Planned` vs `Logged` chips, stronger card border contrast for logged sessions, and a fallback `No movements yet` summary for empty cards.
+- Reduced the duplicate action's visual weight so the card body reads as the primary focus and the copy affordance reads as secondary.
+
+Validation: `./gradlew :features:feature-workouts:compileDebugKotlin --no-daemon`, `./gradlew :features:feature-workouts:clean --no-daemon`, and `./gradlew assembleDebug --no-daemon` — BUILD SUCCESSFUL.
+
+---
+
 ## Milestone 14 — Previous Performance in Exercise Card
 
 Under the target line of each ExerciseCard in the active workout view, show a "Previous" line sourced from the most recent prior session for that exercise.

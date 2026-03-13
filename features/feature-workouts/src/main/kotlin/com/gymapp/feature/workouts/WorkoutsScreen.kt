@@ -10,15 +10,19 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -35,6 +39,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.withStyle
@@ -157,6 +162,7 @@ private fun SessionCard(
     onClick: () -> Unit,
     onCopyAsTemplate: () -> Unit,
 ) {
+    val status = remember(summary) { sessionStatus(summary) }
     val nameText: String?
     val nameColor: androidx.compose.ui.graphics.Color
 
@@ -177,24 +183,48 @@ private fun SessionCard(
 
     Card(
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            containerColor = status.containerColor(),
         ),
-        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+        border = BorderStroke(1.dp, status.borderColor()),
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
+            verticalAlignment = Alignment.Top,
             modifier = Modifier.fillMaxWidth(),
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(start = 16.dp, top = 16.dp, bottom = 16.dp),
+            ) {
+                AssistChip(
+                    onClick = onClick,
+                    label = { Text(status.label) },
+                    leadingIcon = if (status == SessionStatus.LOGGED) {
+                        {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = null,
+                                modifier = Modifier.size(AssistChipDefaults.IconSize),
+                            )
+                        }
+                    } else {
+                        null
+                    },
+                    colors = AssistChipDefaults.assistChipColors(
+                        containerColor = status.chipContainerColor(),
+                        labelColor = status.chipLabelColor(),
+                        leadingIconContentColor = status.chipLabelColor(),
+                    ),
+                )
                 if (nameText != null) {
                     Text(
                         text = nameText,
                         style = MaterialTheme.typography.titleMedium,
                         color = nameColor,
-                        modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
+                        modifier = Modifier.padding(top = 12.dp, end = 16.dp),
                     )
                 }
                 if (summary != null && summary.exerciseCount > 0) {
@@ -222,28 +252,63 @@ private fun SessionCard(
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(
-                            start = 16.dp,
                             end = 16.dp,
-                            bottom = 16.dp,
                             top = if (nameText != null) 4.dp else 16.dp,
                         ),
                     )
                 } else {
-                    Spacer(modifier = Modifier.padding(bottom = if (nameText != null) 16.dp else 0.dp))
+                    Text(
+                        text = "No movements yet",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = if (nameText != null) 4.dp else 12.dp, end = 16.dp),
+                    )
                 }
             }
             IconButton(
                 onClick = onCopyAsTemplate,
-                modifier = Modifier.padding(end = 4.dp),
+                modifier = Modifier.padding(top = 6.dp, end = 4.dp),
             ) {
                 Icon(
                     Icons.Outlined.ContentCopy,
                     contentDescription = "Copy as new workout",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = MaterialTheme.colorScheme.outline,
                 )
             }
         }
     }
+}
+
+private enum class SessionStatus(val label: String) {
+    PLANNED("Planned"),
+    LOGGED("Logged"),
+}
+
+private fun sessionStatus(summary: SessionSummary?): SessionStatus =
+    if (summary != null && summary.setCount > 0) SessionStatus.LOGGED else SessionStatus.PLANNED
+
+@Composable
+private fun SessionStatus.containerColor(): Color = when (this) {
+    SessionStatus.PLANNED -> MaterialTheme.colorScheme.surfaceVariant
+    SessionStatus.LOGGED -> MaterialTheme.colorScheme.surface
+}
+
+@Composable
+private fun SessionStatus.borderColor(): Color = when (this) {
+    SessionStatus.PLANNED -> MaterialTheme.colorScheme.outlineVariant
+    SessionStatus.LOGGED -> MaterialTheme.colorScheme.primary.copy(alpha = 0.35f)
+}
+
+@Composable
+private fun SessionStatus.chipContainerColor(): Color = when (this) {
+    SessionStatus.PLANNED -> MaterialTheme.colorScheme.secondaryContainer
+    SessionStatus.LOGGED -> MaterialTheme.colorScheme.primaryContainer
+}
+
+@Composable
+private fun SessionStatus.chipLabelColor(): Color = when (this) {
+    SessionStatus.PLANNED -> MaterialTheme.colorScheme.onSecondaryContainer
+    SessionStatus.LOGGED -> MaterialTheme.colorScheme.onPrimaryContainer
 }
 
 private fun truncateToDay(epochMs: Long): Long {

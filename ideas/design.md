@@ -2,6 +2,10 @@ As a UX Designer, I’ve analyzed the provided screenshot. The current interface
 
 Here are my suggested improvements for your software agent to implement:
 
+Progress notes:
+- `Dynamic Header & Grouping` is already implemented on the workouts list via date section headers.
+- The next useful slice is `Status Distinction & Visual Feedback` on workout cards.
+
 ---
 
 ## 1. Status Distinction & Visual Feedback
@@ -50,5 +54,4 @@ The "+" button is large and clear, but the "Robot/AI" icon floating above it cre
 | **Navigation** | Icons are thin. | Increase the weight of the active "Workouts" icon for better accessibility. |
 
 ---
-
 
