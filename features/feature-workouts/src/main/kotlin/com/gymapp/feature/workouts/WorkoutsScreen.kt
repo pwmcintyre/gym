@@ -39,8 +39,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -62,7 +62,7 @@ import com.gymapp.core.model.WorkoutSession
 import com.gymapp.core.model.formatDate
 import java.util.Calendar
 
-@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun WorkoutsScreen(
     onOpenWorkout: (sessionId: String) -> Unit,
@@ -90,15 +90,14 @@ fun WorkoutsScreen(
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            TopAppBar(
-                title = { Text("Workouts") },
-                actions = {
-                    IconButton(onClick = { showAiSheet = true }) {
-                        Icon(Icons.Default.SmartToy, contentDescription = "AI Assistant")
-                    }
-                },
-            )
+        floatingActionButton = {
+            SmallFloatingActionButton(
+                onClick = { showAiSheet = true },
+                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                contentColor = MaterialTheme.colorScheme.primary,
+            ) {
+                Icon(Icons.Default.SmartToy, contentDescription = "AI Assistant")
+            }
         },
     ) { innerPadding ->
         if (sessions.isEmpty()) {
