@@ -50,8 +50,10 @@ import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.RepModifier
 import com.gymapp.core.model.SetEntry
 import com.gymapp.core.model.WeightMode
+import com.gymapp.core.model.buildExerciseSections
 import com.gymapp.core.model.formatDate
 import com.gymapp.core.model.formatWeight
+import com.gymapp.core.model.labelParts
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +68,7 @@ fun WorkoutDetailScreen(
     val session by viewModel.session.collectAsStateWithLifecycle()
     val exercises by viewModel.exercises.collectAsStateWithLifecycle()
     var showDeleteDialog by rememberSaveable { mutableStateOf(false) }
+    val exerciseSections = buildExerciseSections(exercises)
 
     val titleText = session?.let { s ->
         s.notes?.takeIf { it.isNotBlank() } ?: formatDate(s.date)
@@ -118,12 +121,25 @@ fun WorkoutDetailScreen(
                     )
                 }
             }
-            items(exercises, key = { it.id }) { exercise ->
-                ExerciseDetailCard(
-                    exercise = exercise,
-                    viewModel = viewModel,
-                    onOpenProgress = { onOpenProgress(exercise.exerciseName) },
-                )
+            exerciseSections.forEachIndexed { index, section ->
+                if (section.supersetKey != null) {
+                    item(key = "superset_header_${section.supersetKey}_$index") {
+                        Text(
+                            text = "Superset ${section.supersetKey}",
+                            style = MaterialTheme.typography.titleSmall,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.padding(horizontal = 4.dp),
+                        )
+                    }
+                }
+                items(section.exercises, key = { it.id }) { exercise ->
+                    ExerciseDetailCard(
+                        exercise = exercise,
+                        displayLabel = exercise.displayLabel(inSuperset = section.supersetKey != null),
+                        viewModel = viewModel,
+                        onOpenProgress = { onOpenProgress(exercise.exerciseName) },
+                    )
+                }
             }
         }
     }
@@ -151,6 +167,7 @@ fun WorkoutDetailScreen(
 @Composable
 private fun ExerciseDetailCard(
     exercise: ExerciseEntry,
+    displayLabel: String?,
     viewModel: WorkoutDetailViewModel,
     onOpenProgress: () -> Unit,
 ) {
@@ -169,12 +186,16 @@ private fun ExerciseDetailCard(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
             ) {
-                Text(
-                    text = exercise.label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.width(36.dp),
-                )
+                if (displayLabel != null) {
+                    Text(
+                        text = displayLabel,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.width(36.dp),
+                    )
+                } else {
+                    Spacer(modifier = Modifier.width(36.dp))
+                }
                 Text(
                     text = exercise.exerciseName,
                     style = MaterialTheme.typography.titleMedium,
@@ -247,6 +268,15 @@ private fun ExerciseDetailCard(
                 sets.forEach { set -> SetDetailRow(set) }
             }
         }
+    }
+}
+
+private fun ExerciseEntry.displayLabel(inSuperset: Boolean): String? {
+    val parts = labelParts()
+    return when {
+        inSuperset -> parts.memberLabel
+        label.isBlank() -> null
+        else -> label
     }
 }
 

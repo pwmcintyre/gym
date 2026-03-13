@@ -226,6 +226,7 @@ Restructured exercise data into three layers (Movement Identity / Modifiers / Pr
 - Workout creation now lives on the workouts page: scan moved out of bottom nav, the floating add button is gone, and a top-of-list hero CTA now handles new, suggested, and scanned workout starts.
 - User-facing `exercise` terminology has now been exhausted on the shipped UI; remaining `exercise` references are internal model names, route args, or compatibility-sensitive schema fields.
 - Movement detail personal records are now reduced to two headline metrics: top weight and top reps, instead of a dense all-PR grid.
+- Whiteboard-style labels such as `A1` and `A2` are now grouped visually as lightweight supersets in active-workout and workout-detail screens, without changing storage or scan parsing.
 - Remaining larger follow-ups still live in `ideas/` and should be handled as separate slices once this creation-flow cleanup lands.
 
 ## ✅ Milestone 3.6 — Theme and Visual Identity

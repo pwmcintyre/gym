@@ -76,9 +76,11 @@ import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.RepModifier
 import com.gymapp.core.model.SetEntry
 import com.gymapp.core.model.WeightMode
+import com.gymapp.core.model.buildExerciseSections
 import com.gymapp.core.model.findFuzzyMatches
 import com.gymapp.core.model.formatDate
 import com.gymapp.core.model.formatWeight
+import com.gymapp.core.model.labelParts
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -101,6 +103,7 @@ fun ActiveWorkoutScreen(
     var showAddExerciseDialog by rememberSaveable { mutableStateOf(false) }
     var showAiSheet by rememberSaveable { mutableStateOf(false) }
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
+    val exerciseSections = remember(exercises) { buildExerciseSections(exercises) }
 
     // Configure AI assistant with session context
     val sessionId = session?.id
@@ -240,19 +243,30 @@ fun ActiveWorkoutScreen(
                         )
                     }
                 }
-                items(exercises, key = { it.id }) { exercise ->
-                    val timerForThisExercise = (restTimer as? RestTimerState.Running)
-                        ?.takeIf { it.exerciseId == exercise.id }
-                    ExerciseCard(
-                        exercise = exercise,
-                        bodyWeightKg = bodyWeightKg,
-                        previousSets = lastPerformance[exercise.exerciseName],
-                        previousSessionDate = lastPerformanceDate[exercise.exerciseName],
-                        knownNames = knownNames,
-                        restTimer = timerForThisExercise,
-                        onCancelTimer = { viewModel.cancelRestTimer() },
-                        viewModel = viewModel,
-                    )
+                exerciseSections.forEachIndexed { index, section ->
+                    if (section.supersetKey != null) {
+                        item(key = "superset_header_${section.supersetKey}_$index") {
+                            SupersetHeader(
+                                title = "Superset ${section.supersetKey}",
+                                modifier = Modifier.padding(top = if (index == 0) 0.dp else 4.dp),
+                            )
+                        }
+                    }
+                    items(section.exercises, key = { it.id }) { exercise ->
+                        val timerForThisExercise = (restTimer as? RestTimerState.Running)
+                            ?.takeIf { it.exerciseId == exercise.id }
+                        ExerciseCard(
+                            exercise = exercise,
+                            displayLabel = exercise.displayLabel(inSuperset = section.supersetKey != null),
+                            bodyWeightKg = bodyWeightKg,
+                            previousSets = lastPerformance[exercise.exerciseName],
+                            previousSessionDate = lastPerformanceDate[exercise.exerciseName],
+                            knownNames = knownNames,
+                            restTimer = timerForThisExercise,
+                            onCancelTimer = { viewModel.cancelRestTimer() },
+                            viewModel = viewModel,
+                        )
+                    }
                 }
             }
         }
@@ -301,6 +315,7 @@ fun ActiveWorkoutScreen(
 @Composable
 private fun ExerciseCard(
     exercise: ExerciseEntry,
+    displayLabel: String?,
     bodyWeightKg: Float?,
     previousSets: List<SetEntry>?,
     previousSessionDate: Long?,
@@ -352,12 +367,16 @@ private fun ExerciseCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = exercise.label,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.width(36.dp),
-                )
+                if (displayLabel != null) {
+                    Text(
+                        text = displayLabel,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.width(36.dp),
+                    )
+                } else {
+                    Spacer(modifier = Modifier.width(36.dp))
+                }
                 Text(
                     text = exercise.exerciseName,
                     style = MaterialTheme.typography.titleMedium,
@@ -1000,5 +1019,27 @@ private fun SuggestionButton(label: String, subtitle: String, onClick: () -> Uni
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
+    }
+}
+
+@Composable
+private fun SupersetHeader(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = modifier.padding(horizontal = 4.dp),
+    )
+}
+
+private fun ExerciseEntry.displayLabel(inSuperset: Boolean): String? {
+    val parts = labelParts()
+    return when {
+        inSuperset -> parts.memberLabel
+        label.isBlank() -> null
+        else -> label
     }
 }
