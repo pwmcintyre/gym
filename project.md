@@ -393,6 +393,32 @@ Remaining:
 
 ---
 
+## ✅ Milestone 13 — AI Assistant (voice + chat)
+
+Autonomous session.
+
+Delivered:
+- **`AiAssistant` service** (`core/core-ai`) — thin GPT-4o chat completions wrapper. Takes a system prompt + `List<ChatMessage>` conversation history, returns `Result<String>`. Shares the `OkHttpClient` + serialization pattern from `ProxyWorkoutCardParser`.
+- **`AiAssistantViewModel`** (`feature-workouts`) — `AndroidViewModel` managing:
+  - Conversation history (bubbles shown in the sheet).
+  - Mic state (`Idle` / `Listening` / `Error`) via Android `SpeechRecognizer` (no new library).
+  - `isLoading` flag while waiting for OpenAI.
+  - `AutoFillProposal` — parsed from GPT-4o's structured JSON response (`action: fill_sets`) when in workout mode; user confirms before sets are written to Room.
+  - `configure(sessionId, workoutMode)` — called by the host screen; controls which system prompt is built.
+  - Two system prompt modes: in-workout (serializes current exercises + logged sets; asks for `fill_sets` JSON) and history Q&A (serializes `ExerciseProgressSummary` for all exercises; asks for `answer` JSON).
+  - `applyAutoFill()` — matches fills to exercises by name, appends new `SetEntry` rows via `SetRepository`.
+- **`AiAssistantSheet` composable** (`feature-workouts`) — `ModalBottomSheet` with:
+  - Chat bubble list (user = primary colour, assistant = surfaceVariant, error = errorContainer).
+  - `AutoFillBanner` — card with "Apply" + dismiss when proposal is ready.
+  - Input row: mic toggle button, `OutlinedTextField`, send button.
+- **AI button (SmartToy FAB)** added to both `ActiveWorkoutScreen` and `WorkoutsScreen` as a secondary FAB above the primary FAB.
+- **`RECORD_AUDIO` permission** added to `AndroidManifest.xml`.
+- **`kotlin.serialization` plugin + `kotlinx.serialization.json` dependency** added to `feature-workouts/build.gradle.kts`.
+
+Validation: `./gradlew assembleDebug testDebugUnitTest --no-daemon` — BUILD SUCCESSFUL.
+
+---
+
 
 
 | Decision                  | Reason                                          |

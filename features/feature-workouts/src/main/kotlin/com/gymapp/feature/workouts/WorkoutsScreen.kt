@@ -15,6 +15,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.outlined.ContentCopy
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -28,7 +29,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -49,22 +54,41 @@ fun WorkoutsScreen(
     onOpenProgress: (exerciseName: String) -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WorkoutsViewModel = hiltViewModel(),
+    aiViewModel: AiAssistantViewModel = hiltViewModel(),
 ) {
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
     val progressSummaries by viewModel.progressSummaries.collectAsStateWithLifecycle()
     val sessionSummaries by viewModel.sessionSummaries.collectAsStateWithLifecycle()
+    var showAiSheet by rememberSaveable { mutableStateOf(false) }
+
+    // Configure AI in history mode (no session)
+    LaunchedEffect(Unit) {
+        aiViewModel.configure(sessionId = null, workoutMode = false)
+    }
 
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
         topBar = { TopAppBar(title = { Text("Workouts") }) },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { viewModel.createWorkout(onOpenWorkout) },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Icon(Icons.Default.Add, contentDescription = "New workout")
+                FloatingActionButton(
+                    onClick = { showAiSheet = true },
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                ) {
+                    Icon(Icons.Default.SmartToy, contentDescription = "AI Assistant")
+                }
+                FloatingActionButton(
+                    onClick = { viewModel.createWorkout(onOpenWorkout) },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "New workout")
+                }
             }
         },
     ) { innerPadding ->
@@ -109,6 +133,13 @@ fun WorkoutsScreen(
                 }
             }
         }
+    }
+
+    if (showAiSheet) {
+        AiAssistantSheet(
+            onDismiss = { showAiSheet = false },
+            viewModel = aiViewModel,
+        )
     }
 }
 

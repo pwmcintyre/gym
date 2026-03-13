@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -75,6 +76,7 @@ fun ActiveWorkoutScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ActiveWorkoutViewModel = hiltViewModel(),
+    aiViewModel: AiAssistantViewModel = hiltViewModel(),
 ) {
     val session by viewModel.session.collectAsStateWithLifecycle()
     val exercises by viewModel.exercises.collectAsStateWithLifecycle()
@@ -84,6 +86,13 @@ fun ActiveWorkoutScreen(
     val restTimer by viewModel.restTimer.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showAddExerciseDialog by rememberSaveable { mutableStateOf(false) }
+    var showAiSheet by rememberSaveable { mutableStateOf(false) }
+
+    // Configure AI assistant with session context
+    val sessionId = session?.id
+    LaunchedEffect(sessionId) {
+        if (sessionId != null) aiViewModel.configure(sessionId = sessionId, workoutMode = true)
+    }
 
     // Vibrate when timer expires
     LaunchedEffect(restTimer) {
@@ -121,12 +130,24 @@ fun ActiveWorkoutScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(
-                onClick = { showAddExerciseDialog = true },
-                containerColor = MaterialTheme.colorScheme.primary,
-                contentColor = MaterialTheme.colorScheme.onPrimary,
+            Column(
+                horizontalAlignment = Alignment.End,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Add exercise")
+                FloatingActionButton(
+                    onClick = { showAiSheet = true },
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                ) {
+                    Icon(Icons.Default.SmartToy, contentDescription = "AI Assistant")
+                }
+                FloatingActionButton(
+                    onClick = { showAddExerciseDialog = true },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = "Add exercise")
+                }
             }
         },
     ) { innerPadding ->
@@ -212,6 +233,13 @@ fun ActiveWorkoutScreen(
                 showAddExerciseDialog = false
             },
             onDismiss = { showAddExerciseDialog = false },
+        )
+    }
+
+    if (showAiSheet) {
+        AiAssistantSheet(
+            onDismiss = { showAiSheet = false },
+            viewModel = aiViewModel,
         )
     }
 }

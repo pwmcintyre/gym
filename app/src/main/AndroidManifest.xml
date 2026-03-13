@@ -4,8 +4,11 @@
     <!-- Camera permission for scanning workout cards -->
     <uses-permission android:name="android.permission.CAMERA" />
 
-    <!-- Internet permission for Google Drive backup -->
+    <!-- Internet permission for Google Drive backup and OpenAI calls -->
     <uses-permission android:name="android.permission.INTERNET" />
+
+    <!-- Microphone permission for AI voice input -->
+    <uses-permission android:name="android.permission.RECORD_AUDIO" />
 
     <!-- Camera feature declaration (optional hardware) -->
     <uses-feature
