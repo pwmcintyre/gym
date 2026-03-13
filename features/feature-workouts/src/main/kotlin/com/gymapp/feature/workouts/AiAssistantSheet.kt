@@ -1,5 +1,9 @@
 package com.gymapp.feature.workouts
 
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -50,9 +54,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,6 +74,20 @@ fun AiAssistantSheet(
     val proposal by viewModel.autoFillProposal.collectAsStateWithLifecycle()
 
     val listState = rememberLazyListState()
+    val context = LocalContext.current
+
+    var hasMicPermission by remember {
+        mutableStateOf(
+            ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO)
+                == PackageManager.PERMISSION_GRANTED
+        )
+    }
+    val micPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        hasMicPermission = granted
+        if (granted) viewModel.startListening()
+    }
 
     // Auto-scroll to latest message
     LaunchedEffect(messages.size) {
@@ -162,8 +182,13 @@ fun AiAssistantSheet(
                 micState = micState,
                 onSend = { viewModel.sendMessage(it) },
                 onMicToggle = {
-                    if (micState is MicState.Listening) viewModel.stopListening()
-                    else viewModel.startListening()
+                    if (micState is MicState.Listening) {
+                        viewModel.stopListening()
+                    } else if (hasMicPermission) {
+                        viewModel.startListening()
+                    } else {
+                        micPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
                 },
             )
         }
