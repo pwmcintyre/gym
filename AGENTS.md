@@ -13,6 +13,9 @@
 - Do not add backwards-compatibility shims or version gates. Change the code directly.
 - Do not over-engineer for hypothetical future scale. Solve the immediate problem simply.
 - User feedback is tracked in `feedback/YYYY-MM-DD.md`. Check recent feedback files for known issues before starting a session.
+- If the user interrupts with a totally off-topic suggestion during another task, and it does not sound urgent, do not derail the current task. Capture it in `ideas/<slug>.md` as a short actionable note and return to the current work.
+- If the user later asks to "make progress", "continue", or otherwise work unguided, review pending files in `ideas/` and use them as guidance alongside `project.md` and milestone order.
+- Delete an `ideas/<slug>.md` file once that idea has been implemented and verified.
 
 ---
 

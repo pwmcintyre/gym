@@ -35,6 +35,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
@@ -93,6 +94,7 @@ fun ActiveWorkoutScreen(
     val lastPerformance by viewModel.lastPerformance.collectAsStateWithLifecycle()
     val lastPerformanceDate by viewModel.lastPerformanceDate.collectAsStateWithLifecycle()
     val restTimer by viewModel.restTimer.collectAsStateWithLifecycle()
+    val isSuggesting by viewModel.isSuggesting.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showAddExerciseDialog by rememberSaveable { mutableStateOf(false) }
     var showAiSheet by rememberSaveable { mutableStateOf(false) }
@@ -227,11 +229,9 @@ fun ActiveWorkoutScreen(
                 }
                 if (exercises.isEmpty()) {
                     item {
-                        Text(
-                            "No exercises yet. Tap + to add one.",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(top = 32.dp),
+                        WorkoutSuggestionPanel(
+                            isSuggesting = isSuggesting,
+                            onSuggest = { viewModel.suggestWorkout(it) },
                         )
                     }
                 }
@@ -924,4 +924,60 @@ private fun nextLabel(exercises: List<ExerciseEntry>): String {
     val letter = last.firstOrNull { it.isLetter() } ?: 'A'
     val num = last.filter { it.isDigit() }.toIntOrNull() ?: 1
     return if (num < 3) "$letter${num + 1}" else "${letter + 1}1"
+}
+
+@Composable
+private fun WorkoutSuggestionPanel(
+    isSuggesting: Boolean,
+    onSuggest: (SuggestionType) -> Unit,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 32.dp),
+    ) {
+        Text(
+            "No exercises yet. Tap + to add, or let AI suggest a starting point:",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        if (isSuggesting) {
+            Box(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp),
+            ) {
+                CircularProgressIndicator()
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                SuggestionButton("Double down", "Continue & intensify recent training") {
+                    onSuggest(SuggestionType.DOUBLE_DOWN)
+                }
+                SuggestionButton("Fill the gaps", "Train what you've been skipping") {
+                    onSuggest(SuggestionType.FILL_GAPS)
+                }
+                SuggestionButton("Cardio", "Conditioning — no weights") {
+                    onSuggest(SuggestionType.CARDIO)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SuggestionButton(label: String, subtitle: String, onClick: () -> Unit) {
+    ElevatedButton(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.padding(vertical = 4.dp)) {
+            Text(label, style = MaterialTheme.typography.titleSmall)
+            Text(
+                subtitle,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
 }

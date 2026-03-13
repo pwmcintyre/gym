@@ -3,6 +3,8 @@ package com.gymapp.feature.workouts
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gymapp.core.ai.AiAssistant
+import com.gymapp.core.ai.ChatMessage
 import com.gymapp.core.ai.UserSettings
 import com.gymapp.core.database.repository.SetRepository
 import com.gymapp.core.database.repository.WorkoutRepository
@@ -22,6 +24,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class SuggestionType { DOUBLE_DOWN, FILL_GAPS, CARDIO }
+
 sealed class RestTimerState {
     object Idle : RestTimerState()
     data class Running(val exerciseId: String, val remainingSeconds: Int, val totalSeconds: Int) : RestTimerState()
@@ -33,6 +37,7 @@ class ActiveWorkoutViewModel @Inject constructor(
     private val workoutRepository: WorkoutRepository,
     private val setRepository: SetRepository,
     private val userSettings: UserSettings,
+    private val aiAssistant: AiAssistant,
 ) : ViewModel() {
 
     private val sessionId: String = checkNotNull(savedStateHandle["sessionId"])
@@ -169,6 +174,72 @@ class ActiveWorkoutViewModel @Inject constructor(
             setRepository.observeSets(exerciseId)
                 .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
         }
+
+    private val _isSuggesting = MutableStateFlow(false)
+    val isSuggesting: StateFlow<Boolean> = _isSuggesting.asStateFlow()
+
+    fun suggestWorkout(type: SuggestionType) {
+        viewModelScope.launch {
+            _isSuggesting.value = true
+            runCatching {
+                // Build context from last 5 sessions
+                val recent = workoutRepository.observeAll().first().take(5)
+                val contextLines = mutableListOf<String>()
+                for (s in recent) {
+                    val names = workoutRepository.getExerciseNames(s.id)
+                    val label = s.notes?.takeIf { it.isNotBlank() } ?: "Unnamed"
+                    contextLines.add("$label: ${names.joinToString(", ")}")
+                }
+                val context = contextLines.joinToString("\n")
+
+                val goalPrompt = when (type) {
+                    SuggestionType.DOUBLE_DOWN ->
+                        "Suggest a workout that continues my recent training pattern. Push harder on the same movements or similar ones — progressive overload."
+                    SuggestionType.FILL_GAPS ->
+                        "Suggest a workout that complements my recent training. Focus on muscle groups I haven't trained recently to keep things balanced."
+                    SuggestionType.CARDIO ->
+                        "Suggest a practical conditioning/cardio workout suitable for someone who also trains with weights."
+                }
+
+                val result = aiAssistant.chat(
+                    model = "gpt-4o-mini",
+                    systemPrompt = """
+                        You are a workout planner. Given recent workout history and a goal, suggest 3–6 exercises.
+                        Respond ONLY with one exercise per line in this exact format:
+                        Exercise Name | sets | reps
+                        Use whole numbers for sets and reps. No extra text, no headers, no blank lines.
+                    """.trimIndent(),
+                    messages = listOf(
+                        ChatMessage(
+                            ChatMessage.Role.USER,
+                            "Recent sessions:\n$context\n\nGoal: $goalPrompt",
+                        ),
+                    ),
+                )
+
+                val lines = result.getOrThrow().trim().lines()
+                val labelPool = listOf("A1","B1","C1","D1","E1","F1","G1","H1")
+                val startIdx = exercises.value.size
+                lines.forEachIndexed { i, line ->
+                    val parts = line.split("|").map { it.trim() }
+                    if (parts.size >= 1 && parts[0].isNotBlank()) {
+                        val name = parts[0]
+                        val sets = parts.getOrNull(1)?.toIntOrNull()
+                        val reps = parts.getOrNull(2)?.toIntOrNull()
+                        val label = labelPool.getOrElse(startIdx + i) { "${startIdx + i + 1}" }
+                        workoutRepository.addExercise(
+                            sessionId = sessionId,
+                            label = label,
+                            exerciseName = name,
+                            targetSets = sets,
+                            targetReps = reps,
+                        )
+                    }
+                }
+            }
+            _isSuggesting.value = false
+        }
+    }
 
     fun cancelRestTimer() {
         timerJob?.cancel()
