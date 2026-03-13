@@ -446,6 +446,7 @@ Delivered:
 - Moved the secondary session actions into a long-press card menu so tap remains the primary path into workout details while template-copy stays available without adding another visible icon.
 - Added target-set progress to workout cards so sessions with programmed work now show a completion bar and `logged / target` set count at a glance.
 - Clarified non-targeted card states so workouts without programmed set goals now distinguish `No movements yet`, `Ready to start logging`, and `Logged without set targets`.
+- Tightened workout-list section headers so they now read as `Today`, `Yesterday`, weekday-only for recent sessions, and fuller weekday/date labels for older history instead of raw ISO dates.
 
 Validation: `./gradlew :features:feature-workouts:compileDebugKotlin --no-daemon` and `./gradlew assembleDebug --no-daemon` — BUILD SUCCESSFUL.
 

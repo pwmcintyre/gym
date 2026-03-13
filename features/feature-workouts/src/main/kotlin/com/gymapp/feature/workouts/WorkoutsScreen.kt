@@ -447,9 +447,14 @@ private fun truncateToDay(epochMs: Long): Long {
 
 private fun dayLabel(epochMs: Long): String {
     val todayStart = truncateToDay(System.currentTimeMillis())
+    val daysAgo = ((todayStart - epochMs) / 86_400_000L).toInt()
+    val todayYear = Calendar.getInstance().apply { timeInMillis = todayStart }.get(Calendar.YEAR)
+    val labelYear = Calendar.getInstance().apply { timeInMillis = epochMs }.get(Calendar.YEAR)
     return when {
         epochMs >= todayStart -> "Today"
         epochMs >= todayStart - 86_400_000L -> "Yesterday"
-        else -> formatDate(epochMs)
+        daysAgo in 2..6 -> formatDate(epochMs, "EEEE")
+        labelYear == todayYear -> formatDate(epochMs, "EEEE, MMM d")
+        else -> formatDate(epochMs, "EEEE, MMM d, yyyy")
     }
 }

@@ -10,7 +10,8 @@ Progress notes:
 - `Action Priority` is now implemented via a long-press card menu for secondary session actions.
 - `Data Visualization` is now partially implemented via a set-completion progress bar when a workout has programmed target sets.
 - Empty and non-targeted in-progress sessions now have clearer supporting states (`No movements yet`, `Ready to start logging`, `Logged without set targets`).
-- The next useful slice is tightening the section-header language beyond `Today` / `Yesterday` into more natural date labels.
+- Section headers now use more natural labels: `Today`, `Yesterday`, weekday names for recent sessions, and fuller weekday/date labels for older sessions.
+- The next useful slice is deciding whether workout cards need a stronger explicit in-progress treatment beyond the current compact status icon and supporting copy.
 
 ---
 
