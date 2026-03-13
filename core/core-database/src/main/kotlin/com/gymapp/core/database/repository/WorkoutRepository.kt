@@ -79,6 +79,7 @@ class WorkoutRepository @Inject constructor(
         targetReps: Int? = null,
         targetModifier: RepModifier = RepModifier.NONE,
         targetRawText: String? = null,
+        modifierTags: List<String> = emptyList(),
         notes: String? = null,
     ): ExerciseEntry {
         val entry = ExerciseEntry(
@@ -90,6 +91,7 @@ class WorkoutRepository @Inject constructor(
             targetReps = targetReps,
             targetModifier = targetModifier,
             targetRawText = targetRawText,
+            modifierTags = modifierTags,
             notes = notes,
         )
         exerciseDao.insert(entry.toEntity())
@@ -127,10 +129,10 @@ private fun WorkoutSession.toEntity() = WorkoutSessionEntity(id, date, notes, cr
 
 private fun ExerciseEntryEntity.toModel() = ExerciseEntry(
     id, workoutSessionId, label, exerciseName,
-    targetSets, targetReps, targetModifier, targetRawText, notes,
+    targetSets, targetReps, targetModifier, targetRawText, modifierTags, notes,
 )
 
 private fun ExerciseEntry.toEntity() = ExerciseEntryEntity(
     id, workoutSessionId, label, exerciseName,
-    targetSets, targetReps, targetModifier, targetRawText, notes,
+    targetSets, targetReps, targetModifier, targetRawText, modifierTags, notes,
 )

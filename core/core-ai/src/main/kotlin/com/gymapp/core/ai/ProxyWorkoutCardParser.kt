@@ -2,6 +2,7 @@ package com.gymapp.core.ai
 
 import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.RepModifier
+import com.gymapp.core.model.extractModifierTags
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -156,6 +157,7 @@ private data class WorkoutItem(
         targetReps = targetReps,
         targetModifier = if (repModifier.uppercase() == "MAX") RepModifier.MAX else RepModifier.NONE,
         targetRawText = rawSourceText.ifBlank { null },
+        modifierTags = extractModifierTags(notes),
         notes = notes.ifBlank { null },
     )
 }

@@ -137,6 +137,7 @@ class ScanViewModel @Inject constructor(
                     targetReps = null,
                     targetModifier = com.gymapp.core.model.RepModifier.NONE,
                     targetRawText = null,
+                    modifierTags = emptyList(),
                     notes = null,
                 )
             )
@@ -157,6 +158,7 @@ class ScanViewModel @Inject constructor(
                     targetReps = entry.targetReps,
                     targetModifier = entry.targetModifier,
                     targetRawText = entry.targetRawText,
+                    modifierTags = entry.modifierTags,
                     notes = entry.notes,
                 )
             }

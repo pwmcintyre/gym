@@ -39,5 +39,7 @@ dependencies {
     // Coroutines
     implementation(libs.bundles.coroutines)
 
+    implementation(libs.kotlinx.serialization.json)
+
     testImplementation(libs.junit)
 }

@@ -67,6 +67,7 @@ class DebugDataSeeder @Inject constructor(
                 name = "Paused Barbell Deadlift (Isometric)",
                 targetSets = 4,
                 targetReps = 3,
+                modifierTags = listOf("Pause", "Isometric"),
                 notes = "2-sec pause above the knee on the way up; 2-sec pause above the knee on the way down",
             ) {
                 repeatedSets(weight = 90f + (week.weekNumber - 1) * 7.5f, count = 4, reps = 3)
@@ -79,11 +80,12 @@ class DebugDataSeeder @Inject constructor(
                 name = "Paused DB Goblet Squat with Glute Band (HEAVY)",
                 targetSets = 4,
                 targetReps = 10,
+                modifierTags = listOf("Pause", "Banded"),
                 notes = "3-sec pause at the bottom of the squat",
             ) {
                 repeatedSets(weight = 24f + (week.weekNumber - 1) * 2f, count = 4, reps = 10, lastReps = 8)
             }
-            ex("D1", "Weighted Plank", 4, null, RepModifier.MAX, notes = "Max hold") {
+            ex("D1", "Weighted Plank", 4, null, RepModifier.MAX, modifierTags = listOf("Isometric"), notes = "Max hold") {
                 repeatedSets(weight = 15f + (week.weekNumber - 1) * 5f, count = 4, reps = 45 + (week.weekNumber - 1) * 5)
             }
         }
@@ -99,6 +101,7 @@ class DebugDataSeeder @Inject constructor(
                 name = "Paused DB Bench Press (Flat)",
                 targetSets = 4,
                 targetReps = 8,
+                modifierTags = listOf("Pause"),
                 notes = "3-sec pause at the bottom; target range 6-8",
             ) {
                 repeatedSets(weight = 24f + (week.weekNumber - 1) * 2f, count = 4, reps = 8, lastReps = 6)
@@ -108,17 +111,18 @@ class DebugDataSeeder @Inject constructor(
                 name = "Paused Pull Ups",
                 targetSets = 4,
                 targetReps = 6,
+                modifierTags = listOf("Pause", "Bodyweight"),
                 notes = "2-sec pause when chin passes the bar; alternative: Paused TRX Row 8-10",
             ) {
                 bodyweightSets(SEEDED_BODY_WEIGHT_KG, 6 + week.weekNumber, 5 + week.weekNumber, 4 + week.weekNumber, 4 + week.weekNumber)
             }
-            ex("C2", "Banded Face Pulls", 4, 15) {
+            ex("C2", "Banded Face Pulls", 4, 15, modifierTags = listOf("Banded")) {
                 bandedSets(15, 15, 14, 14)
             }
             ex("D1", "Swiss Ball Jackknifes", 4, 12) {
                 repeatedSets(weight = 0f, count = 4, reps = 12, mode = WeightMode.BODYWEIGHT, bodyWeightKg = SEEDED_BODY_WEIGHT_KG)
             }
-            ex("D2", "Hollow Hold", 4, null, RepModifier.MAX, notes = "Max hold") {
+            ex("D2", "Hollow Hold", 4, null, RepModifier.MAX, modifierTags = listOf("Bodyweight", "Isometric"), notes = "Max hold") {
                 bodyweightSets(SEEDED_BODY_WEIGHT_KG, 30 + week.weekNumber * 2, 28 + week.weekNumber * 2, 26 + week.weekNumber * 2, 24 + week.weekNumber * 2)
             }
         }
@@ -132,6 +136,7 @@ class DebugDataSeeder @Inject constructor(
                 targetSets = 4,
                 targetReps = null,
                 targetModifier = RepModifier.MAX,
+                modifierTags = listOf("Isometric"),
                 notes = "20-30s iso hold into max reps (aim for 10+)",
             ) {
                 repeatedSets(weight = 20f + (week.weekNumber - 1) * 2.5f, count = 4, reps = 12, lastReps = 10)
@@ -148,7 +153,7 @@ class DebugDataSeeder @Inject constructor(
             ex("C1", "Seated Zottman Curl", 4, 12, notes = "10-12") {
                 repeatedSets(weight = 12f + (week.weekNumber - 1), count = 4, reps = 12, lastReps = 10)
             }
-            ex("C2", "Banded Tricep Kickbacks", 4, 15) {
+            ex("C2", "Banded Tricep Kickbacks", 4, 15, modifierTags = listOf("Banded")) {
                 bandedSets(15, 15, 14, 14)
             }
             ex("D1", "Kneeling Plate Windmill", 4, 10, notes = "10 each side") {
@@ -179,6 +184,7 @@ class DebugDataSeeder @Inject constructor(
                 name = "Paused BB Back Squat",
                 targetSets = 4,
                 targetReps = 3,
+                modifierTags = listOf("Pause"),
                 notes = "3-sec pause at the bottom",
             ) {
                 repeatedSets(weight = 80f + (week.weekNumber - 1) * 7.5f, count = 4, reps = 3)
@@ -195,11 +201,12 @@ class DebugDataSeeder @Inject constructor(
                 targetSets = 4,
                 targetReps = null,
                 targetModifier = RepModifier.MAX,
+                modifierTags = listOf("Bodyweight", "Isometric"),
                 notes = "Max hold each leg",
             ) {
                 bodyweightSets(SEEDED_BODY_WEIGHT_KG, 35 + week.weekNumber * 2, 34 + week.weekNumber * 2, 32 + week.weekNumber * 2, 30 + week.weekNumber * 2)
             }
-            ex("D2", "Banded Woodchop", 4, 10, notes = "10 each side") {
+            ex("D2", "Banded Woodchop", 4, 10, modifierTags = listOf("Banded"), notes = "10 each side") {
                 bandedSets(10, 10, 10, 10)
             }
         }
@@ -215,6 +222,7 @@ class DebugDataSeeder @Inject constructor(
                 name = "Paused Standing Single DB Shoulder Press",
                 targetSets = 4,
                 targetReps = 8,
+                modifierTags = listOf("Pause"),
                 notes = "2-sec pause at lockout; target range 6-8",
             ) {
                 repeatedSets(weight = 16f + (week.weekNumber - 1) * 2f, count = 4, reps = 8, lastReps = 6)
@@ -225,6 +233,7 @@ class DebugDataSeeder @Inject constructor(
                 targetSets = 4,
                 targetReps = null,
                 targetModifier = RepModifier.MAX,
+                modifierTags = listOf("Bodyweight"),
                 notes = "Use bands, aim for 10",
             ) {
                 bodyweightSets(SEEDED_BODY_WEIGHT_KG, 10 + week.weekNumber, 9 + week.weekNumber, 8 + week.weekNumber, 8 + week.weekNumber)
@@ -234,6 +243,7 @@ class DebugDataSeeder @Inject constructor(
                 name = "Paused Single Arm DB Row",
                 targetSets = 3,
                 targetReps = 10,
+                modifierTags = listOf("Pause"),
                 notes = "2-sec pause at the top; target range 8-10",
             ) {
                 repeatedSets(weight = 24f + (week.weekNumber - 1) * 2f, count = 3, reps = 10, lastReps = 8)
@@ -260,6 +270,7 @@ class DebugDataSeeder @Inject constructor(
             targetSets: Int,
             targetReps: Int?,
             targetModifier: RepModifier = RepModifier.NONE,
+            modifierTags: List<String> = emptyList(),
             notes: String? = null,
             targetRawText: String? = null,
             block: suspend ExerciseScope.() -> Unit,
@@ -272,6 +283,7 @@ class DebugDataSeeder @Inject constructor(
                 targetReps = targetReps,
                 targetModifier = targetModifier,
                 targetRawText = targetRawText,
+                modifierTags = modifierTags,
                 notes = notes,
             )
             ExerciseScope(entry.id).block()

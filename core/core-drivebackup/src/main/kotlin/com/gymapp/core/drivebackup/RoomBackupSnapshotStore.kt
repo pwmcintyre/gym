@@ -90,6 +90,7 @@ private fun ExerciseEntryEntity.toModel() = ExerciseEntry(
     targetReps = targetReps,
     targetModifier = targetModifier,
     targetRawText = targetRawText,
+    modifierTags = modifierTags,
     notes = notes,
 )
 
@@ -102,6 +103,7 @@ private fun ExerciseEntry.toEntity() = ExerciseEntryEntity(
     targetReps = targetReps,
     targetModifier = targetModifier,
     targetRawText = targetRawText,
+    modifierTags = modifierTags,
     notes = notes,
 )
 

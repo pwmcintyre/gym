@@ -40,6 +40,7 @@ class BackupSnapshotCodecTest {
                     targetReps = 5,
                     targetModifier = RepModifier.NONE,
                     targetRawText = "4 x 5",
+                    modifierTags = listOf("Pause"),
                     notes = "belt on top set",
                 ),
             ),

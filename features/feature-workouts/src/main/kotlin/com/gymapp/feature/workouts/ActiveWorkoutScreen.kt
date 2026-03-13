@@ -72,6 +72,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.gymapp.core.model.AVAILABLE_MODIFIER_TAGS
 import com.gymapp.core.model.ExerciseEntry
 import com.gymapp.core.model.RepModifier
 import com.gymapp.core.model.SetEntry
@@ -426,11 +427,17 @@ private fun ExerciseCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
-            exercise.notes?.takeIf { it.isNotBlank() }?.let { modifierText ->
+            if (exercise.modifierTags.isNotEmpty()) {
+                ModifierTagRow(
+                    tags = exercise.modifierTags,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+            exercise.notes?.takeIf { it.isNotBlank() }?.let { noteText ->
                 Text(
-                    text = "Modifier: $modifierText",
+                    text = noteText,
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }
 
@@ -742,6 +749,7 @@ private fun EditExerciseDialog(
     var setsText by rememberSaveable { mutableStateOf(exercise.targetSets?.toString() ?: "") }
     var repsText by rememberSaveable { mutableStateOf(exercise.targetReps?.toString() ?: "") }
     var isAmrap by rememberSaveable { mutableStateOf(exercise.targetModifier == RepModifier.MAX) }
+    var modifierTags by rememberSaveable { mutableStateOf(exercise.modifierTags) }
     var notes by rememberSaveable { mutableStateOf(exercise.notes ?: "") }
 
     val suggestions = remember(name, knownNames) {
@@ -807,22 +815,20 @@ private fun EditExerciseDialog(
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    items(MODIFIER_SUGGESTIONS) { suggestion ->
-                        ElevatedButton(
-                            onClick = { notes = appendModifierNote(notes, suggestion) },
-                            colors = ButtonDefaults.elevatedButtonColors(
-                                containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                                contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                            ),
-                        ) {
-                            Text(suggestion, style = MaterialTheme.typography.labelMedium)
-                        }
+                    items(AVAILABLE_MODIFIER_TAGS) { tag ->
+                        FilterChip(
+                            selected = modifierTags.contains(tag),
+                            onClick = {
+                                modifierTags = modifierTags.toggleTag(tag)
+                            },
+                            label = { Text(tag) },
+                        )
                     }
                 }
                 OutlinedTextField(
                     value = notes,
                     onValueChange = { notes = it },
-                    label = { Text("Modifier / notes") },
+                    label = { Text("Notes") },
                     minLines = 2,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -837,6 +843,7 @@ private fun EditExerciseDialog(
                             targetSets = setsText.toIntOrNull(),
                             targetReps = if (isAmrap) null else repsText.toIntOrNull(),
                             targetModifier = if (isAmrap) RepModifier.MAX else RepModifier.NONE,
+                            modifierTags = modifierTags,
                             notes = notes.takeIf { it.isNotBlank() },
                         )
                     )
@@ -1069,16 +1076,25 @@ private fun ExerciseEntry.displayLabel(inSuperset: Boolean): String? {
     }
 }
 
-private fun appendModifierNote(existing: String, addition: String): String {
-    val trimmed = existing.trim()
-    if (trimmed.isBlank()) return addition
-    if (trimmed.contains(addition, ignoreCase = true)) return trimmed
-    return "$trimmed; $addition"
+@Composable
+private fun ModifierTagRow(
+    tags: List<String>,
+    modifier: Modifier = Modifier,
+) {
+    LazyRow(
+        horizontalArrangement = Arrangement.spacedBy(6.dp),
+        modifier = modifier,
+    ) {
+        items(tags) { tag ->
+            FilterChip(
+                selected = true,
+                onClick = {},
+                enabled = false,
+                label = { Text(tag) },
+            )
+        }
+    }
 }
 
-private val MODIFIER_SUGGESTIONS = listOf(
-    "2s pause",
-    "3s pause",
-    "Tempo",
-    "Isometric",
-)
+private fun List<String>.toggleTag(tag: String): List<String> =
+    if (contains(tag)) filterNot { it == tag } else this + tag

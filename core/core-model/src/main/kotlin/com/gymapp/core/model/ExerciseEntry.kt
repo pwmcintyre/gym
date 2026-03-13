@@ -18,6 +18,7 @@ import kotlinx.serialization.Serializable
  * @property targetReps        Prescribed reps (from [TargetPrescription.reps]).
  * @property targetModifier    Rep modifier (from [TargetPrescription.modifier]).
  * @property targetRawText     Raw prescription text (from [TargetPrescription.rawText]).
+ * @property modifierTags      Highlighted movement modifiers selected in the UI.
  * @property notes             Free-form notes for this exercise entry.
  */
 @Serializable
@@ -30,6 +31,7 @@ data class ExerciseEntry(
     val targetReps: Int?,
     val targetModifier: RepModifier,
     val targetRawText: String?,
+    val modifierTags: List<String> = emptyList(),
     val notes: String?,
 ) {
     /** Convenience accessor reconstructing the prescription value object. */

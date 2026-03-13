@@ -48,6 +48,9 @@ data class ExerciseEntryEntity(
     @ColumnInfo(name = "target_raw_text")
     val targetRawText: String?,
 
+    @ColumnInfo(name = "modifier_tags")
+    val modifierTags: List<String>,
+
     @ColumnInfo(name = "notes")
     val notes: String?,
 )
