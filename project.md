@@ -249,6 +249,7 @@ Three feedback items addressed:
 
 1. **Keyboard hides last items** — Added `.imePadding()` to `ActiveWorkoutScreen` `LazyColumn` modifier so content scrolls above the software keyboard.
 2. **Body weight as configurable weight value** — New `UserSettings` DataStore class stores a user-defined body weight. Settings screen now has a "Body Weight" section. A `BW` chip appears under the weight field in every set row when body weight is configured; tapping it fills in the stored value.
+3. **Demo bodyweight history no longer renders blank** — Debug seed data now stores `75 kg` as the system weight for sample pull-up sets, and existing seeded debug installs get a targeted backfill for those sample bodyweight sets.
 3. **Exercise naming consistency** — `ExerciseEntryDao` now has `observeDistinctNames()`. The Add Exercise dialog shows `SuggestionChip` rows filtered to names containing the typed prefix, letting users reuse prior exercise names exactly.
 
 Deferred: exercise variation management, workouts/history consolidation, banded bodyweight modifier, AI voice input.

@@ -20,7 +20,11 @@ class DebugDataSeeder @Inject constructor(
     private val setRepository: SetRepository,
 ) {
     suspend fun seedIfEmpty() {
-        if (workoutRepository.observeAll().first().isNotEmpty()) return
+        val existingSessions = workoutRepository.observeAll().first()
+        if (existingSessions.isNotEmpty()) {
+            backfillSeededBodyweightSamples(existingSessions)
+            return
+        }
 
         val now = System.currentTimeMillis()
         fun daysAgo(days: Int): Long {
@@ -49,7 +53,7 @@ class DebugDataSeeder @Inject constructor(
         seedSession(daysAgo(30), "Pull") {
             ex("Deadlift", 3, 5) { sets(100f, 102.5f, 105f, reps = 5, lastReps = 4) }
             ex("Barbell Row", 4, 8) { sets(60f, 60f, 62.5f, 62.5f, reps = 8, lastReps = 7) }
-            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(8, 7, 6) }
+            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(75f, 8, 7, 6) }
         }
 
         // Week 4
@@ -66,7 +70,7 @@ class DebugDataSeeder @Inject constructor(
         seedSession(daysAgo(23), "Pull") {
             ex("Deadlift", 3, 5) { sets(105f, 105f, 107.5f, reps = 5, lastReps = 4) }
             ex("Barbell Row", 4, 8) { sets(62.5f, 62.5f, 65f, 65f, reps = 8, lastReps = 7) }
-            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(9, 8, 7) }
+            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(75f, 9, 8, 7) }
         }
 
         // Week 3
@@ -83,7 +87,7 @@ class DebugDataSeeder @Inject constructor(
         seedSession(daysAgo(16), "Pull") {
             ex("Deadlift", 3, 5) { sets(107.5f, 110f, 110f, reps = 5, lastReps = 4) }
             ex("Barbell Row", 4, 8) { sets(65f, 65f, 67.5f, 67.5f, reps = 8, lastReps = 7) }
-            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(10, 8, 7) }
+            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(75f, 10, 8, 7) }
         }
 
         // Week 2
@@ -100,7 +104,7 @@ class DebugDataSeeder @Inject constructor(
         seedSession(daysAgo(9), "Pull") {
             ex("Deadlift", 3, 5) { sets(110f, 112.5f, 112.5f, reps = 5) }
             ex("Barbell Row", 4, 8) { sets(67.5f, 70f, 70f, 70f, reps = 8, lastReps = 7) }
-            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(10, 9, 8) }
+            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(75f, 10, 9, 8) }
         }
 
         // Week 1 (most recent)
@@ -117,7 +121,7 @@ class DebugDataSeeder @Inject constructor(
         seedSession(daysAgo(2), "Pull") {
             ex("Deadlift", 3, 5) { sets(112.5f, 115f, 115f, reps = 5, lastReps = 4) }
             ex("Barbell Row", 4, 8) { sets(70f, 70f, 72.5f, 72.5f, reps = 8, lastReps = 7) }
-            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(11, 9, 8) }
+            ex("Pull Up", 3, null, RepModifier.MAX) { bwSets(75f, 11, 9, 8) }
         }
     }
 
@@ -158,9 +162,15 @@ class DebugDataSeeder @Inject constructor(
             }
         }
 
-        suspend fun bwSets(vararg repCounts: Int) {
+        suspend fun bwSets(bodyWeightKg: Float, vararg repCounts: Int) {
             repCounts.forEach { r ->
-                setRepository.addSet(exerciseId, setNum++, repsPerformed = r, weightMode = WeightMode.BODYWEIGHT)
+                setRepository.addSet(
+                    exerciseEntryId = exerciseId,
+                    setNumber = setNum++,
+                    repsPerformed = r,
+                    weight = bodyWeightKg,
+                    weightMode = WeightMode.BODYWEIGHT,
+                )
             }
         }
     }
@@ -172,5 +182,33 @@ class DebugDataSeeder @Inject constructor(
     ) {
         val session = workoutRepository.create(date = date, notes = name)
         SessionScope(session.id).block()
+    }
+
+    private suspend fun backfillSeededBodyweightSamples(existingSessions: List<com.gymapp.core.model.WorkoutSession>) {
+        if (!looksLikeSeededPplBlock(existingSessions)) return
+
+        existingSessions.forEach { session ->
+            val exercises = workoutRepository.observeExercises(session.id).first()
+            exercises
+                .filter { it.exerciseName == "Pull Up" }
+                .forEach { exercise ->
+                    val sets = setRepository.observeSets(exercise.id).first()
+                    sets
+                        .filter { it.weightMode == WeightMode.BODYWEIGHT && it.weight == null }
+                        .forEach { set ->
+                            setRepository.update(set.copy(weight = SEEDED_BODY_WEIGHT_KG))
+                        }
+                }
+        }
+    }
+
+    private fun looksLikeSeededPplBlock(sessions: List<com.gymapp.core.model.WorkoutSession>): Boolean {
+        if (sessions.size != 15) return false
+        val workoutNames = sessions.mapNotNull { it.notes }.toSet()
+        return workoutNames == setOf("Legs", "Push", "Pull")
+    }
+
+    private companion object {
+        const val SEEDED_BODY_WEIGHT_KG = 75f
     }
 }
