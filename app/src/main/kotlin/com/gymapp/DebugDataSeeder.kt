@@ -64,10 +64,10 @@ class DebugDataSeeder @Inject constructor(
             }
             ex(
                 label = "B1",
-                name = "Paused Barbell Deadlift (Isometric)",
+                name = "Barbell Deadlift",
                 targetSets = 4,
                 targetReps = 3,
-                modifierTags = listOf("Pause", "Isometric"),
+                modifierTags = listOf("Pause", "Iso Hold"),
                 notes = "2-sec pause above the knee on the way up; 2-sec pause above the knee on the way down",
             ) {
                 repeatedSets(weight = 90f + (week.weekNumber - 1) * 7.5f, count = 4, reps = 3)
@@ -77,15 +77,15 @@ class DebugDataSeeder @Inject constructor(
             }
             ex(
                 label = "C2",
-                name = "Paused DB Goblet Squat with Glute Band (HEAVY)",
+                name = "DB Goblet Squat",
                 targetSets = 4,
                 targetReps = 10,
-                modifierTags = listOf("Pause", "Banded"),
-                notes = "3-sec pause at the bottom of the squat",
+                modifierTags = listOf("Pause"),
+                notes = "3-sec pause at the bottom of the squat; glute band; heavy",
             ) {
                 repeatedSets(weight = 24f + (week.weekNumber - 1) * 2f, count = 4, reps = 10, lastReps = 8)
             }
-            ex("D1", "Weighted Plank", 4, null, RepModifier.MAX, modifierTags = listOf("Isometric"), notes = "Max hold") {
+            ex("D1", "Weighted Plank", 4, null, RepModifier.MAX, modifierTags = listOf("Iso Hold"), notes = "Max hold") {
                 repeatedSets(weight = 15f + (week.weekNumber - 1) * 5f, count = 4, reps = 45 + (week.weekNumber - 1) * 5)
             }
         }
@@ -93,36 +93,36 @@ class DebugDataSeeder @Inject constructor(
 
     private suspend fun seedChest(date: Long, week: TriphasicWeekSpec) {
         seedSession(date, "Week ${week.weekNumber} - Chest") {
-            ex("A1", "Incline Barbell Bench Press (2-up on incline)", 4, week.progressionReps) {
+            ex("A1", "Barbell Bench Press", 4, week.progressionReps, modifierTags = listOf("Incline"), notes = "2-up on incline") {
                 repeatedSets(weight = 55f + (week.weekNumber - 1) * 5f, count = 4, reps = week.progressionReps)
             }
             ex(
                 label = "B1",
-                name = "Paused DB Bench Press (Flat)",
+                name = "DB Bench Press",
                 targetSets = 4,
                 targetReps = 8,
-                modifierTags = listOf("Pause"),
+                modifierTags = listOf("Pause", "Flat"),
                 notes = "3-sec pause at the bottom; target range 6-8",
             ) {
                 repeatedSets(weight = 24f + (week.weekNumber - 1) * 2f, count = 4, reps = 8, lastReps = 6)
             }
             ex(
                 label = "C1",
-                name = "Paused Pull Ups",
+                name = "Pull Ups",
                 targetSets = 4,
                 targetReps = 6,
-                modifierTags = listOf("Pause", "Bodyweight"),
+                modifierTags = listOf("Pause"),
                 notes = "2-sec pause when chin passes the bar; alternative: Paused TRX Row 8-10",
             ) {
                 bodyweightSets(SEEDED_BODY_WEIGHT_KG, 6 + week.weekNumber, 5 + week.weekNumber, 4 + week.weekNumber, 4 + week.weekNumber)
             }
-            ex("C2", "Banded Face Pulls", 4, 15, modifierTags = listOf("Banded")) {
+            ex("C2", "Face Pulls", 4, 15) {
                 bandedSets(15, 15, 14, 14)
             }
             ex("D1", "Swiss Ball Jackknifes", 4, 12) {
                 repeatedSets(weight = 0f, count = 4, reps = 12, mode = WeightMode.BODYWEIGHT, bodyWeightKg = SEEDED_BODY_WEIGHT_KG)
             }
-            ex("D2", "Hollow Hold", 4, null, RepModifier.MAX, modifierTags = listOf("Bodyweight", "Isometric"), notes = "Max hold") {
+            ex("D2", "Hollow Hold", 4, null, RepModifier.MAX, modifierTags = listOf("Iso Hold"), notes = "Max hold") {
                 bodyweightSets(SEEDED_BODY_WEIGHT_KG, 30 + week.weekNumber * 2, 28 + week.weekNumber * 2, 26 + week.weekNumber * 2, 24 + week.weekNumber * 2)
             }
         }
@@ -132,11 +132,11 @@ class DebugDataSeeder @Inject constructor(
         seedSession(date, "Week ${week.weekNumber} - Wednesday") {
             ex(
                 label = "A1",
-                name = "BB Curl (Iso Hold + Max Reps)",
+                name = "BB Curl",
                 targetSets = 4,
                 targetReps = null,
                 targetModifier = RepModifier.MAX,
-                modifierTags = listOf("Isometric"),
+                modifierTags = listOf("Iso Hold"),
                 notes = "20-30s iso hold into max reps (aim for 10+)",
             ) {
                 repeatedSets(weight = 20f + (week.weekNumber - 1) * 2.5f, count = 4, reps = 12, lastReps = 10)
@@ -150,13 +150,13 @@ class DebugDataSeeder @Inject constructor(
             ) {
                 repeatedSets(weight = 14f + (week.weekNumber - 1) * 2f, count = 4, reps = 8, lastReps = 6)
             }
-            ex("C1", "Seated Zottman Curl", 4, 12, notes = "10-12") {
+            ex("C1", "Zottman Curl", 4, 12, modifierTags = listOf("Seated"), notes = "10-12") {
                 repeatedSets(weight = 12f + (week.weekNumber - 1), count = 4, reps = 12, lastReps = 10)
             }
-            ex("C2", "Banded Tricep Kickbacks", 4, 15, modifierTags = listOf("Banded")) {
+            ex("C2", "Tricep Kickbacks", 4, 15) {
                 bandedSets(15, 15, 14, 14)
             }
-            ex("D1", "Kneeling Plate Windmill", 4, 10, notes = "10 each side") {
+            ex("D1", "Plate Windmill", 4, 10, modifierTags = listOf("Kneeling"), notes = "10 each side") {
                 repeatedSets(weight = 10f, count = 4, reps = 10)
             }
             ex("D2", "DB Straight Arm Plank Pull Through (HEAVY)", 4, 20) {
@@ -181,7 +181,7 @@ class DebugDataSeeder @Inject constructor(
             }
             ex(
                 label = "B1",
-                name = "Paused BB Back Squat",
+                name = "BB Back Squat",
                 targetSets = 4,
                 targetReps = 3,
                 modifierTags = listOf("Pause"),
@@ -189,24 +189,24 @@ class DebugDataSeeder @Inject constructor(
             ) {
                 repeatedSets(weight = 80f + (week.weekNumber - 1) * 7.5f, count = 4, reps = 3)
             }
-            ex("C1", "DB B-Stance Split Squat", 4, 10, notes = "10 each leg") {
+            ex("C1", "DB Split Squat", 4, 10, modifierTags = listOf("B-Stance"), notes = "10 each leg") {
                 repeatedSets(weight = 20f + (week.weekNumber - 1) * 2f, count = 4, reps = 10, lastReps = 8)
             }
-            ex("C2", "KB Goblet Sumo Squat", 4, 12) {
+            ex("C2", "KB Goblet Squat", 4, 12, modifierTags = listOf("Sumo")) {
                 repeatedSets(weight = 28f + (week.weekNumber - 1) * 4f, count = 4, reps = 12, lastReps = 10)
             }
             ex(
                 label = "D1",
-                name = "Bulgarian Split Squat Iso Hold (DB or bodyweight)",
+                name = "Bulgarian Split Squat",
                 targetSets = 4,
                 targetReps = null,
                 targetModifier = RepModifier.MAX,
-                modifierTags = listOf("Bodyweight", "Isometric"),
-                notes = "Max hold each leg",
+                modifierTags = listOf("Iso Hold"),
+                notes = "Max hold each leg; DB or bodyweight",
             ) {
                 bodyweightSets(SEEDED_BODY_WEIGHT_KG, 35 + week.weekNumber * 2, 34 + week.weekNumber * 2, 32 + week.weekNumber * 2, 30 + week.weekNumber * 2)
             }
-            ex("D2", "Banded Woodchop", 4, 10, modifierTags = listOf("Banded"), notes = "10 each side") {
+            ex("D2", "Woodchop", 4, 10, notes = "10 each side") {
                 bandedSets(10, 10, 10, 10)
             }
         }
@@ -214,36 +214,35 @@ class DebugDataSeeder @Inject constructor(
 
     private suspend fun seedShoulders(date: Long, week: TriphasicWeekSpec) {
         seedSession(date, "Week ${week.weekNumber} - Shoulders") {
-            ex("A1", "DB Shoulder Press (Seated)", 4, week.progressionReps) {
+            ex("A1", "DB Shoulder Press", 4, week.progressionReps, modifierTags = listOf("Seated")) {
                 repeatedSets(weight = 20f + (week.weekNumber - 1) * 2f, count = 4, reps = week.progressionReps)
             }
             ex(
                 label = "B1",
-                name = "Paused Standing Single DB Shoulder Press",
+                name = "DB Shoulder Press",
                 targetSets = 4,
                 targetReps = 8,
-                modifierTags = listOf("Pause"),
+                modifierTags = listOf("Pause", "Standing", "Single Arm"),
                 notes = "2-sec pause at lockout; target range 6-8",
             ) {
                 repeatedSets(weight = 16f + (week.weekNumber - 1) * 2f, count = 4, reps = 8, lastReps = 6)
             }
             ex(
                 label = "B2",
-                name = "Pull Ups (Muscle Endurance)",
+                name = "Pull Ups",
                 targetSets = 4,
                 targetReps = null,
                 targetModifier = RepModifier.MAX,
-                modifierTags = listOf("Bodyweight"),
                 notes = "Use bands, aim for 10",
             ) {
                 bodyweightSets(SEEDED_BODY_WEIGHT_KG, 10 + week.weekNumber, 9 + week.weekNumber, 8 + week.weekNumber, 8 + week.weekNumber)
             }
             ex(
                 label = "C1",
-                name = "Paused Single Arm DB Row",
+                name = "DB Row",
                 targetSets = 3,
                 targetReps = 10,
-                modifierTags = listOf("Pause"),
+                modifierTags = listOf("Pause", "Single Arm"),
                 notes = "2-sec pause at the top; target range 8-10",
             ) {
                 repeatedSets(weight = 24f + (week.weekNumber - 1) * 2f, count = 3, reps = 10, lastReps = 8)
@@ -257,7 +256,7 @@ class DebugDataSeeder @Inject constructor(
             ) {
                 repeatedSets(weight = 10f + (week.weekNumber - 1) * 2f, count = 3, reps = 15, lastReps = 12)
             }
-            ex("C3", "Prone Plate Windmill Passes", 3, 8, notes = "6-8 each direction") {
+            ex("C3", "Plate Windmill Passes", 3, 8, modifierTags = listOf("Prone"), notes = "6-8 each direction") {
                 repeatedSets(weight = 5f + (week.weekNumber - 1), count = 3, reps = 8, lastReps = 6)
             }
         }

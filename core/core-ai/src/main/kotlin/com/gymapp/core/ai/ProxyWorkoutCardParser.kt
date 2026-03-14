@@ -157,7 +157,7 @@ private data class WorkoutItem(
         targetReps = targetReps,
         targetModifier = if (repModifier.uppercase() == "MAX") RepModifier.MAX else RepModifier.NONE,
         targetRawText = rawSourceText.ifBlank { null },
-        modifierTags = extractModifierTags(notes),
+        modifierTags = extractModifierTags(exerciseName, notes),
         notes = notes.ifBlank { null },
     )
 }
