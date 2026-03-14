@@ -13,11 +13,34 @@
 - Do not add backwards-compatibility shims or version gates. Change the code directly.
 - Do not over-engineer for hypothetical future scale. Solve the immediate problem simply.
 - User feedback is tracked in `feedback/YYYY-MM-DD.md`. Check recent feedback files for known issues before starting a session.
-- If the user interrupts with a totally off-topic suggestion during another task, and it does not sound urgent, do not derail the current task. Capture it in `ideas/<slug>.md` as a short actionable note and return to the current work.
-- If the user prefixes a request with `idea:` or otherwise clearly frames it as an idea, document it in `ideas/<slug>.md` instead of implementing it unless they explicitly ask for implementation.
-- If the user later asks to "make progress", "continue", or otherwise work unguided, review pending files in `ideas/` and use them as guidance alongside `project.md` and milestone order.
-- Once an idea from `ideas/<slug>.md` has been implemented and verified, delete that idea file in the same task. Do not leave implemented ideas sitting in `ideas/`.
-- An idea file remaining in `ideas/` means the idea is still pending, not done.
+- If the user interrupts with a totally off-topic suggestion during another task and it does not sound urgent, do not derail the current task. Capture it as a new PRD in `tasks/prd-<slug>.md` and return to the current work.
+- If the user prefixes a request with `idea:` or clearly frames it as an idea, create a PRD stub in `tasks/prd-<slug>.md` instead of implementing it unless they explicitly ask for implementation.
+- If the user later asks to "make progress", "continue", or otherwise work unguided, review pending PRDs in `tasks/` and convert the highest-priority one to `prd.json` for Ralph execution.
+
+## Ralph workflow
+
+New features and improvements are tracked as PRDs in `tasks/prd-*.md`. Autonomous execution is handled by Ralph — a loop that runs Claude Code repeatedly, one user story per iteration.
+
+**To start work on a PRD:**
+
+1. **Create a PRD** using `/prd` skill or write `tasks/prd-<feature>.md` directly
+2. **Convert to JSON** using `/ralph` skill — writes `prd.json` at the project root
+3. **Execute** with `./ralph.sh --tool claude [max_iterations]`
+
+**Key files:**
+| File | Purpose |
+|------|---------|
+| `tasks/prd-*.md` | Human-readable feature specs (backlog) |
+| `prd.json` | Active working PRD for the current Ralph run |
+| `progress.txt` | Per-iteration learnings and codebase patterns |
+| `CLAUDE.md` | Instructions given to each Claude iteration |
+| `ralph.sh` | The agent loop script |
+| `tasks/archive/` | Completed Ralph runs (prd.json + progress.txt) |
+
+**Rules:**
+- A `tasks/prd-*.md` file still in the directory = backlog (not started or in progress)
+- When a PRD is fully executed by Ralph (all stories `passes: true`), move the PRD to `tasks/archive/` with the run artifacts
+- Stories must be completable in one context window — if they're too large, split them before running Ralph
 
 ---
 
@@ -65,7 +88,6 @@ For every task, follow this loop:
 6. Fix failures before stopping.
 7. Update documentation or milestone state.
 8. Commit only when the increment is working and verified.
-9. If the task implemented an idea from `ideas/`, delete that idea file before finishing.
 
 Do not leave the repository in a partially broken state.
 
@@ -283,7 +305,8 @@ Before stopping:
 - delete any `ideas/<slug>.md` files that were implemented in this session,
 - confirm repo state is clean or intentionally staged,
 - commit if a milestone or meaningful verified increment is complete,
-- leave a clear next task in `project.md`.
+- leave a clear next task in `project.md`,
+- if a PRD story was completed, ensure `prd.json` is updated with `passes: true` for that story.
 
 ---
 

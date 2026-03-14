@@ -50,3 +50,33 @@ adb shell am start -n com.gymapp/.MainActivity
 ## Stack
 
 Kotlin · Jetpack Compose · Material3 · Room · Hilt · CameraX · DataStore · OpenAI Vision API
+
+## Feature development with Ralph
+
+New features and improvements are tracked as PRDs in `tasks/prd-*.md`. Autonomous implementation is handled by [Ralph](https://github.com/snarktank/ralph) — an agent loop that runs Claude Code repeatedly, completing one user story per iteration.
+
+### Workflow
+
+```sh
+# 1. Create a PRD for the feature
+#    Use the /prd skill or write tasks/prd-<feature>.md directly
+
+# 2. Convert the PRD to prd.json
+#    Use the /ralph skill — it writes prd.json at the project root
+
+# 3. Run the agent loop
+./ralph.sh --tool claude 10
+```
+
+Ralph will iterate until all stories have `passes: true`, then exit. Each iteration commits verified progress and appends learnings to `progress.txt`.
+
+### Key files
+
+| File | Purpose |
+|------|---------|
+| `tasks/prd-*.md` | Feature specs (backlog) |
+| `prd.json` | Active PRD for the current Ralph run |
+| `progress.txt` | Per-iteration learnings and codebase patterns |
+| `CLAUDE.md` | Per-iteration instructions for Claude |
+| `ralph.sh` | The agent loop |
+| `tasks/archive/` | Completed runs |
