@@ -9,6 +9,20 @@ Started: Sat Mar 14 18:52:23 AEDT 2026
 - Gradle HTML profile has 5 tabs: Summary, Configuration, Dependency Resolution, Artifact Transforms, Task Execution
 - `--dry-run` shows the full task graph with SKIPPED on each task; all 184 tasks SKIPPED means up-to-date
 
+## 2026-03-14T20:00 - TC-001
+- Added `kotlinx-coroutines-test` to `gradle/libs.versions.toml` and `features/feature-workouts/build.gradle.kts`
+- Created `FakeDaos.kt`: in-memory fake implementations of `WorkoutSessionDao`, `ExerciseEntryDao`, `SetEntryDao`
+- Created `WorkoutCreationTest.kt`: 6 tests covering session creation, exercise/set addition, set editing
+- Tests exercise the repository layer (the use-case layer in this app — no separate use-case classes)
+- Files changed: `gradle/libs.versions.toml`, `features/feature-workouts/build.gradle.kts`, `FakeDaos.kt` (new), `WorkoutCreationTest.kt` (new)
+- **Learnings for future iterations:**
+  - DAOs are interfaces → can implement them as in-memory fakes without Robolectric
+  - `WorkoutRepository` / `SetRepository` are concrete classes that accept DAOs by constructor — instantiate directly in tests
+  - `MutableStateFlow` inside fake DAOs lets Flow-based observation methods emit updates synchronously
+  - `runTest` from `kotlinx-coroutines-test` works cleanly with suspend functions and `Flow.first()` collection
+  - No need for `Dispatchers.setMain()` when testing repositories directly (no `viewModelScope`)
+---
+
 ## 2026-03-14T19:05 - BP-003
 - Added `org.gradle.configuration-cache=warn` to `gradle.properties`
 - `org.gradle.caching=true` was already set from a prior milestone
