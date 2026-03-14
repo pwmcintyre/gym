@@ -229,6 +229,7 @@ Restructured exercise data into three layers (Movement Identity / Modifiers / Pr
 - Whiteboard-style labels such as `A1` and `A2` are now grouped visually as lightweight supersets in active-workout and workout-detail screens, without changing storage or scan parsing.
 - Movement trend charts now support point selection with an `Open workout` action, so chart interaction can jump directly to the underlying session instead of acting as a static graphic.
 - Workout entries now store real `modifierTags` alongside notes, and the workout editor uses highlighted tag toggles for richer labels such as `Seated`, `Single Arm`, `Incline`, and `Iso Hold` while keeping separate free-form notes. The debug seed routine now normalizes base movement names and uses those labels instead of baking pause/position text into the movement name.
+- AI workout suggestions no longer fail silently on empty-screen workout creation: failures now surface an inline error, and the reply parser is slightly more forgiving of numbered or bulleted lines. A unit test now covers the suggestion parser’s strict and loose formats.
 - The workouts landing screen now surfaces a `Today's focus` card when there is a session dated today, giving the page a more directed entry state without changing navigation.
 - Remaining larger follow-ups still live in `ideas/` and should be handled as separate slices once this creation-flow cleanup lands.
 

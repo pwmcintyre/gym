@@ -26,6 +26,12 @@ import javax.inject.Inject
 
 enum class SuggestionType { DOUBLE_DOWN, FILL_GAPS, CARDIO }
 
+data class SuggestedWorkoutEntry(
+    val exerciseName: String,
+    val targetSets: Int?,
+    val targetReps: Int?,
+)
+
 sealed class RestTimerState {
     object Idle : RestTimerState()
     data class Running(val exerciseId: String, val remainingSeconds: Int, val totalSeconds: Int) : RestTimerState()
@@ -210,6 +216,9 @@ class ActiveWorkoutViewModel @Inject constructor(
     private val _isSuggesting = MutableStateFlow(false)
     val isSuggesting: StateFlow<Boolean> = _isSuggesting.asStateFlow()
 
+    private val _suggestionError = MutableStateFlow<String?>(null)
+    val suggestionError: StateFlow<String?> = _suggestionError.asStateFlow()
+
     private val _isNaming = MutableStateFlow(false)
     val isNaming: StateFlow<Boolean> = _isNaming.asStateFlow()
 
@@ -218,6 +227,7 @@ class ActiveWorkoutViewModel @Inject constructor(
     fun suggestWorkout(type: SuggestionType) {
         viewModelScope.launch {
             _isSuggesting.value = true
+            _suggestionError.value = null
             runCatching {
                 // Build context from last 5 sessions
                 val recent = workoutRepository.observeAll().first().take(5)
@@ -254,25 +264,24 @@ class ActiveWorkoutViewModel @Inject constructor(
                     ),
                 )
 
-                val lines = result.getOrThrow().trim().lines()
+                val suggestions = parseSuggestedWorkoutEntries(result.getOrThrow())
+                check(suggestions.isNotEmpty()) {
+                    "AI suggestion came back empty. Try again."
+                }
                 val labelPool = listOf("A1","B1","C1","D1","E1","F1","G1","H1")
                 val startIdx = exercises.value.size
-                lines.forEachIndexed { i, line ->
-                    val parts = line.split("|").map { it.trim() }
-                    if (parts.size >= 1 && parts[0].isNotBlank()) {
-                        val name = parts[0]
-                        val sets = parts.getOrNull(1)?.toIntOrNull()
-                        val reps = parts.getOrNull(2)?.toIntOrNull()
-                        val label = labelPool.getOrElse(startIdx + i) { "${startIdx + i + 1}" }
-                        workoutRepository.addExercise(
-                            sessionId = sessionId,
-                            label = label,
-                            exerciseName = name,
-                            targetSets = sets,
-                            targetReps = reps,
-                        )
-                    }
+                suggestions.forEachIndexed { i, suggestion ->
+                    val label = labelPool.getOrElse(startIdx + i) { "${startIdx + i + 1}" }
+                    workoutRepository.addExercise(
+                        sessionId = sessionId,
+                        label = label,
+                        exerciseName = suggestion.exerciseName,
+                        targetSets = suggestion.targetSets,
+                        targetReps = suggestion.targetReps,
+                    )
                 }
+            }.onFailure { error ->
+                _suggestionError.value = error.message ?: "Couldn't get an AI workout suggestion."
             }
             _isSuggesting.value = false
         }
@@ -296,3 +305,22 @@ class ActiveWorkoutViewModel @Inject constructor(
         }.also { timerJob = it }
     }
 }
+
+internal fun parseSuggestedWorkoutEntries(response: String): List<SuggestedWorkoutEntry> =
+    response
+        .lineSequence()
+        .map { it.trim() }
+        .filter { it.isNotBlank() }
+        .mapNotNull { line ->
+            val cleaned = line.removePrefix("-").trim()
+                .removePrefix("*").trim()
+                .replace(Regex("^\\d+\\.\\s*"), "")
+            val parts = cleaned.split("|").map { it.trim() }.filter { it.isNotEmpty() }
+            val name = parts.firstOrNull()?.takeIf { it.isNotBlank() } ?: return@mapNotNull null
+            SuggestedWorkoutEntry(
+                exerciseName = name,
+                targetSets = parts.getOrNull(1)?.toIntOrNull(),
+                targetReps = parts.getOrNull(2)?.toIntOrNull(),
+            )
+        }
+        .toList()

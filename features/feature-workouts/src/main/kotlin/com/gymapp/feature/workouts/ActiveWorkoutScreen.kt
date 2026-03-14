@@ -99,6 +99,7 @@ fun ActiveWorkoutScreen(
     val lastPerformanceDate by viewModel.lastPerformanceDate.collectAsStateWithLifecycle()
     val restTimer by viewModel.restTimer.collectAsStateWithLifecycle()
     val isSuggesting by viewModel.isSuggesting.collectAsStateWithLifecycle()
+    val suggestionError by viewModel.suggestionError.collectAsStateWithLifecycle()
     val isNaming by viewModel.isNaming.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showAddExerciseDialog by rememberSaveable { mutableStateOf(false) }
@@ -240,6 +241,7 @@ fun ActiveWorkoutScreen(
                     item {
                         WorkoutSuggestionPanel(
                             isSuggesting = isSuggesting,
+                            error = suggestionError,
                             onSuggest = { viewModel.suggestWorkout(it) },
                         )
                     }
@@ -996,6 +998,7 @@ private fun nextLabel(exercises: List<ExerciseEntry>): String {
 @Composable
 private fun WorkoutSuggestionPanel(
     isSuggesting: Boolean,
+    error: String?,
     onSuggest: (SuggestionType) -> Unit,
 ) {
     Column(
@@ -1009,6 +1012,13 @@ private fun WorkoutSuggestionPanel(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+        error?.let {
+            Text(
+                text = it,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.error,
+            )
+        }
         if (isSuggesting) {
             Box(
                 contentAlignment = Alignment.Center,
