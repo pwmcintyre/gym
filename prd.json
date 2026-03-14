@@ -1,8 +1,52 @@
 {
   "project": "gym",
   "branchName": "ralph/ai-assistant",
-  "description": "AI Assistant — always-available floating chat coach with context awareness, data access, proactive launch summary, write actions, and user training constraints",
+  "description": "Test Coverage + AI Assistant — finish remaining unit/integration test stories, then implement the always-available floating chat coach",
   "userStories": [
+    {
+      "id": "TC-002",
+      "title": "Add unit tests for movement history and progress behavior",
+      "description": "As a developer, I want unit tests for movement history aggregation so changes to progress calculation are caught early.",
+      "acceptanceCriteria": [
+        "Tests cover: retrieving movement history for a given exercise, computing best set per session, ordering sessions by date",
+        "Tests use an in-memory Room database populated with known fixture data",
+        "Edge cases covered: no sessions, single session, sessions with multiple sets",
+        "Tests pass (`./gradlew testDebugUnitTest --no-daemon`)",
+        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)"
+      ],
+      "priority": 1,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "TC-003",
+      "title": "Add unit tests for AI scan parsing flows",
+      "description": "As a developer, I want unit tests for the AI scan parsing logic so changes to prompt output handling don't silently break import.",
+      "acceptanceCriteria": [
+        "Tests cover: parsing a well-formed AI response into workout data, handling a malformed/partial response gracefully, handling an empty response",
+        "Tests are pure unit tests — no network calls, use hardcoded JSON/text fixtures",
+        "Tests pass (`./gradlew testDebugUnitTest --no-daemon`)",
+        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)"
+      ],
+      "priority": 2,
+      "passes": false,
+      "notes": ""
+    },
+    {
+      "id": "TC-004",
+      "title": "Add integration tests for fragile UI state logic",
+      "description": "As a developer, I want integration-level tests for the most fragile UI state flows so state bugs are caught before manual testing.",
+      "acceptanceCriteria": [
+        "Tests cover at minimum: the workouts list screen loading state, the set-editor showing correct initial values when editing an existing set",
+        "Tests use Compose testing APIs (not Espresso unless unavoidable)",
+        "Tests placed in appropriate `src/test/` or `src/androidTest/` directory",
+        "Tests pass",
+        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)"
+      ],
+      "priority": 3,
+      "passes": false,
+      "notes": ""
+    },
     {
       "id": "US-001",
       "title": "Floating chat FAB and dismissible overlay shell",
@@ -18,9 +62,9 @@
         "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
         "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
-      "priority": 1,
+      "priority": 4,
       "passes": true,
-      "notes": ""
+      "notes": "Completed on ralph/ai-assistant — FAB and overlay shell implemented."
     },
     {
       "id": "US-002",
@@ -37,9 +81,9 @@
         "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
         "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
-      "priority": 2,
-      "passes": false,
-      "notes": ""
+      "priority": 5,
+      "passes": true,
+      "notes": "Completed on ralph/ai-assistant — ChatViewModel + message bubbles + loading + error handling."
     },
     {
       "id": "US-003",
@@ -54,7 +98,7 @@
         "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
         "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
-      "priority": 3,
+      "priority": 6,
       "passes": false,
       "notes": ""
     },
@@ -71,7 +115,7 @@
         "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
         "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
-      "priority": 4,
+      "priority": 7,
       "passes": false,
       "notes": ""
     },
@@ -88,7 +132,7 @@
         "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
         "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
-      "priority": 5,
+      "priority": 8,
       "passes": false,
       "notes": ""
     },
@@ -107,7 +151,7 @@
         "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
         "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
-      "priority": 6,
+      "priority": 9,
       "passes": false,
       "notes": ""
     },
@@ -126,7 +170,7 @@
         "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
         "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
-      "priority": 7,
+      "priority": 10,
       "passes": false,
       "notes": ""
     }

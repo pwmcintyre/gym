@@ -3,7 +3,23 @@
 - `ModalBottomSheet` with `skipPartiallyExpanded = true` used for overlay sheet — placed after Scaffold in composition, not inside it
 - Use `Icons.AutoMirrored.Filled.*` for Chat and Send icons (Filled variants deprecated in recent Material Icons)
 - Feature overlays that should persist across navigation live in `app/` module, not in feature modules
+- `ChatViewModel` lives in `app/` module (not a feature module) because it drives a global overlay
+- `hiltViewModel()` called in `GymAppRoot` scope — ViewModel survives navigation because it's at the root composable level
+- `LazyColumn` with `reverseLayout = true` + `items(messages.reversed())` pattern for chat lists — newest message at bottom; loading indicator inserted as first `item {}` block in reversed order
+- `mutableStateListOf<T>` for ViewModel-owned lists that drive Compose recomposition without StateFlow overhead
 
+---
+
+## 2026-03-14T22:30 - US-002
+- Implemented `ChatViewModel` (app module) with `AiAssistant` integration, in-memory message list, loading state, and error handling
+- Updated `GymAppRoot.kt`: `ChatOverlay` now accepts ViewModel state; message bubbles with user (right, primaryContainer) / AI (left, surfaceVariant) / error (errorContainer) styling; `CircularProgressIndicator` loading item; send button disabled while loading
+- Added `core:core-ai` and `lifecycle-viewmodel-compose` deps to `app/build.gradle.kts`
+- System prompt: personal training coach persona — concise, direct, no hedging
+- Files changed: `app/build.gradle.kts`, `app/src/main/kotlin/com/gymapp/ChatViewModel.kt` (new), `app/src/main/kotlin/com/gymapp/GymAppRoot.kt`, `prd.json`, `progress.txt`
+- **Learnings for future iterations:**
+  - `AiAssistant.chat()` already handles API key reads from DataStore — just pass system prompt + message history
+  - Error text from `AiAssistant` is surfaced via `Result.failure` — catch and show inline, never crash
+  - Input cleared after send by resetting `inputText = ""` in the `onClick` lambda (not in ViewModel)
 ---
 
 ## 2026-03-14T22:00 - US-001
