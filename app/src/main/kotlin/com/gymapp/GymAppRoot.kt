@@ -1,18 +1,25 @@
 package com.gymapp
 
 import android.net.Uri
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
@@ -27,6 +34,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -34,6 +42,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -83,6 +92,7 @@ fun GymAppRoot() {
 
         var chatOpen by remember { mutableStateOf(false) }
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val chatViewModel: ChatViewModel = hiltViewModel()
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -231,6 +241,9 @@ fun GymAppRoot() {
         if (chatOpen) {
             ChatOverlay(
                 sheetState = sheetState,
+                messages = chatViewModel.messages,
+                isLoading = chatViewModel.isLoading,
+                onSend = { chatViewModel.sendMessage(it) },
                 onDismiss = { chatOpen = false },
             )
         }
@@ -241,9 +254,20 @@ fun GymAppRoot() {
 @Composable
 private fun ChatOverlay(
     sheetState: androidx.compose.material3.SheetState,
+    messages: List<UiChatMessage>,
+    isLoading: Boolean,
+    onSend: (String) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var inputText by remember { mutableStateOf("") }
+    val listState = rememberLazyListState()
+
+    // Scroll to bottom whenever messages or loading state changes
+    LaunchedEffect(messages.size, isLoading) {
+        if (messages.isNotEmpty() || isLoading) {
+            listState.animateScrollToItem(0)
+        }
+    }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -276,15 +300,33 @@ private fun ChatOverlay(
                 }
             }
 
-            // Scrollable message list — empty until US-002
+            // Scrollable message list — reverseLayout so newest is at bottom
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
                 reverseLayout = true,
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                // Messages will be added in US-002
+                // Loading indicator at top of reversed list = visually at bottom
+                if (isLoading) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 4.dp),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                        }
+                    }
+                }
+
+                items(messages.reversed()) { message ->
+                    MessageBubble(message)
+                }
             }
 
             // Input row
@@ -302,8 +344,11 @@ private fun ChatOverlay(
                     singleLine = true,
                 )
                 IconButton(
-                    onClick = { /* AI integration in US-002 */ },
-                    enabled = inputText.isNotBlank(),
+                    onClick = {
+                        onSend(inputText)
+                        inputText = ""
+                    },
+                    enabled = inputText.isNotBlank() && !isLoading,
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
@@ -311,6 +356,40 @@ private fun ChatOverlay(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun MessageBubble(message: UiChatMessage) {
+    val bubbleColor = when {
+        message.isError -> MaterialTheme.colorScheme.errorContainer
+        message.isUser -> MaterialTheme.colorScheme.primaryContainer
+        else -> MaterialTheme.colorScheme.surfaceVariant
+    }
+    val textColor = when {
+        message.isError -> MaterialTheme.colorScheme.onErrorContainer
+        message.isUser -> MaterialTheme.colorScheme.onPrimaryContainer
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start,
+    ) {
+        Box(
+            modifier = Modifier
+                .background(
+                    color = bubbleColor,
+                    shape = RoundedCornerShape(12.dp),
+                )
+                .padding(horizontal = 12.dp, vertical = 8.dp),
+        ) {
+            Text(
+                text = message.content,
+                color = textColor,
+                style = MaterialTheme.typography.bodyMedium,
+            )
         }
     }
 }
