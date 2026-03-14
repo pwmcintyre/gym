@@ -9,6 +9,31 @@
 - `hiltViewModel()` called in `GymAppRoot` scope — ViewModel survives navigation because it's at the root composable level
 - `LazyColumn` with `reverseLayout = true` + `items(messages.reversed())` pattern for chat lists — newest message at bottom; loading indicator inserted as first `item {}` block in reversed order
 - `mutableStateListOf<T>` for ViewModel-owned lists that drive Compose recomposition without StateFlow overhead
+- For assistant prompt payloads in the `app/` module, lightweight manual JSON string builders are simpler than adding serialization plugin support just for local prompt structs
+
+---
+
+## 2026-03-14T23:45 - US-004
+- Extended `ChatViewModel` to inject fresh workout data into every assistant request
+- Prompt now includes: current hidden screen context, plain-English schema notes, allowed write-action descriptions, known movement names, last 14 days of sessions with nested movement/set data, and full history when a movement-specific screen is in context
+- Data is fetched on demand from `WorkoutRepository` + `SetRepository` using `first()` so chat requests are fresh instead of cached
+- Files changed: `app/src/main/kotlin/com/gymapp/ChatViewModel.kt`, `app/src/main/kotlin/com/gymapp/GymAppRoot.kt`, `prd.json`, `progress.txt`, `project.md`
+- Validation: `./gradlew :app:assembleDebug --no-daemon`
+- **Learnings for future iterations:**
+  - Root-nav context is easiest to capture in `GymAppRoot.kt` via `currentBackStackEntryAsState()` and push into the global chat ViewModel with a `LaunchedEffect`
+  - For a PoC-sized data set, assembling prompt context via repository flows on demand is simpler than introducing a dedicated aggregation layer
+
+---
+
+## 2026-03-14T23:20 - TC-003
+- Extracted parser-only helpers from `ProxyWorkoutCardParser` so scan-response decoding can be tested without network calls
+- Added `core/core-ai/src/test/kotlin/com/gymapp/core/ai/ProxyWorkoutCardParserTest.kt`
+- Tests cover: well-formed completion payload, malformed JSON, empty `items`, and missing completion content
+- Files changed: `core/core-ai/src/main/kotlin/com/gymapp/core/ai/ProxyWorkoutCardParser.kt`, `core/core-ai/src/test/kotlin/com/gymapp/core/ai/ProxyWorkoutCardParserTest.kt`, `prd.json`, `progress.txt`
+- Validation: `./gradlew :core:core-ai:clean :core:core-ai:testDebugUnitTest --no-daemon`, `./gradlew :core:core-ai:compileDebugKotlin --no-daemon`
+- **Learnings for future iterations:**
+  - Avoid running module-level Gradle compile and test tasks in parallel when both hit the same KSP/Hilt generated-source directories
+  - A tiny internal parsing seam is enough to get real coverage on AI response handling without changing the network contract
 
 ---
 

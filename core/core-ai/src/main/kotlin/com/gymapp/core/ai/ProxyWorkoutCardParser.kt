@@ -111,16 +111,32 @@ class ProxyWorkoutCardParser @Inject constructor(
                 }
 
                 val body = checkNotNull(response.body?.string()) { "Empty response from OpenAI" }
-                val completion = json.decodeFromString<ChatCompletion>(body)
-                val content = completion.choices.firstOrNull()?.message?.content
-                    ?: error("No content in OpenAI response")
-
-                val stripped = content.trim()
-                    .removePrefix("```json").removePrefix("```").removeSuffix("```").trim()
-                val parsed = json.decodeFromString<WorkoutResponse>(stripped)
-                parsed.items.map { it.toExerciseEntry() }
+                parseExerciseEntriesFromCompletionBody(body, json)
             }
         }
+}
+
+internal fun parseExerciseEntriesFromCompletionBody(
+    body: String,
+    json: Json = Json { ignoreUnknownKeys = true },
+): List<ExerciseEntry> {
+    val completion = json.decodeFromString<ChatCompletion>(body)
+    val content = completion.choices.firstOrNull()?.message?.content
+        ?: error("No content in OpenAI response")
+    return parseExerciseEntriesFromContent(content, json)
+}
+
+internal fun parseExerciseEntriesFromContent(
+    content: String,
+    json: Json = Json { ignoreUnknownKeys = true },
+): List<ExerciseEntry> {
+    val stripped = content.trim()
+        .removePrefix("```json")
+        .removePrefix("```")
+        .removeSuffix("```")
+        .trim()
+    val parsed = json.decodeFromString<WorkoutResponse>(stripped)
+    return parsed.items.map { it.toExerciseEntry() }
 }
 
 @Serializable

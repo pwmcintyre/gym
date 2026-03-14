@@ -29,8 +29,8 @@
         "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)"
       ],
       "priority": 2,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed — extracted pure parser helpers in core-ai and added ProxyWorkoutCardParserTest covering well-formed, malformed, empty-item, and missing-content responses."
     },
     {
       "id": "TC-004",
@@ -99,8 +99,8 @@
         "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
       "priority": 6,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed — GymAppRoot now pushes nav-derived screen context into ChatViewModel, and the assistant system prompt includes structured hidden context for the current screen/entity."
     },
     {
       "id": "US-004",
@@ -116,8 +116,8 @@
         "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed — each assistant request now injects known movement names, the last 14 days of sessions with nested sets, schema guidance, allowed write actions, and full movement history when on a movement-specific screen."
     },
     {
       "id": "US-005",

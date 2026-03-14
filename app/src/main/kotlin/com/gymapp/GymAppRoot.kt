@@ -46,6 +46,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -93,6 +94,9 @@ fun GymAppRoot() {
         var chatOpen by remember { mutableStateOf(false) }
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val chatViewModel: ChatViewModel = hiltViewModel()
+        LaunchedEffect(navBackStackEntry) {
+            chatViewModel.updateScreenContext(navBackStackEntry.toChatScreenContext())
+        }
 
         Scaffold(
             modifier = Modifier.fillMaxSize(),
@@ -247,6 +251,40 @@ fun GymAppRoot() {
                 onDismiss = { chatOpen = false },
             )
         }
+    }
+}
+
+private fun NavBackStackEntry?.toChatScreenContext(): ChatScreenContext {
+    val entry = this ?: return ChatScreenContext(screenName = "workouts")
+    val route = entry.destination.route.orEmpty()
+    val args = entry.arguments
+
+    return when {
+        route == Routes.WORKOUTS -> ChatScreenContext(screenName = "workouts")
+        route == Routes.MOVEMENTS -> ChatScreenContext(screenName = "movements")
+        route == Routes.SCAN -> ChatScreenContext(screenName = "scan")
+        route == Routes.SETTINGS -> ChatScreenContext(screenName = "settings")
+        route.startsWith("workout/") -> ChatScreenContext(
+            screenName = "active_workout",
+            entityType = "sessionId",
+            entityValue = args?.getString("sessionId"),
+        )
+        route.startsWith("history/detail/") -> ChatScreenContext(
+            screenName = "workout_detail",
+            entityType = "sessionId",
+            entityValue = args?.getString("sessionId"),
+        )
+        route.startsWith("history/progress/") -> ChatScreenContext(
+            screenName = "movement_progress",
+            entityType = "movementName",
+            entityValue = args?.getString("exerciseName")?.let(Uri::decode),
+        )
+        route.startsWith("history/comparison/") -> ChatScreenContext(
+            screenName = "workout_comparison",
+            entityType = "workoutName",
+            entityValue = args?.getString("workoutName")?.let(Uri::decode),
+        )
+        else -> ChatScreenContext(screenName = route.ifBlank { "unknown" })
     }
 }
 
