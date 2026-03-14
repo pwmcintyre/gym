@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymapp.core.ai.AiAssistant
 import com.gymapp.core.ai.ChatMessage
+import com.gymapp.core.ai.UserSettings
 import com.gymapp.core.database.repository.SetRepository
 import com.gymapp.core.database.repository.WorkoutRepository
 import com.gymapp.core.model.ExerciseEntry
@@ -36,6 +37,7 @@ data class ChatScreenContext(
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val aiAssistant: AiAssistant,
+    private val userSettings: UserSettings,
     private val workoutRepository: WorkoutRepository,
     private val setRepository: SetRepository,
 ) : ViewModel() {
@@ -71,6 +73,7 @@ class ChatViewModel @Inject constructor(
 
             val systemPrompt = buildSystemPrompt(
                 context = screenContext,
+                trainingConstraints = userSettings.trainingConstraints.first(),
                 workoutRepository = workoutRepository,
                 setRepository = setRepository,
             )
@@ -104,6 +107,7 @@ class ChatViewModel @Inject constructor(
 
         internal suspend fun buildSystemPrompt(
             context: ChatScreenContext,
+            trainingConstraints: String,
             workoutRepository: WorkoutRepository,
             setRepository: SetRepository,
             nowMillis: Long = System.currentTimeMillis(),
@@ -118,12 +122,23 @@ class ChatViewModel @Inject constructor(
                 ?.let { movementName ->
                     buildMovementHistoryPayload(movementName, sessions, workoutRepository, setRepository)
                 }
+            val constraintsSection = trainingConstraints
+                .trim()
+                .takeIf { it.isNotBlank() }
+                ?.let {
+                    """
+                    User training constraints (always respect these):
+                    $it
+                    """.trimIndent()
+                }
 
             return """
                 ${COACH_PROMPT.trimIndent()}
 
                 Current app context:
                 ${context.toPromptJson()}
+
+                ${constraintsSection ?: ""}
 
                 Data schema:
                 - Session: one workout day.

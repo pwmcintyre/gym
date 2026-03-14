@@ -6,6 +6,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
@@ -22,6 +23,7 @@ class UserSettings @Inject constructor(
     companion object {
         private val KEY_BODY_WEIGHT = floatPreferencesKey("body_weight_kg")
         private val KEY_REST_TIMER_SECONDS = intPreferencesKey("rest_timer_seconds")
+        private val KEY_TRAINING_CONSTRAINTS = stringPreferencesKey("training_constraints")
         const val DEFAULT_BODY_WEIGHT_KG = 75f
         const val DEFAULT_REST_TIMER_SECONDS = 90
     }
@@ -32,11 +34,18 @@ class UserSettings @Inject constructor(
     val restTimerSeconds: Flow<Int> = context.userDataStore.data
         .map { prefs -> prefs[KEY_REST_TIMER_SECONDS] ?: DEFAULT_REST_TIMER_SECONDS }
 
+    val trainingConstraints: Flow<String> = context.userDataStore.data
+        .map { prefs -> prefs[KEY_TRAINING_CONSTRAINTS] ?: "" }
+
     suspend fun setBodyWeightKg(kg: Float) {
         context.userDataStore.edit { prefs -> prefs[KEY_BODY_WEIGHT] = kg }
     }
 
     suspend fun setRestTimerSeconds(seconds: Int) {
         context.userDataStore.edit { prefs -> prefs[KEY_REST_TIMER_SECONDS] = seconds }
+    }
+
+    suspend fun setTrainingConstraints(text: String) {
+        context.userDataStore.edit { prefs -> prefs[KEY_TRAINING_CONSTRAINTS] = text.trim() }
     }
 }

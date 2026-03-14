@@ -171,8 +171,8 @@
         "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
       "priority": 10,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed — added a dedicated Training Constraints editor in Settings, persisted the free-text note to DataStore, and injected it into every assistant system prompt when non-blank."
     }
   ]
 }

@@ -10,6 +10,19 @@
 - `LazyColumn` with `reverseLayout = true` + `items(messages.reversed())` pattern for chat lists — newest message at bottom; loading indicator inserted as first `item {}` block in reversed order
 - `mutableStateListOf<T>` for ViewModel-owned lists that drive Compose recomposition without StateFlow overhead
 - For assistant prompt payloads in the `app/` module, lightweight manual JSON string builders are simpler than adding serialization plugin support just for local prompt structs
+- For small settings subflows, an internal screen-state switch inside the feature screen is cheaper than introducing another top-level nav route
+
+---
+
+## 2026-03-14T23:58 - US-007
+- Added `trainingConstraints` persistence to `UserSettings` DataStore and surfaced it through `SettingsViewModel`
+- Extended the Settings screen with a dedicated `Training Constraints` editor screen reachable from a root settings entry
+- Constraints text now auto-saves, has an explicit Save button, and is injected into every chat request only when non-blank
+- Files changed: `core/core-ai/src/main/kotlin/com/gymapp/core/ai/UserSettings.kt`, `features/feature-settings/src/main/kotlin/com/gymapp/feature/settings/SettingsViewModel.kt`, `features/feature-settings/src/main/kotlin/com/gymapp/feature/settings/SettingsScreen.kt`, `app/src/main/kotlin/com/gymapp/ChatViewModel.kt`, `prd.json`, `progress.txt`, `project.md`
+- Validation: `./gradlew :app:assembleDebug --no-daemon`, `adb install -r app/build/outputs/apk/debug/app-debug.apk`
+- **Learnings for future iterations:**
+  - A short preview helper keeps free-text settings readable on the root settings page without needing a custom list item component
+  - Pulling constraints from DataStore at send time keeps the chat prompt aligned with recent edits even if the overlay stays mounted
 
 ---
 

@@ -41,6 +41,9 @@ class SettingsViewModel @Inject constructor(
     val restTimerSeconds: StateFlow<Int> = userSettings.restTimerSeconds
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), 90)
 
+    val trainingConstraints: StateFlow<String> = userSettings.trainingConstraints
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+
     private val _driveBackupState = MutableStateFlow(
         driveAuthManager.currentAccountState().toUiState(),
     )
@@ -56,6 +59,10 @@ class SettingsViewModel @Inject constructor(
 
     fun saveRestTimerSeconds(seconds: Int) {
         viewModelScope.launch { userSettings.setRestTimerSeconds(seconds) }
+    }
+
+    fun saveTrainingConstraints(text: String) {
+        viewModelScope.launch { userSettings.setTrainingConstraints(text) }
     }
 
     fun createDriveSignInIntent(): Intent =
