@@ -2,7 +2,7 @@
 
 ## Introduction
 
-Replace the current passive AI (scan-only) with an always-available, proactive assistant that lives in a floating chat UI. The assistant knows what page the user is on, has read/write access to all app data, and can take actions on the user's behalf after a single confirmation tap.
+Replace the current passive AI (scan-only) with an always-available, proactive assistant that feels like a coach standing over your shoulder. It lives in a floating chat UI, silently knows what the user is looking at, has read/write access to all app data, and can take actions on their behalf after a single confirmation tap. The user should never have to explain where they are or what they're doing — the AI already knows.
 
 On every cold launch it greets the user with a 7-day summary and a psychological hook (e.g. "Want me to load last Tuesday's session as a starting point?") to drive engagement. At any other time the user can open it from a floating button and ask anything — looking up movement history, comparing weights, or logging new data.
 
@@ -40,18 +40,19 @@ On every cold launch it greets the user with a 7-day summary and a psychological
 - [ ] A loading indicator is shown while the AI is responding
 - [ ] Errors are shown inline in the chat (not a toast or crash) — e.g. "Couldn't reach the AI, try again"
 - [ ] Conversation is in-memory only — no persistence between app launches (for now)
-- [ ] System prompt instructs the AI: it is a gym training assistant, it should be concise and direct, avoid filler
+- [ ] System prompt instructs the AI: it is a personal training coach, present in the moment, concise and direct — no filler, no disclaimers, no "As an AI..." hedging. Talks like a coach, not a chatbot.
 - [ ] Typecheck passes
 - [ ] Build passes
 
-### US-003: Context injection — AI knows current screen
-**Description:** As a user, I want the AI to know what screen I'm on so its answers are relevant without me having to explain.
+### US-003: Context injection — AI silently knows current screen
+**Description:** As a user, I want the AI to know what screen I'm on so I never have to explain what I'm looking at — it just knows, like a coach standing beside me.
 
 **Acceptance Criteria:**
-- [ ] Every AI request includes the current screen name in the system prompt (e.g. "User is currently on: Workout History", "User is currently on: Movement Detail — Bench Press")
-- [ ] The overlay shows a small, subtle label below the input field indicating context, e.g. "Chatting on: Workout History"
-- [ ] Context updates automatically if the user navigates while the overlay is open (e.g. swipes to a different page)
+- [ ] Every AI request includes the current screen name and any relevant entity (e.g. movement name, session date) in the system prompt — never surfaced in the UI
+- [ ] No label, badge, or indicator is shown to the user about context — it is entirely invisible
+- [ ] Context updates automatically if the user navigates while the overlay is open
 - [ ] Screen context is passed as a structured field in the system prompt, not embedded in the user message
+- [ ] The system prompt instructs the AI to use context naturally, never announce it ("I can see you're on...") — just use it
 - [ ] Typecheck passes
 - [ ] Build passes
 
@@ -154,4 +155,4 @@ On every cold launch it greets the user with a 7-day summary and a psychological
 ## Open Questions
 
 - Should the overlay remember scroll position if dismissed and reopened within the same session?
-- Should the context label show the movement name when on a movement detail page, or just the screen name?
+- When on a movement detail page, should the context injected into the system prompt include the movement name and recent history for that movement automatically, or only inject it when the user asks? (Recommendation: always inject it — the coach already knows what you're looking at.)
