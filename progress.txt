@@ -1,0 +1,20 @@
+## Codebase Patterns
+- `GymAppRoot.kt` is the single root composable wrapping NavHost + Scaffold — global UI overlays (chat, notifications) belong here, outside NavHost
+- `ModalBottomSheet` with `skipPartiallyExpanded = true` used for overlay sheet — placed after Scaffold in composition, not inside it
+- Use `Icons.AutoMirrored.Filled.*` for Chat and Send icons (Filled variants deprecated in recent Material Icons)
+- Feature overlays that should persist across navigation live in `app/` module, not in feature modules
+
+---
+
+## 2026-03-14T22:00 - US-001
+- Implemented floating chat FAB and dismissible overlay shell in `GymAppRoot.kt`
+- FAB uses `Icons.AutoMirrored.Filled.Chat`, hidden when overlay is open
+- Overlay is a `ModalBottomSheet` with `skipPartiallyExpanded = true`, containing: title row + close (X) button, empty `LazyColumn` for messages, and `OutlinedTextField` + send `IconButton`
+- All state is local (`remember { mutableStateOf(...) }`) — no ViewModel needed for scaffolding
+- Files changed: `app/src/main/kotlin/com/gymapp/GymAppRoot.kt`, `prd.json`
+- **Learnings for future iterations:**
+  - `ModalBottomSheet` must be placed outside `Scaffold` but inside `GymAppTheme` to overlay correctly
+  - `dragHandle = null` removes the default handle; use explicit close button instead for cleaner UX
+  - `imePadding()` on the Column inside the sheet handles keyboard correctly
+  - New branch `ralph/ai-assistant` created from `main`
+---

@@ -1,32 +1,40 @@
 {
   "project": "gym",
-  "branchName": "ralph/build-perf-and-testing",
-  "description": "Build Performance + Test Coverage — measure and improve Gradle build speed, then add unit/integration tests for the highest-risk flows",
+  "branchName": "ralph/ai-assistant",
+  "description": "AI Assistant — always-available floating chat coach with context awareness, data access, proactive launch summary, write actions, and user training constraints",
   "userStories": [
     {
-      "id": "BP-001",
-      "title": "Measure and document build performance baseline",
-      "description": "As a developer, I want to know which Gradle tasks are slowest so I can prioritize optimization effort.",
+      "id": "US-001",
+      "title": "Floating chat FAB and dismissible overlay shell",
+      "description": "As a user, I want a floating chat button always visible so I can open the assistant at any time without leaving my current screen.",
       "acceptanceCriteria": [
-        "Run a clean build with --profile flag: `./gradlew assembleDebug --profile --no-daemon`",
-        "Identify the top 5 slowest tasks by duration from the HTML report",
-        "Document findings in `tasks/build-performance-notes.md` with task names and durations",
-        "Note which tasks are configuration-phase vs execution-phase",
-        "Run `./gradlew compileDebugKotlin --dry-run` and document the task graph in the same notes file",
-        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)"
+        "A floating action button (FAB) is visible in the bottom-right corner on every screen in the app",
+        "Tapping the FAB opens a chat overlay that floats above the current page — the page content remains visible and partially interactive beneath it",
+        "The overlay occupies roughly the bottom half of the screen (a bottom sheet style), leaving the top half showing the current page",
+        "The overlay has a visible dismiss button (X or drag handle) that closes it and returns focus to the underlying page",
+        "The overlay contains: a scrollable message list area, a text input field, and a send button",
+        "The FAB is hidden while the overlay is open (no double-tap confusion)",
+        "No AI calls yet — this story is UI scaffolding only",
+        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
+        "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
       "priority": 1,
-      "passes": false,
+      "passes": true,
       "notes": ""
     },
     {
-      "id": "BP-002",
-      "title": "Tune Gradle JVM and parallel execution settings",
-      "description": "As a developer, I want Gradle to use available CPU cores and an appropriate heap so builds don't bottleneck on resources.",
+      "id": "US-002",
+      "title": "Basic AI chat — send message, receive text response",
+      "description": "As a user, I want to type a message and receive a response from the AI so I can have a basic conversation.",
       "acceptanceCriteria": [
-        "`org.gradle.parallel=true` confirmed set in `gradle.properties`",
-        "`org.gradle.daemon=true` confirmed set in `gradle.properties`",
-        "`org.gradle.jvmargs` heap reviewed — set to at least `-Xmx3g` if not already",
+        "Typing a message and tapping Send calls the AI (via existing `core/core-ai/`) with the user's message",
+        "AI response is displayed in the message list as a chat bubble",
+        "User messages appear on the right; AI messages appear on the left",
+        "A loading indicator is shown while the AI is responding",
+        "Errors are shown inline in the chat (not a toast or crash) — e.g. \"Couldn't reach the AI, try again\"",
+        "Conversation is in-memory only — no persistence between app launches (for now)",
+        "System prompt instructs the AI: it is a personal training coach, present in the moment, concise and direct — no filler, no disclaimers, no \"As an AI...\" hedging. Talks like a coach, not a chatbot.",
+        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
         "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
       "priority": 2,
@@ -34,14 +42,16 @@
       "notes": ""
     },
     {
-      "id": "BP-003",
-      "title": "Enable Gradle configuration cache and build cache",
-      "description": "As a developer, I want Gradle to cache configuration and task outputs so repeated builds are faster.",
+      "id": "US-003",
+      "title": "Context injection — AI silently knows current screen",
+      "description": "As a user, I want the AI to know what screen I'm on so I never have to explain what I'm looking at — it just knows, like a coach standing beside me.",
       "acceptanceCriteria": [
-        "`org.gradle.configuration-cache=warn` added to `gradle.properties` (warn mode to avoid hard failures from incompatible plugins)",
-        "`org.gradle.caching=true` added to `gradle.properties`",
-        "Clean build succeeds, followed by a second incremental build",
-        "No existing tasks broken by cache enablement",
+        "Every AI request includes the current screen name and any relevant entity (e.g. movement name, session date) in the system prompt — never surfaced in the UI",
+        "No label, badge, or indicator is shown to the user about context — it is entirely invisible",
+        "Context updates automatically if the user navigates while the overlay is open",
+        "Screen context is passed as a structured field in the system prompt, not embedded in the user message",
+        "The system prompt instructs the AI to use context naturally, never announce it (\"I can see you're on...\") — just use it",
+        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
         "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
       "priority": 3,
@@ -49,75 +59,74 @@
       "notes": ""
     },
     {
-      "id": "BP-004",
-      "title": "Document before/after build timing comparison",
-      "description": "As a developer, I want a documented record of build time improvements so I know whether the changes had measurable effect.",
+      "id": "US-004",
+      "title": "AI data access — read all workout data",
+      "description": "As a user, I want the AI to be able to answer questions about my training history so I can ask things like \"how much did I bench last week?\" and get a real answer.",
       "acceptanceCriteria": [
-        "Run `./gradlew assembleDebug --profile --no-daemon` after all config changes",
-        "Append before/after timing comparison to `tasks/build-performance-notes.md`",
-        "Note any remaining bottlenecks or follow-up opportunities",
-        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)"
+        "On every AI request, inject the following as structured context in the system prompt: all movement names known in the database; last 14 days of sessions (date, movements, sets with weight/reps/modifier); if a specific movement is in context (from US-003), include its full history (all sessions)",
+        "System prompt includes a plain-English description of the data schema: what a Session, Movement, and Set are and how they relate",
+        "System prompt tells the AI what write actions it can propose (see US-006)",
+        "The AI can correctly answer \"what was my best set on X this month?\" using injected data",
+        "Data is fetched fresh on each chat open (not cached across sessions)",
+        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
+        "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
       "priority": 4,
       "passes": false,
       "notes": ""
     },
     {
-      "id": "TC-001",
-      "title": "Add unit tests for workout creation and editing",
-      "description": "As a developer, I want unit tests for the workout creation and editing flows so regressions are caught before they reach the device.",
+      "id": "US-005",
+      "title": "Proactive cold-launch message with 7-day summary",
+      "description": "As a user, I want to see a helpful summary when I open the app so I'm immediately oriented and motivated to train.",
       "acceptanceCriteria": [
-        "Tests cover: creating a new workout session, adding a set to an existing session, editing set values (weight, reps, modifier)",
-        "Tests exercise the ViewModel or use-case layer, not just data models",
-        "Tests use fakes or in-memory Room database — no mocks of the Room DAO directly",
-        "Tests pass (`./gradlew testDebugUnitTest --no-daemon`)",
-        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)"
+        "On cold launch (process start, not resume from background), the chat overlay opens automatically after a short delay (300–500ms — enough for the home screen to render first)",
+        "The AI generates a proactive opening message containing: a brief summary of the last 7 days (number of sessions, notable movements or PRs); a concrete hook suggestion, e.g. \"You trained 3 times last week — want me to queue up a lower body session?\" or \"You hit 100kg squat on Thursday — want to aim for 102.5kg today?\"",
+        "If no data exists (new user), the message is a friendly intro: \"Welcome! Tap + to log your first workout, or ask me anything.\"",
+        "The overlay can be dismissed with the same X button — no forced interaction",
+        "The proactive message is only triggered on cold launch, not on every app resume",
+        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
+        "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
       "priority": 5,
       "passes": false,
       "notes": ""
     },
     {
-      "id": "TC-002",
-      "title": "Add unit tests for movement history and progress behavior",
-      "description": "As a developer, I want unit tests for movement history aggregation so changes to progress calculation are caught early.",
+      "id": "US-006",
+      "title": "AI write actions with confirmation",
+      "description": "As a user, I want the AI to be able to propose actions like logging a set, and confirm them with one tap so I don't have to navigate the UI manually.",
       "acceptanceCriteria": [
-        "Tests cover: retrieving movement history for a given exercise, computing best set per session, ordering sessions by date",
-        "Tests use an in-memory Room database populated with known fixture data",
-        "Edge cases covered: no sessions, single session, sessions with multiple sets",
-        "Tests pass (`./gradlew testDebugUnitTest --no-daemon`)",
-        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)"
+        "The AI can propose write actions by returning a structured JSON block alongside its message",
+        "Supported actions: `add_set` (fields: movementName, weightKg, reps, modifier optional) and `create_session` (start a new session for today)",
+        "When the AI returns an action, the UI renders it as a distinct action card below the AI's message: a brief human-readable description of the action + a \"Confirm\" button",
+        "Tapping Confirm executes the write against the Room database and shows a brief success message inline (e.g. \"Done — added Bench Press 80kg × 5\")",
+        "If the action would target a session that doesn't exist, the AI should first propose `create_session`, then the set",
+        "Cancelled or ignored action cards remain visible in the chat history (no auto-dismiss)",
+        "Action JSON format: the AI returns a fenced ```action block with fields: type, movementName, weightKg, reps, modifier, sessionDate",
+        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
+        "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
       "priority": 6,
       "passes": false,
       "notes": ""
     },
     {
-      "id": "TC-003",
-      "title": "Add unit tests for AI scan parsing flows",
-      "description": "As a developer, I want unit tests for the AI scan parsing logic so changes to prompt output handling don't silently break import.",
+      "id": "US-007",
+      "title": "Training constraints settings screen",
+      "description": "As a user, I want to describe my training constraints in plain text so the AI coach automatically factors them into every response without me having to repeat myself.",
       "acceptanceCriteria": [
-        "Tests cover: parsing a well-formed AI response into workout data, handling a malformed/partial response gracefully, handling an empty response",
-        "Tests are pure unit tests — no network calls, use hardcoded JSON/text fixtures",
-        "Tests pass (`./gradlew testDebugUnitTest --no-daemon`)",
-        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)"
+        "A \"Training Constraints\" entry is added to the existing Settings screen",
+        "Tapping it opens a dedicated screen with a single large multi-line plain-text input field (no structured fields — free text only)",
+        "Placeholder text prompts the user with examples: e.g. \"I train at home with dumbbells up to 30kg and a pull-up bar. I have a left shoulder impingement — avoid overhead pressing.\"",
+        "The entered text is persisted to DataStore (not Room) — it survives app restarts",
+        "A Save button (or auto-save on text change with debounce) commits the value",
+        "The constraints text is injected into every AI system prompt as a clearly labelled block: \"User training constraints (always respect these):\\n<text>\" — or omitted entirely if blank",
+        "The constraints are loaded by `ChatViewModel` at chat-open time alongside the workout data (US-004)",
+        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)",
+        "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
       "priority": 7,
-      "passes": false,
-      "notes": ""
-    },
-    {
-      "id": "TC-004",
-      "title": "Add integration tests for fragile UI state logic",
-      "description": "As a developer, I want integration-level tests for the most fragile UI state flows so state bugs are caught before manual testing.",
-      "acceptanceCriteria": [
-        "Tests cover at minimum: the workouts list screen loading state, the set-editor showing correct initial values when editing an existing set",
-        "Tests use Compose testing APIs (not Espresso unless unavoidable)",
-        "Tests placed in appropriate `src/test/` or `src/androidTest/` directory",
-        "Tests pass",
-        "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)"
-      ],
-      "priority": 8,
       "passes": false,
       "notes": ""
     }
