@@ -22,7 +22,19 @@
 - Validation: `./gradlew :app:assembleDebug --no-daemon`, `adb install -r app/build/outputs/apk/debug/app-debug.apk`
 - **Learnings for future iterations:**
   - A short preview helper keeps free-text settings readable on the root settings page without needing a custom list item component
-  - Pulling constraints from DataStore at send time keeps the chat prompt aligned with recent edits even if the overlay stays mounted
+- Pulling constraints from DataStore at send time keeps the chat prompt aligned with recent edits even if the overlay stays mounted
+
+---
+
+## 2026-03-15T00:12 - US-005
+- Added a one-time-per-process cold-launch opener flow to the global coach overlay
+- `GymAppRoot` now opens the chat after a 400ms delay on cold start, and `ChatViewModel` seeds the first assistant message
+- New users get a local welcome message; returning users get an AI-generated opener using the recent 7-day summary, with a deterministic fallback if the AI call fails
+- Files changed: `app/src/main/kotlin/com/gymapp/GymAppRoot.kt`, `app/src/main/kotlin/com/gymapp/ChatViewModel.kt`, `prd.json`, `progress.txt`, `project.md`
+- Validation: `./gradlew :app:assembleDebug --no-daemon`, `adb install -r app/build/outputs/apk/debug/app-debug.apk`
+- **Learnings for future iterations:**
+  - A ViewModel-scoped `hasTriggeredColdLaunchMessage` flag is enough to suppress reopen spam on ordinary resume without extra persistence
+  - For proactive AI openers, a small local fallback keeps the experience resilient when the network or API key is unavailable
 
 ---
 

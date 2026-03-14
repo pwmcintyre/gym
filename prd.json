@@ -133,8 +133,8 @@
         "Build passes (`./gradlew assembleDebug --no-daemon`)"
       ],
       "priority": 8,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed — the global coach overlay auto-opens once per cold launch after a short delay, seeds itself with a local welcome for new users or an AI-generated 7-day opener, and does not retrigger on routine resume within the same process."
     },
     {
       "id": "US-006",

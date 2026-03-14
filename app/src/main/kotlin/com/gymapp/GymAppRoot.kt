@@ -62,6 +62,7 @@ import com.gymapp.feature.workouts.ActiveWorkoutScreen
 import com.gymapp.feature.workouts.WorkoutsScreen
 import com.gymapp.navigation.bottomNavDestinations
 import com.gymapp.ui.theme.GymAppTheme
+import kotlinx.coroutines.delay
 
 private object Routes {
     const val WORKOUTS = "workouts"
@@ -96,6 +97,13 @@ fun GymAppRoot() {
         val chatViewModel: ChatViewModel = hiltViewModel()
         LaunchedEffect(navBackStackEntry) {
             chatViewModel.updateScreenContext(navBackStackEntry.toChatScreenContext())
+        }
+        LaunchedEffect(Unit) {
+            if (chatViewModel.shouldTriggerColdLaunchMessage()) {
+                delay(400)
+                chatOpen = true
+                chatViewModel.triggerColdLaunchMessage()
+            }
         }
 
         Scaffold(

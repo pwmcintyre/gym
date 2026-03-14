@@ -49,9 +49,64 @@ class ChatViewModel @Inject constructor(
         private set
 
     private var screenContext by mutableStateOf(ChatScreenContext(screenName = "workouts"))
+    private var hasTriggeredColdLaunchMessage = false
 
     fun updateScreenContext(context: ChatScreenContext) {
         screenContext = context
+    }
+
+    fun shouldTriggerColdLaunchMessage(): Boolean = !hasTriggeredColdLaunchMessage
+
+    fun triggerColdLaunchMessage() {
+        if (hasTriggeredColdLaunchMessage) return
+        hasTriggeredColdLaunchMessage = true
+        if (_messages.isNotEmpty()) return
+
+        viewModelScope.launch {
+            val sessions = workoutRepository.observeAll().first()
+            val recentSessions = sessions.filter { it.date >= System.currentTimeMillis() - COLD_LAUNCH_WINDOW_MS }
+            if (recentSessions.isEmpty()) {
+                _messages.add(
+                    UiChatMessage(
+                        content = "Welcome! Log your first workout, or ask me anything.",
+                        isUser = false,
+                    ),
+                )
+                return@launch
+            }
+
+            isLoading = true
+            val recentSummary = buildRecentSummary(recentSessions, workoutRepository)
+            val systemPrompt = buildSystemPrompt(
+                context = screenContext,
+                trainingConstraints = userSettings.trainingConstraints.first(),
+                workoutRepository = workoutRepository,
+                setRepository = setRepository,
+            ) + "\n\nWrite a proactive opening message for app launch. Keep it to two sentences max. Mention the last 7 days briefly and end with one concrete suggestion or hook."
+            val result = aiAssistant.chat(
+                systemPrompt = systemPrompt,
+                messages = listOf(
+                    ChatMessage(
+                        role = ChatMessage.Role.USER,
+                        content = "Use this recent training summary for your opener: $recentSummary",
+                    )
+                ),
+            )
+            isLoading = false
+            result.fold(
+                onSuccess = { reply ->
+                    _messages.add(UiChatMessage(reply.trim(), isUser = false))
+                },
+                onFailure = {
+                    _messages.add(
+                        UiChatMessage(
+                            content = fallbackOpeningMessage(recentSessions),
+                            isUser = false,
+                        ),
+                    )
+                },
+            )
+        }
     }
 
     fun sendMessage(text: String) {
@@ -98,6 +153,7 @@ class ChatViewModel @Inject constructor(
     }
 
     companion object {
+        private const val COLD_LAUNCH_WINDOW_MS = 7L * 24 * 60 * 60 * 1000
         private const val RECENT_HISTORY_WINDOW_MS = 14L * 24 * 60 * 60 * 1000
         private const val COACH_PROMPT = """
             You are a personal training coach. Be present, concise, and direct.
@@ -287,3 +343,53 @@ private fun formatEpochDate(epochMillis: Long): String =
         .atZone(ZoneId.systemDefault())
         .toLocalDate()
         .toString()
+
+private suspend fun buildRecentSummary(
+    sessions: List<WorkoutSession>,
+    workoutRepository: WorkoutRepository,
+): String {
+    val movementNames = sessions.flatMap { session ->
+        workoutRepository.observeExercises(session.id).first().map { it.exerciseName }
+    }
+        .filter { it.isNotBlank() }
+    val topMovements = movementNames
+        .groupingBy { it }
+        .eachCount()
+        .entries
+        .sortedByDescending { it.value }
+        .take(3)
+        .joinToString { "${it.key} (${it.value})" }
+
+    return buildString {
+        append("sessions=")
+        append(sessions.size)
+        if (topMovements.isNotBlank()) {
+            append("; common movements=")
+            append(topMovements)
+        }
+    }
+}
+
+private fun fallbackOpeningMessage(sessions: List<WorkoutSession>): String {
+    val count = sessions.size
+    val dayLabel = if (count == 1) "session" else "sessions"
+    val recentDay = sessions.maxByOrNull { it.date }?.let { formatEpochDate(it.date) }
+    val hook = if (count >= 3) {
+        "Want me to help line up the next one?"
+    } else {
+        "Want to plan today's training?"
+    }
+    return buildString {
+        append("You trained ")
+        append(count)
+        append(' ')
+        append(dayLabel)
+        append(" in the last 7 days")
+        recentDay?.let {
+            append(", most recently on ")
+            append(it)
+        }
+        append(". ")
+        append(hook)
+    }
+}
