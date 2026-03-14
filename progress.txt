@@ -1,0 +1,46 @@
+# Ralph Progress Log
+Started: Sat Mar 14 18:52:23 AEDT 2026
+---
+
+## Codebase Patterns
+- Profile reports land in `build/reports/profile/profile-*.html`
+- Use `--no-build-cache` with `--profile` for true baseline timing (avoid cached results skewing numbers)
+- `./gradlew clean --no-daemon` clears only build outputs, not the local build cache (~/.gradle/caches)
+- Gradle HTML profile has 5 tabs: Summary, Configuration, Dependency Resolution, Artifact Transforms, Task Execution
+- `--dry-run` shows the full task graph with SKIPPED on each task; all 184 tasks SKIPPED means up-to-date
+
+## 2026-03-14T19:05 - BP-003
+- Added `org.gradle.configuration-cache=warn` to `gradle.properties`
+- `org.gradle.caching=true` was already set from a prior milestone
+- Verified clean build succeeds, followed by incremental build
+- Verified "Reusing configuration cache" on second `--configuration-cache` run
+- Files changed: `gradle.properties`
+- **Learnings for future iterations:**
+  - Configuration cache in `warn` mode doesn't fail on incompatible plugins — safe for AGP 8.3
+  - Must use `--configuration-cache` CLI flag to force cache entry creation on first run; the property `org.gradle.configuration-cache=warn` enables it but is passive
+  - Confirmation message: "Configuration cache entry stored." then "Reusing configuration cache."
+---
+
+## 2026-03-14T19:00 - BP-002
+- Added `org.gradle.daemon=true` to `gradle.properties` (was missing)
+- Raised `-Xmx2g` to `-Xmx3g` to reduce GC pressure during Kotlin compilation
+- Confirmed `org.gradle.parallel=true` already set
+- Files changed: `gradle.properties`
+- **Learnings for future iterations:**
+  - In WSL2, the daemon may not persist between shell sessions as expected, but the setting is correct
+  - Build cache (`org.gradle.caching=true`) was already enabled from a prior milestone
+---
+
+## 2026-03-14T18:55 - BP-001
+- Ran clean build with `--profile --no-build-cache` to capture true baseline (53s)
+- Extracted top 5 slowest tasks: all `compileDebugKotlin` calls (13.4s, 8.8s, 8.5s, 5.5s, 3.4s)
+- Documented configuration-phase vs execution-phase breakdown
+- Documented task graph for `compileDebugKotlin` via `--dry-run` (184 tasks, 9 Kotlin compile steps)
+- Files changed: `tasks/build-performance-notes.md` (created)
+- **Learnings for future iterations:**
+  - Kotlin/Compose compilation dominates (~60% of execution time)
+  - KSP adds 3–4s per module with Room/Hilt
+  - Build cache reduces clean 53s → incremental ~14s (73% speedup)
+  - `core-model` is root dep — changes invalidate all 9 downstream compile steps
+  - Artifact transforms (18s) are one-time per dependency version, not repeated on incremental
+---

@@ -94,6 +94,58 @@ Key compilation order (topological):
 
 ---
 
+## After-Optimization Measurement — 2026-03-14
+
+Changes applied before this run:
+- `-Xmx` raised from `2g` → `3g`
+- `org.gradle.daemon=true` added
+- `org.gradle.configuration-cache=warn` added
+- Profile: `build/reports/profile/profile-2026-03-14-19-01-03.html`
+
+### Clean Build Summary After (no-build-cache)
+| Phase                 | Duration |
+|-----------------------|----------|
+| Total Build Time      | 50.0s    |
+| Startup               | 2.2s     |
+| Settings and buildSrc | 0.4s     |
+| Loading Projects      | 0.3s     |
+| Configuring Projects  | 3.4s     |
+| Artifact Transforms   | 15.4s    |
+| Task Execution        | ~105s    |
+
+---
+
 ## Before/After Comparison
 
-*(To be filled in after BP-003 and BP-004 — see below)*
+| Metric                    | Before  | After   | Change   |
+|---------------------------|---------|---------|----------|
+| Total clean build time    | 52.9s   | 50.0s   | -2.9s (-5%) |
+| Startup                   | 2.2s    | 2.2s    | ~0       |
+| Configuring Projects      | 3.4s    | 3.4s    | ~0       |
+| Artifact Transforms       | 18.2s   | 15.4s   | -2.8s (-15%) |
+| `feature-workouts:compileDebugKotlin` | 13.4s | 13.2s | ~0 |
+| `app:mergeExtDexDebug`    | 11.7s   | 10.8s   | -0.9s (-8%) |
+| `feature-history:compileDebugKotlin` | 8.8s | 8.9s | ~0 |
+
+### Analysis
+
+The `-Xmx3g` change provides a **modest improvement** (~5% overall) — the Kotlin compiler has more headroom but is not memory-bound at this project size. The main gains are:
+- Reduced GC pause time in artifact transforms (~2.8s saving)
+- Slightly faster DEX merging (~0.9s saving)
+- Kotlin compilation tasks are essentially unchanged (CPU-bound, not heap-bound)
+
+### Configuration Cache Impact
+
+The configuration cache (`org.gradle.configuration-cache=warn`) saves **~3.4s per build** on repeated builds (the full configuration phase is eliminated). For a developer doing 10 incremental builds in a session, this is a ~34s total saving. The cache reuse was verified with "Reusing configuration cache." output.
+
+### Build Cache Impact
+
+The build cache (`org.gradle.caching=true`) is the most impactful optimization: it reduces clean builds from **52s → 14s** (73% faster) after initial population. This was already enabled before this sprint.
+
+### Remaining Bottlenecks / Follow-Up Opportunities
+
+1. **AGP upgrade** (8.3.2 → 8.7+): AGP 8.3 has known warnings with `compileSdk=35`. Newer AGP versions have improved KSP/Hilt caching. Medium effort.
+2. **Compiler daemon warm-up**: The Gradle daemon is now enabled, so the JVM warms up across builds. Most benefit is felt in developer workflows (not CI).
+3. **`feature-workouts:compileDebugKotlin` (13s)**: This module has the most Compose code. Future: modularize Compose screens into smaller sub-modules to enable more parallelism.
+4. **`mergeExtDexDebug` (11s)**: Hard to optimize directly — this is an AGP task merging all external library DEX. A future AGP upgrade may reduce this.
+5. **Configuration cache full enablement**: Switch from `warn` → `true` once plugin compatibility is confirmed. Currently in warn mode for safety.
