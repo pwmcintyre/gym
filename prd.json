@@ -15,8 +15,8 @@
         "Typecheck passes (`./gradlew compileDebugKotlin --no-daemon`)"
       ],
       "priority": 1,
-      "passes": false,
-      "notes": ""
+      "passes": true,
+      "notes": "Completed — MovementHistoryTest with Robolectric + in-memory Room, 12 tests covering all acceptance criteria."
     },
     {
       "id": "TC-003",

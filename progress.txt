@@ -1,4 +1,6 @@
 ## Codebase Patterns
+- Room JVM unit tests (Robolectric): add `testImplementation("org.robolectric:robolectric:4.11.1")`, `androidx.test:core:1.5.0`, `kotlinx-coroutines-test`; set `@Config(sdk = [34])` to avoid compileSdk=35 warnings; enable `testOptions { unitTests.isIncludeAndroidResources = true }` in the Android block
+- Use `Room.inMemoryDatabaseBuilder(...).allowMainThreadQueries()` for DAO tests in `src/test/`; collect flows with `.first()` inside `runTest {}`
 - `GymAppRoot.kt` is the single root composable wrapping NavHost + Scaffold — global UI overlays (chat, notifications) belong here, outside NavHost
 - `ModalBottomSheet` with `skipPartiallyExpanded = true` used for overlay sheet — placed after Scaffold in composition, not inside it
 - Use `Icons.AutoMirrored.Filled.*` for Chat and Send icons (Filled variants deprecated in recent Material Icons)
@@ -8,6 +10,18 @@
 - `LazyColumn` with `reverseLayout = true` + `items(messages.reversed())` pattern for chat lists — newest message at bottom; loading indicator inserted as first `item {}` block in reversed order
 - `mutableStateListOf<T>` for ViewModel-owned lists that drive Compose recomposition without StateFlow overhead
 
+---
+
+## 2026-03-14T23:00 - TC-002
+- Added Robolectric + room-testing + coroutines-test deps to `core/core-database/build.gradle.kts`
+- Created `core/core-database/src/test/kotlin/com/gymapp/core/database/MovementHistoryTest.kt` (12 tests)
+- Tests cover: empty history, single-session, multi-set best-weight/reps, date ordering (DESC), exercise isolation, getPreviousSessionSets, getPreviousSessionDate, observeProgressSummaries
+- All edge cases: no sessions, unknown exercise, single session, sessions with multiple sets
+- Files changed: `core/core-database/build.gradle.kts`, `core/core-database/src/test/kotlin/com/gymapp/core/database/MovementHistoryTest.kt`, `prd.json`, `progress.txt`
+- **Learnings for future iterations:**
+  - Robolectric 4.11.1 + `@Config(sdk = [34])` works cleanly for JVM Room tests; avoids compileSdk=35 warning
+  - `allowMainThreadQueries()` needed for Flow `.first()` in JVM tests (no coroutine dispatcher set up)
+  - Test fixtures: simple private suspend helpers (session/exercise/set) keep test bodies clean
 ---
 
 ## 2026-03-14T22:30 - US-002
