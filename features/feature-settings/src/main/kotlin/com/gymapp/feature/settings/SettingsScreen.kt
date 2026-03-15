@@ -60,6 +60,7 @@ fun SettingsScreen(
     val savedRestTimer by viewModel.restTimerSeconds.collectAsStateWithLifecycle()
     val savedTrainingConstraints by viewModel.trainingConstraints.collectAsStateWithLifecycle()
     val driveBackupState by viewModel.driveBackupState.collectAsStateWithLifecycle()
+    val lastAiError by viewModel.lastAiError.collectAsStateWithLifecycle()
     var keyDraft by rememberSaveable(savedKey) { mutableStateOf(savedKey) }
     var bodyWeightDraft by rememberSaveable(savedBodyWeight) {
         mutableStateOf(savedBodyWeight?.let { formatWeight(it) } ?: "")
@@ -106,6 +107,13 @@ fun SettingsScreen(
                         title = "AI Scan",
                         supportingText = "Your OpenAI API key. Get one at platform.openai.com. Stored only on this device.",
                     ) {
+                        lastAiError?.let { error ->
+                            Text(
+                                text = "Last error: $error",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                            )
+                        }
                         OutlinedTextField(
                             value = keyDraft,
                             onValueChange = { keyDraft = it },

@@ -4,6 +4,7 @@ import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymapp.core.ai.AiSettings
+import com.gymapp.core.ai.AiStatusStore
 import com.gymapp.core.ai.UserSettings
 import com.gymapp.core.drivebackup.DriveAccountState
 import com.gymapp.core.drivebackup.DriveBackupRepository
@@ -27,6 +28,7 @@ data class DriveBackupUiState(
 @HiltViewModel
 class SettingsViewModel @Inject constructor(
     private val aiSettings: AiSettings,
+    private val aiStatusStore: AiStatusStore,
     private val userSettings: UserSettings,
     private val driveAuthManager: GoogleDriveAuthManager,
     private val driveBackupRepository: DriveBackupRepository,
@@ -34,6 +36,9 @@ class SettingsViewModel @Inject constructor(
 
     val apiKey: StateFlow<String> = aiSettings.apiKey
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+
+    val lastAiError: StateFlow<String?> = aiStatusStore.lastError
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val bodyWeightKg: StateFlow<Float?> = userSettings.bodyWeightKg
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), UserSettings.DEFAULT_BODY_WEIGHT_KG)

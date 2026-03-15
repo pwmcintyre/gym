@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymapp.core.ai.AiAssistant
 import com.gymapp.core.ai.AiException
+import com.gymapp.core.ai.AiStatusStore
 import com.gymapp.core.ai.ChatMessage
 import com.gymapp.core.ai.CoachSuggestionStore
 import com.gymapp.core.ai.UserSettings
@@ -52,6 +53,7 @@ data class ChatScreenContext(
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val aiAssistant: AiAssistant,
+    private val aiStatusStore: AiStatusStore,
     private val coachSuggestionStore: CoachSuggestionStore,
     private val userSettings: UserSettings,
     private val workoutRepository: WorkoutRepository,
@@ -62,6 +64,10 @@ class ChatViewModel @Inject constructor(
     val messages: List<UiChatMessage> get() = _messages
 
     var isLoading by mutableStateOf(false)
+        private set
+
+    /** True only when the cold-launch AI call succeeded — gates auto-open. */
+    var coldLaunchShouldOpen by mutableStateOf(false)
         private set
 
     private var screenContext by mutableStateOf(ChatScreenContext(screenName = "workouts"))
@@ -127,26 +133,15 @@ class ChatViewModel @Inject constructor(
             isLoading = false
             result.fold(
                 onSuccess = { reply ->
+                    aiStatusStore.clearError()
+                    coldLaunchShouldOpen = true
                     _messages.add(parseColdLaunchMessage(reply, recentSessions))
                 },
                 onFailure = { error ->
-                    _messages.add(
-                        when (error) {
-                            is AiException.ApiKeyMissing, is AiException.Unauthorized ->
-                                UiChatMessage(
-                                    content = "Add an OpenAI API key in Settings to enable the coach.",
-                                    isUser = false,
-                                    action = UiChatAction(
-                                        label = "Open Settings",
-                                        destination = ActionDestination.Settings,
-                                    ),
-                                )
-                            else -> UiChatMessage(
-                                content = fallbackOpeningMessage(recentSessions),
-                                isUser = false,
-                            )
-                        }
-                    )
+                    val msg = errorMessage(error)
+                    aiStatusStore.setError(msg.content)
+                    _messages.add(msg)
+                    // coldLaunchShouldOpen stays false — chat will not auto-open
                 },
             )
         }
@@ -180,10 +175,13 @@ class ChatViewModel @Inject constructor(
 
             result.fold(
                 onSuccess = { reply ->
+                    aiStatusStore.clearError()
                     _messages.add(UiChatMessage(reply, isUser = false))
                 },
                 onFailure = { error ->
-                    _messages.add(errorMessage(error))
+                    val msg = errorMessage(error)
+                    aiStatusStore.setError(msg.content)
+                    _messages.add(msg)
                 },
             )
         }

@@ -124,8 +124,8 @@ fun GymAppRoot() {
         }
         LaunchedEffect(waitingForColdLaunchOpen, chatViewModel.messages.size, chatViewModel.isLoading) {
             if (waitingForColdLaunchOpen && chatViewModel.messages.isNotEmpty() && !chatViewModel.isLoading) {
-                chatOpen = true
                 waitingForColdLaunchOpen = false
+                if (chatViewModel.coldLaunchShouldOpen) chatOpen = true
             }
         }
 
