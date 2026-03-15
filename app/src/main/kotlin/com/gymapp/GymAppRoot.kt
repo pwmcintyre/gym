@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -340,6 +341,7 @@ private fun ChatOverlay(
     val listState = rememberLazyListState()
     val density = LocalDensity.current
     val imeBottomPadding = with(density) { WindowInsets.ime.getBottom(this).toDp() }
+    val panelHeightFraction = if (imeBottomPadding > 0.dp) 0.60f else 0.48f
 
     // Scroll to bottom whenever messages or loading state changes
     LaunchedEffect(messages.size, isLoading) {
@@ -352,14 +354,15 @@ private fun ChatOverlay(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 92.dp + imeBottomPadding),
+            .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 92.dp),
         contentAlignment = Alignment.BottomEnd,
     ) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.94f)
                 .widthIn(max = 420.dp)
-                .fillMaxHeight(0.48f),
+                .fillMaxHeight(panelHeightFraction)
+                .offset(y = -imeBottomPadding),
             shape = RoundedCornerShape(28.dp),
             tonalElevation = 12.dp,
             shadowElevation = 18.dp,

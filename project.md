@@ -236,7 +236,7 @@ Restructured exercise data into three layers (Movement Identity / Modifiers / Pr
 - Cold launch now opens the coach overlay once with a short delay and seeds it with a brief recent-training opener, while still falling back to a simple local welcome when no data exists.
 - That coach opener now follows a tighter structure: one honest encouraging review sentence, one next-workout suggestion sentence, and a one-tap action that creates a new workout and expands the suggestion into a concrete plan on the workout screen.
 - The coach overlay no longer expands to a near full-screen sheet; it now renders as an animated floating panel above the single global coach button, and the older per-screen robot assistant entry points have been removed.
-- Coach IME behavior was tightened: opening the keyboard now lifts the overlay upward via IME insets instead of compressing the panel height, and this was re-verified on a connected Pixel-sized device.
+- Coach IME behavior was tightened: opening the keyboard now lifts the overlay upward via IME insets instead of compressing the panel height, and the panel expands taller while typing so conversation space reaches closer to the top of the screen (re-verified on a connected Pixel-sized device).
 - Remaining larger follow-ups still live in `ideas/` and should be handled as separate slices once this creation-flow cleanup lands.
 
 ## ✅ Milestone 3.6 — Theme and Visual Identity
