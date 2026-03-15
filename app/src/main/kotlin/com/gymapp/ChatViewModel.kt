@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymapp.core.ai.AiAssistant
+import com.gymapp.core.ai.AiException
 import com.gymapp.core.ai.ChatMessage
 import com.gymapp.core.ai.CoachSuggestionStore
 import com.gymapp.core.ai.UserSettings
@@ -31,9 +32,15 @@ data class UiChatMessage(
     val action: UiChatAction? = null,
 )
 
+sealed interface ActionDestination {
+    data object NewWorkout : ActionDestination
+    data object Settings : ActionDestination
+}
+
 data class UiChatAction(
     val label: String,
-    val prompt: String,
+    val prompt: String = "",
+    val destination: ActionDestination = ActionDestination.NewWorkout,
 )
 
 data class ChatScreenContext(
@@ -122,12 +129,23 @@ class ChatViewModel @Inject constructor(
                 onSuccess = { reply ->
                     _messages.add(parseColdLaunchMessage(reply, recentSessions))
                 },
-                onFailure = {
+                onFailure = { error ->
                     _messages.add(
-                        UiChatMessage(
-                            content = fallbackOpeningMessage(recentSessions),
-                            isUser = false,
-                        ),
+                        when (error) {
+                            is AiException.ApiKeyMissing, is AiException.Unauthorized ->
+                                UiChatMessage(
+                                    content = "Add an OpenAI API key in Settings to enable the coach.",
+                                    isUser = false,
+                                    action = UiChatAction(
+                                        label = "Open Settings",
+                                        destination = ActionDestination.Settings,
+                                    ),
+                                )
+                            else -> UiChatMessage(
+                                content = fallbackOpeningMessage(recentSessions),
+                                isUser = false,
+                            )
+                        }
                     )
                 },
             )
@@ -164,15 +182,42 @@ class ChatViewModel @Inject constructor(
                 onSuccess = { reply ->
                     _messages.add(UiChatMessage(reply, isUser = false))
                 },
-                onFailure = {
-                    _messages.add(
-                        UiChatMessage(
-                            content = "Couldn't reach the AI, try again",
-                            isUser = false,
-                            isError = true,
-                        ),
-                    )
+                onFailure = { error ->
+                    _messages.add(errorMessage(error))
                 },
+            )
+        }
+    }
+
+    private fun errorMessage(error: Throwable): UiChatMessage {
+        val settingsAction = UiChatAction(label = "Open Settings", destination = ActionDestination.Settings)
+        return when (error) {
+            is AiException.ApiKeyMissing -> UiChatMessage(
+                content = "No API key set — add your OpenAI key in Settings to use the coach.",
+                isUser = false,
+                isError = true,
+                action = settingsAction,
+            )
+            is AiException.Unauthorized -> UiChatMessage(
+                content = "API key rejected. Check or update it in Settings.",
+                isUser = false,
+                isError = true,
+                action = settingsAction,
+            )
+            is AiException.RateLimited -> UiChatMessage(
+                content = "Rate limit hit — wait a moment and try again.",
+                isUser = false,
+                isError = true,
+            )
+            is AiException.ServiceError -> UiChatMessage(
+                content = "OpenAI is having issues (${error.code}). Try again later.",
+                isUser = false,
+                isError = true,
+            )
+            else -> UiChatMessage(
+                content = "Couldn't reach the AI — check your connection and try again.",
+                isUser = false,
+                isError = true,
             )
         }
     }
@@ -267,7 +312,9 @@ private fun parseColdLaunchMessage(reply: String, recentSessions: List<WorkoutSe
         val buttonLabel = parsed.optString("button_label").ifBlank { "Use workout" }
         val buttonPrompt = parsed.optString("button_prompt").trim()
         UiChatMessage(
-            content = "$review $suggestion".trim(),
+            content = listOf(review, suggestion)
+                .filter { it.isNotBlank() }
+                .joinToString(separator = "\n\n"),
             isUser = false,
             action = buttonPrompt.takeIf { it.isNotBlank() }?.let { prompt ->
                 UiChatAction(

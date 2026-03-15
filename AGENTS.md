@@ -290,6 +290,9 @@ At the start of a session:
 - inspect repository status,
 - inspect `project.md` milestone status and notes,
 - identify the active milestone,
+- check for an available Android target before coding:
+- prefer a Windows-hosted Android Emulator/virtual Pixel first when running from WSL2,
+- if a virtual device is running, prefer using Windows `adb.exe` from WSL to install, launch, and capture screenshots,
 - pick the next smallest valuable task,
 - verify available run/test commands,
 - begin implementation.
@@ -349,6 +352,13 @@ First-time environment setup (macOS):
 ### Deploy
 - Install on device: `adb install app/build/outputs/apk/debug/app-debug.apk`
 - Run on device: `adb shell am start -n com.gymapp/.MainActivity`
+
+### Windows 11 + WSL2 device workflow
+- Check Windows-hosted emulator first: `powershell.exe -Command "& 'C:\Users\<your-username>\AppData\Local\Android\Sdk\platform-tools\adb.exe' devices -l"`
+- If a virtual device is available, prefer Windows `adb.exe` from WSL instead of trying to bridge the Linux ADB server
+- Example install from WSL via Windows `adb.exe`: `powershell.exe -Command "& 'C:\Users\<your-username>\AppData\Local\Android\Sdk\platform-tools\adb.exe' -s emulator-5554 install -r '\\\\wsl.localhost\\Ubuntu\\home\\<your-linux-user>\\git\\gym\\app\\build\\outputs\\apk\\debug\\app-debug.apk'"`
+- Example launch from WSL via Windows `adb.exe`: `powershell.exe -Command "& 'C:\Users\<your-username>\AppData\Local\Android\Sdk\platform-tools\adb.exe' -s emulator-5554 shell am start -n com.gymapp/.MainActivity"`
+- Example screenshot capture from WSL via Windows `adb.exe`: `cmd.exe /c "C:\Users\<your-username>\AppData\Local\Android\Sdk\platform-tools\adb.exe -s emulator-5554 exec-out screencap -p > C:\Users\<your-username>\AppData\Local\Temp\gym-screen.png"`
 
 If commands change, update this file immediately.
 

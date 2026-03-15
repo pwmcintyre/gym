@@ -25,6 +25,16 @@ data class ChatMessage(
 }
 
 /**
+ * Typed errors surfaced by [AiAssistant] so callers can show specific UX.
+ */
+sealed class AiException(message: String) : Exception(message) {
+    class ApiKeyMissing : AiException("No OpenAI API key configured")
+    class Unauthorized : AiException("Invalid or expired API key")
+    class RateLimited : AiException("Rate limit exceeded — try again shortly")
+    class ServiceError(val code: Int) : AiException("OpenAI service error ($code)")
+}
+
+/**
  * Sends text-based chat completion requests to OpenAI.
  * Context (workout state or history) is injected as a system prompt.
  */
@@ -39,6 +49,7 @@ class AiAssistant @Inject constructor(
 
     /**
      * Sends [messages] (with [systemPrompt] prepended) to GPT-4o and returns the assistant reply.
+     * Failures are typed [AiException] subclasses where possible.
      */
     suspend fun chat(
         systemPrompt: String,
@@ -47,18 +58,16 @@ class AiAssistant @Inject constructor(
     ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
             val apiKey = aiSettings.apiKey.first()
-            require(apiKey.isNotBlank()) { "OpenAI API key not configured. Set it in Settings." }
+            if (apiKey.isBlank()) throw AiException.ApiKeyMissing()
 
             val requestJson = buildJsonObject {
                 put("model", model)
                 put("max_tokens", 1024)
                 put("messages", buildJsonArray {
-                    // System context
                     add(buildJsonObject {
                         put("role", "system")
                         put("content", systemPrompt)
                     })
-                    // Conversation history + current user message
                     messages.forEach { msg ->
                         add(buildJsonObject {
                             put("role", if (msg.role == ChatMessage.Role.USER) "user" else "assistant")
@@ -76,12 +85,16 @@ class AiAssistant @Inject constructor(
                 .build()
 
             val response = client.newCall(request).execute()
-            check(response.isSuccessful) {
-                "OpenAI error ${response.code}: ${response.body?.string()?.take(200)}"
+            when (response.code) {
+                401 -> throw AiException.Unauthorized()
+                429 -> throw AiException.RateLimited()
+                in 500..599 -> throw AiException.ServiceError(response.code)
+                else -> check(response.isSuccessful) {
+                    "OpenAI error ${response.code}: ${response.body?.string()?.take(200)}"
+                }
             }
 
             val body = checkNotNull(response.body?.string()) { "Empty response from OpenAI" }
-            // Parse via minimal deserialization (reuse the same pattern as ProxyWorkoutCardParser)
             val jsonBody = kotlinx.serialization.json.Json { ignoreUnknownKeys = true }
                 .decodeFromString<AiChatCompletion>(body)
             jsonBody.choices.firstOrNull()?.message?.content

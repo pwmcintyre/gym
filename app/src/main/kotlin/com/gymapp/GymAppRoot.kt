@@ -286,9 +286,13 @@ fun GymAppRoot() {
                 onSend = { chatViewModel.sendMessage(it) },
                 onActionClick = { action ->
                     chatOpen = false
-                    scope.launch {
-                        val sessionId = chatViewModel.createWorkoutFromCoachSuggestion(action.prompt)
-                        navController.navigate(Routes.activeWorkout(sessionId))
+                    when (action.destination) {
+                        is ActionDestination.Settings ->
+                            navController.navigate(Routes.SETTINGS)
+                        is ActionDestination.NewWorkout -> scope.launch {
+                            val sessionId = chatViewModel.createWorkoutFromCoachSuggestion(action.prompt)
+                            navController.navigate(Routes.activeWorkout(sessionId))
+                        }
                     }
                 },
                 onDismiss = { chatOpen = false },
