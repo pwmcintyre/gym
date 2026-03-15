@@ -19,10 +19,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -56,7 +54,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -343,16 +340,8 @@ private fun ChatOverlay(
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
     val density = LocalDensity.current
-    val configuration = LocalConfiguration.current
     val imeBottomPadding = with(density) { WindowInsets.ime.getBottom(this).toDp() }
-    val navBarBottomPadding = with(density) { WindowInsets.navigationBars.getBottom(this).toDp() }
-    val statusBarTopPadding = with(density) { WindowInsets.statusBars.getTop(this).toDp() }
     val panelHeightFraction = if (imeBottomPadding > 0.dp) 0.60f else 0.48f
-    val availableHeight = configuration.screenHeightDp.dp - navBarBottomPadding
-    val panelHeight = availableHeight * panelHeightFraction
-    val minTopPadding = statusBarTopPadding + 8.dp
-    val maxLift = (availableHeight - 92.dp - panelHeight - minTopPadding).coerceAtLeast(0.dp)
-    val panelLift = imeBottomPadding.coerceAtMost(maxLift)
 
     // Scroll to bottom whenever messages or loading state changes
     LaunchedEffect(messages.size, isLoading) {
@@ -372,8 +361,7 @@ private fun ChatOverlay(
             modifier = Modifier
                 .fillMaxWidth(0.94f)
                 .widthIn(max = 420.dp)
-                .fillMaxHeight(panelHeightFraction)
-                .offset(y = -panelLift),
+                .fillMaxHeight(panelHeightFraction),
             shape = RoundedCornerShape(28.dp),
             tonalElevation = 12.dp,
             shadowElevation = 18.dp,
@@ -437,6 +425,7 @@ private fun ChatOverlay(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .imePadding()
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
