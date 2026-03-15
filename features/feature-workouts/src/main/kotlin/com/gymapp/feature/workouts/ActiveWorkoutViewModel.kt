@@ -4,6 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymapp.core.ai.AiAssistant
+import com.gymapp.core.ai.CoachSuggestionStore
 import com.gymapp.core.ai.ChatMessage
 import com.gymapp.core.ai.UserSettings
 import com.gymapp.core.database.repository.SetRepository
@@ -44,6 +45,7 @@ class ActiveWorkoutViewModel @Inject constructor(
     private val setRepository: SetRepository,
     private val userSettings: UserSettings,
     private val aiAssistant: AiAssistant,
+    private val coachSuggestionStore: CoachSuggestionStore,
 ) : ViewModel() {
 
     private val sessionId: String = checkNotNull(savedStateHandle["sessionId"])
@@ -133,6 +135,11 @@ class ActiveWorkoutViewModel @Inject constructor(
                     }
                 }
             }
+        }
+
+        viewModelScope.launch {
+            val pendingPrompt = coachSuggestionStore.consume(sessionId) ?: return@launch
+            applyCoachSuggestion(pendingPrompt)
         }
     }
 
@@ -285,6 +292,57 @@ class ActiveWorkoutViewModel @Inject constructor(
             }
             _isSuggesting.value = false
         }
+    }
+
+    private suspend fun applyCoachSuggestion(prompt: String) {
+        _isSuggesting.value = true
+        _suggestionError.value = null
+        runCatching {
+            val recent = workoutRepository.observeAll().first()
+                .filterNot { it.id == sessionId }
+                .take(5)
+            val contextLines = mutableListOf<String>()
+            for (session in recent) {
+                val names = workoutRepository.getExerciseNames(session.id)
+                val label = session.notes?.takeIf { it.isNotBlank() } ?: "Unnamed"
+                contextLines += "$label: ${names.joinToString(", ")}"
+            }
+            val context = contextLines.joinToString("\n")
+            val result = aiAssistant.chat(
+                model = "gpt-4o-mini",
+                systemPrompt = """
+                    You are a workout planner. Turn the user's requested next workout into 3–6 movements.
+                    Respond ONLY with one movement per line in this exact format:
+                    Movement Name | sets | reps
+                    Use whole numbers for sets and reps. No extra text, no headers, no blank lines.
+                """.trimIndent(),
+                messages = listOf(
+                    ChatMessage(
+                        ChatMessage.Role.USER,
+                        "Recent sessions:\n$context\n\nBuild the next workout from this coach prompt:\n$prompt",
+                    ),
+                ),
+            )
+
+            val suggestions = parseSuggestedWorkoutEntries(result.getOrThrow())
+            check(suggestions.isNotEmpty()) {
+                "Coach suggestion came back empty. Try again."
+            }
+            val labelPool = listOf("A1","B1","C1","D1","E1","F1","G1","H1")
+            suggestions.forEachIndexed { index, suggestion ->
+                val label = labelPool.getOrElse(index) { "${index + 1}" }
+                workoutRepository.addExercise(
+                    sessionId = sessionId,
+                    label = label,
+                    exerciseName = suggestion.exerciseName,
+                    targetSets = suggestion.targetSets,
+                    targetReps = suggestion.targetReps,
+                )
+            }
+        }.onFailure { error ->
+            _suggestionError.value = error.message ?: "Couldn't load the coach workout suggestion."
+        }
+        _isSuggesting.value = false
     }
 
     fun cancelRestTimer() {

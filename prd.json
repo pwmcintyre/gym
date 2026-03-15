@@ -134,7 +134,7 @@
       ],
       "priority": 8,
       "passes": true,
-      "notes": "Completed — the global coach overlay auto-opens once per cold launch after a short delay, seeds itself with a local welcome for new users or an AI-generated 7-day opener, and does not retrigger on routine resume within the same process."
+      "notes": "Completed — the global coach overlay auto-opens once per cold launch after a short delay, waits until the first reply is ready, and now asks the AI for a one-sentence review, a one-sentence next-workout suggestion, and a CTA that can create a new workout and expand that suggestion into movements."
     },
     {
       "id": "US-006",

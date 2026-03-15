@@ -8,6 +8,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymapp.core.ai.AiAssistant
 import com.gymapp.core.ai.ChatMessage
+import com.gymapp.core.ai.CoachSuggestionStore
 import com.gymapp.core.ai.UserSettings
 import com.gymapp.core.database.repository.SetRepository
 import com.gymapp.core.database.repository.WorkoutRepository
@@ -21,11 +22,18 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.ZoneId
 import javax.inject.Inject
+import org.json.JSONObject
 
 data class UiChatMessage(
     val content: String,
     val isUser: Boolean,
     val isError: Boolean = false,
+    val action: UiChatAction? = null,
+)
+
+data class UiChatAction(
+    val label: String,
+    val prompt: String,
 )
 
 data class ChatScreenContext(
@@ -37,6 +45,7 @@ data class ChatScreenContext(
 @HiltViewModel
 class ChatViewModel @Inject constructor(
     private val aiAssistant: AiAssistant,
+    private val coachSuggestionStore: CoachSuggestionStore,
     private val userSettings: UserSettings,
     private val workoutRepository: WorkoutRepository,
     private val setRepository: SetRepository,
@@ -82,7 +91,23 @@ class ChatViewModel @Inject constructor(
                 trainingConstraints = userSettings.trainingConstraints.first(),
                 workoutRepository = workoutRepository,
                 setRepository = setRepository,
-            ) + "\n\nWrite a proactive opening message for app launch. Keep it to two sentences max. Mention the last 7 days briefly and end with one concrete suggestion or hook."
+            ) + """
+
+                Write a proactive opening message for app launch as valid JSON only:
+                {
+                  "review": "One honest but encouraging sentence about the recent training history.",
+                  "next_workout_suggestion": "One sentence suggesting the next workout.",
+                  "button_label": "Short CTA label",
+                  "button_prompt": "A concise workout-planning prompt to expand into a full workout."
+                }
+
+                Rules:
+                - `review` must be exactly one sentence.
+                - `next_workout_suggestion` must be exactly one sentence.
+                - Keep both direct and specific.
+                - `button_label` should be 2-4 words.
+                - `button_prompt` should give enough detail to build the workout plan.
+            """.trimIndent()
             val result = aiAssistant.chat(
                 systemPrompt = systemPrompt,
                 messages = listOf(
@@ -95,7 +120,7 @@ class ChatViewModel @Inject constructor(
             isLoading = false
             result.fold(
                 onSuccess = { reply ->
-                    _messages.add(UiChatMessage(reply.trim(), isUser = false))
+                    _messages.add(parseColdLaunchMessage(reply, recentSessions))
                 },
                 onFailure = {
                     _messages.add(
@@ -150,6 +175,12 @@ class ChatViewModel @Inject constructor(
                 },
             )
         }
+    }
+
+    suspend fun createWorkoutFromCoachSuggestion(prompt: String): String {
+        val session = workoutRepository.create(date = System.currentTimeMillis())
+        coachSuggestionStore.set(session.id, prompt)
+        return session.id
     }
 
     companion object {
@@ -220,6 +251,36 @@ class ChatViewModel @Inject constructor(
                 Use the app context and training data naturally. Do not announce hidden context or say that you can see the screen.
             """.trimIndent()
         }
+    }
+}
+
+private fun parseColdLaunchMessage(reply: String, recentSessions: List<WorkoutSession>): UiChatMessage {
+    val stripped = reply.trim()
+        .removePrefix("```json")
+        .removePrefix("```")
+        .removeSuffix("```")
+        .trim()
+    return runCatching {
+        val parsed = JSONObject(stripped)
+        val review = parsed.optString("review").trim()
+        val suggestion = parsed.optString("next_workout_suggestion").trim()
+        val buttonLabel = parsed.optString("button_label").ifBlank { "Use workout" }
+        val buttonPrompt = parsed.optString("button_prompt").trim()
+        UiChatMessage(
+            content = "$review $suggestion".trim(),
+            isUser = false,
+            action = buttonPrompt.takeIf { it.isNotBlank() }?.let { prompt ->
+                UiChatAction(
+                    label = buttonLabel,
+                    prompt = prompt,
+                )
+            },
+        )
+    }.getOrElse {
+        UiChatMessage(
+            content = fallbackOpeningMessage(recentSessions),
+            isUser = false,
+        )
     }
 }
 

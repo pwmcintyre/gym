@@ -40,6 +40,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -47,6 +48,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -72,6 +74,7 @@ import com.gymapp.feature.workouts.WorkoutsScreen
 import com.gymapp.navigation.bottomNavDestinations
 import com.gymapp.ui.theme.GymAppTheme
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 private object Routes {
     const val WORKOUTS = "workouts"
@@ -97,6 +100,7 @@ private val bottomNavRoutes = setOf(
 fun GymAppRoot() {
     GymAppTheme {
         val navController = rememberNavController()
+        val scope = rememberCoroutineScope()
         val navBackStackEntry by navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry?.destination?.route
 
@@ -275,6 +279,13 @@ fun GymAppRoot() {
                 messages = chatViewModel.messages,
                 isLoading = chatViewModel.isLoading,
                 onSend = { chatViewModel.sendMessage(it) },
+                onActionClick = { action ->
+                    chatOpen = false
+                    scope.launch {
+                        val sessionId = chatViewModel.createWorkoutFromCoachSuggestion(action.prompt)
+                        navController.navigate(Routes.activeWorkout(sessionId))
+                    }
+                },
                 onDismiss = { chatOpen = false },
             )
         }
@@ -320,6 +331,7 @@ private fun ChatOverlay(
     messages: List<UiChatMessage>,
     isLoading: Boolean,
     onSend: (String) -> Unit,
+    onActionClick: (UiChatAction) -> Unit,
     onDismiss: () -> Unit,
 ) {
     var inputText by remember { mutableStateOf("") }
@@ -398,7 +410,10 @@ private fun ChatOverlay(
                     }
 
                     items(messages.reversed()) { message ->
-                        MessageBubble(message)
+                        MessageBubble(
+                            message = message,
+                            onActionClick = onActionClick,
+                        )
                     }
                 }
 
@@ -434,7 +449,10 @@ private fun ChatOverlay(
 }
 
 @Composable
-private fun MessageBubble(message: UiChatMessage) {
+private fun MessageBubble(
+    message: UiChatMessage,
+    onActionClick: (UiChatAction) -> Unit,
+) {
     val bubbleColor = when {
         message.isError -> MaterialTheme.colorScheme.errorContainer
         message.isUser -> MaterialTheme.colorScheme.primaryContainer
@@ -450,7 +468,7 @@ private fun MessageBubble(message: UiChatMessage) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (message.isUser) Arrangement.End else Arrangement.Start,
     ) {
-        Box(
+        Column(
             modifier = Modifier
                 .background(
                     color = bubbleColor,
@@ -463,6 +481,14 @@ private fun MessageBubble(message: UiChatMessage) {
                 color = textColor,
                 style = MaterialTheme.typography.bodyMedium,
             )
+            message.action?.let { action ->
+                TextButton(
+                    onClick = { onActionClick(action) },
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
+                    Text(action.label)
+                }
+            }
         }
     }
 }

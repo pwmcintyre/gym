@@ -62,6 +62,19 @@
 
 ---
 
+## 2026-03-15T01:05 - Coach Review + Suggested Workout Action
+- Upgraded the cold-launch coach reply to structured content: one-sentence review, one-sentence next-workout suggestion, and a CTA label/prompt
+- Added action-button rendering to the global coach overlay so the suggested workout can be turned into a new session with one tap
+- Introduced `CoachSuggestionStore` in `core-ai` as a small shared handoff between the global chat and `ActiveWorkoutViewModel`
+- Tapping the coach CTA now creates a new workout session, navigates to it, and asks the existing workout-planner AI flow to expand the suggestion prompt into concrete movements/sets/reps
+- Validation: `./gradlew :app:assembleDebug --no-daemon`, `adb install -r app/build/outputs/apk/debug/app-debug.apk`
+- Files changed: `app/src/main/kotlin/com/gymapp/ChatViewModel.kt`, `app/src/main/kotlin/com/gymapp/GymAppRoot.kt`, `features/feature-workouts/src/main/kotlin/com/gymapp/feature/workouts/ActiveWorkoutViewModel.kt`, `core/core-ai/src/main/kotlin/com/gymapp/core/ai/CoachSuggestionStore.kt`, `prd.json`, `progress.txt`, `project.md`
+- **Learnings for future iterations:**
+  - A tiny singleton handoff store is enough for cross-screen AI suggestion flow in a PoC without building a more complex navigation/result channel
+  - Keeping the coach opener JSON small and explicit makes it easy to render actionable UI without losing the conversational tone
+
+---
+
 ## 2026-03-14T23:45 - US-004
 - Extended `ChatViewModel` to inject fresh workout data into every assistant request
 - Prompt now includes: current hidden screen context, plain-English schema notes, allowed write-action descriptions, known movement names, last 14 days of sessions with nested movement/set data, and full history when a movement-specific screen is in context
