@@ -17,7 +17,8 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -52,6 +53,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavDestination.Companion.hierarchy
@@ -336,6 +338,8 @@ private fun ChatOverlay(
 ) {
     var inputText by remember { mutableStateOf("") }
     val listState = rememberLazyListState()
+    val density = LocalDensity.current
+    val imeBottomPadding = with(density) { WindowInsets.ime.getBottom(this).toDp() }
 
     // Scroll to bottom whenever messages or loading state changes
     LaunchedEffect(messages.size, isLoading) {
@@ -348,15 +352,14 @@ private fun ChatOverlay(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 92.dp),
+            .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 92.dp + imeBottomPadding),
         contentAlignment = Alignment.BottomEnd,
     ) {
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.94f)
                 .widthIn(max = 420.dp)
-                .fillMaxHeight(0.48f)
-                .imePadding(),
+                .fillMaxHeight(0.48f),
             shape = RoundedCornerShape(28.dp),
             tonalElevation = 12.dp,
             shadowElevation = 18.dp,
