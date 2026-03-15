@@ -24,7 +24,6 @@ import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.filled.Timelapse
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
@@ -36,11 +35,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -68,12 +65,10 @@ fun WorkoutsScreen(
     onOpenScan: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: WorkoutsViewModel = hiltViewModel(),
-    aiViewModel: AiAssistantViewModel = hiltViewModel(),
 ) {
     val sessions by viewModel.sessions.collectAsStateWithLifecycle()
     val sessionSummaries by viewModel.sessionSummaries.collectAsStateWithLifecycle()
     val suggestedNames by viewModel.suggestedNames.collectAsStateWithLifecycle()
-    var showAiSheet by rememberSaveable { mutableStateOf(false) }
 
     val groupedSessions = remember(sessions) {
         sessions.groupBy { truncateToDay(it.date) }
@@ -94,23 +89,9 @@ fun WorkoutsScreen(
         }
     }
 
-    // Configure AI in history mode (no session)
-    LaunchedEffect(Unit) {
-        aiViewModel.configure(sessionId = null, workoutMode = false)
-    }
-
     Scaffold(
         modifier = modifier,
         containerColor = MaterialTheme.colorScheme.background,
-        floatingActionButton = {
-            SmallFloatingActionButton(
-                onClick = { showAiSheet = true },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.primary,
-            ) {
-                Icon(Icons.Default.SmartToy, contentDescription = "AI Assistant")
-            }
-        },
     ) { innerPadding ->
         if (sessions.isEmpty()) {
             Column(
@@ -180,13 +161,6 @@ fun WorkoutsScreen(
                 }
             }
         }
-    }
-
-    if (showAiSheet) {
-        AiAssistantSheet(
-            onDismiss = { showAiSheet = false },
-            viewModel = aiViewModel,
-        )
     }
 }
 

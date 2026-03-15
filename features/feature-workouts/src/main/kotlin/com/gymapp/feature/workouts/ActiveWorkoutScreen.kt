@@ -25,7 +25,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.SmartToy
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -39,7 +38,6 @@ import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -89,7 +87,6 @@ fun ActiveWorkoutScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: ActiveWorkoutViewModel = hiltViewModel(),
-    aiViewModel: AiAssistantViewModel = hiltViewModel(),
 ) {
     val session by viewModel.session.collectAsStateWithLifecycle()
     val exercises by viewModel.exercises.collectAsStateWithLifecycle()
@@ -103,15 +100,8 @@ fun ActiveWorkoutScreen(
     val isNaming by viewModel.isNaming.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var showAddExerciseDialog by rememberSaveable { mutableStateOf(false) }
-    var showAiSheet by rememberSaveable { mutableStateOf(false) }
     var showDatePicker by rememberSaveable { mutableStateOf(false) }
     val exerciseSections = remember(exercises) { buildExerciseSections(exercises) }
-
-    // Configure AI assistant with session context
-    val sessionId = session?.id
-    LaunchedEffect(sessionId) {
-        if (sessionId != null) aiViewModel.configure(sessionId = sessionId, workoutMode = true)
-    }
 
     // Vibrate when timer expires
     LaunchedEffect(restTimer) {
@@ -157,26 +147,14 @@ fun ActiveWorkoutScreen(
             )
         },
         floatingActionButton = {
-            Column(
-                horizontalAlignment = Alignment.End,
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+            ExtendedFloatingActionButton(
+                onClick = { showAddExerciseDialog = true },
+                containerColor = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
             ) {
-                FloatingActionButton(
-                    onClick = { showAiSheet = true },
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                ) {
-                    Icon(Icons.Default.SmartToy, contentDescription = "AI Assistant")
-                }
-                ExtendedFloatingActionButton(
-                    onClick = { showAddExerciseDialog = true },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("Manually add")
-                }
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Manually add")
             }
         },
     ) { innerPadding ->
@@ -284,13 +262,6 @@ fun ActiveWorkoutScreen(
                 showAddExerciseDialog = false
             },
             onDismiss = { showAddExerciseDialog = false },
-        )
-    }
-
-    if (showAiSheet) {
-        AiAssistantSheet(
-            onDismiss = { showAiSheet = false },
-            viewModel = aiViewModel,
         )
     }
 

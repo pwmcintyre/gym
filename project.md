@@ -234,7 +234,7 @@ Restructured exercise data into three layers (Movement Identity / Modifiers / Pr
 - The global coach overlay now carries hidden nav context plus fresh workout data into every request, including recent sessions and movement-specific history when relevant. Scan-response parsing also has dedicated unit coverage for malformed and empty AI payloads.
 - Settings now include a dedicated `Training Constraints` editor backed by DataStore, and the coach prompt silently respects those notes on every reply.
 - Cold launch now opens the coach overlay once with a short delay and seeds it with a brief recent-training opener, while still falling back to a simple local welcome when no data exists.
-- The coach overlay no longer expands to a near full-screen sheet; it now renders as a capped floating panel so the underlying page remains visible.
+- The coach overlay no longer expands to a near full-screen sheet; it now renders as an animated floating panel above the single global coach button, and the older per-screen robot assistant entry points have been removed.
 - Remaining larger follow-ups still live in `ideas/` and should be handled as separate slices once this creation-flow cleanup lands.
 
 ## ✅ Milestone 3.6 — Theme and Visual Identity

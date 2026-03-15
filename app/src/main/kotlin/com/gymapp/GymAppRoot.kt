@@ -1,6 +1,14 @@
 package com.gymapp
 
 import android.net.Uri
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -93,6 +101,7 @@ fun GymAppRoot() {
         val currentRoute = navBackStackEntry?.destination?.route
 
         var chatOpen by remember { mutableStateOf(false) }
+        var waitingForColdLaunchOpen by remember { mutableStateOf(false) }
         val chatViewModel: ChatViewModel = hiltViewModel()
         LaunchedEffect(navBackStackEntry) {
             chatViewModel.updateScreenContext(navBackStackEntry.toChatScreenContext())
@@ -100,8 +109,14 @@ fun GymAppRoot() {
         LaunchedEffect(Unit) {
             if (chatViewModel.shouldTriggerColdLaunchMessage()) {
                 delay(400)
-                chatOpen = true
+                waitingForColdLaunchOpen = true
                 chatViewModel.triggerColdLaunchMessage()
+            }
+        }
+        LaunchedEffect(waitingForColdLaunchOpen, chatViewModel.messages.size, chatViewModel.isLoading) {
+            if (waitingForColdLaunchOpen && chatViewModel.messages.isNotEmpty() && !chatViewModel.isLoading) {
+                chatOpen = true
+                waitingForColdLaunchOpen = false
             }
         }
 
@@ -109,16 +124,14 @@ fun GymAppRoot() {
             modifier = Modifier.fillMaxSize(),
             containerColor = MaterialTheme.colorScheme.background,
             floatingActionButton = {
-                if (!chatOpen) {
-                    FloatingActionButton(
-                        onClick = { chatOpen = true },
-                        containerColor = MaterialTheme.colorScheme.primary,
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.Chat,
-                            contentDescription = "Open coach",
-                        )
-                    }
+                FloatingActionButton(
+                    onClick = { chatOpen = !chatOpen },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Chat,
+                        contentDescription = if (chatOpen) "Close coach" else "Open coach",
+                    )
                 }
             },
             bottomBar = {
@@ -249,7 +262,15 @@ fun GymAppRoot() {
             }
         }
 
-        if (chatOpen) {
+        AnimatedVisibility(
+            visible = chatOpen,
+            enter = fadeIn(animationSpec = tween(180)) +
+                scaleIn(initialScale = 0.92f, animationSpec = tween(220)) +
+                slideInVertically(initialOffsetY = { it / 5 }, animationSpec = tween(220)),
+            exit = fadeOut(animationSpec = tween(140)) +
+                scaleOut(targetScale = 0.96f, animationSpec = tween(160)) +
+                slideOutVertically(targetOffsetY = { it / 6 }, animationSpec = tween(160)),
+        ) {
             ChatOverlay(
                 messages = chatViewModel.messages,
                 isLoading = chatViewModel.isLoading,
@@ -315,7 +336,7 @@ private fun ChatOverlay(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .padding(horizontal = 12.dp, vertical = 12.dp),
+            .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 92.dp),
         contentAlignment = Alignment.BottomEnd,
     ) {
         Surface(
