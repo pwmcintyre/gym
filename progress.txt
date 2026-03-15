@@ -33,8 +33,19 @@
 - Files changed: `app/src/main/kotlin/com/gymapp/GymAppRoot.kt`, `app/src/main/kotlin/com/gymapp/ChatViewModel.kt`, `prd.json`, `progress.txt`, `project.md`
 - Validation: `./gradlew :app:assembleDebug --no-daemon`, `adb install -r app/build/outputs/apk/debug/app-debug.apk`
 - **Learnings for future iterations:**
-  - A ViewModel-scoped `hasTriggeredColdLaunchMessage` flag is enough to suppress reopen spam on ordinary resume without extra persistence
-  - For proactive AI openers, a small local fallback keeps the experience resilient when the network or API key is unavailable
+- A ViewModel-scoped `hasTriggeredColdLaunchMessage` flag is enough to suppress reopen spam on ordinary resume without extra persistence
+- For proactive AI openers, a small local fallback keeps the experience resilient when the network or API key is unavailable
+
+---
+
+## 2026-03-15T00:25 - Coach Overlay Size Fix
+- Replaced the global coach `ModalBottomSheet` with a capped `Surface` overlay anchored to the bottom-right of the app shell
+- Overlay now uses roughly half-screen height at most, leaving more of the current screen visible and avoiding the full-screen sheet behavior
+- Validation: `./gradlew :app:assembleDebug --no-daemon`, `adb install -r app/build/outputs/apk/debug/app-debug.apk`
+- Files changed: `app/src/main/kotlin/com/gymapp/GymAppRoot.kt`, `prd.json`, `progress.txt`, `project.md`
+- **Learnings for future iterations:**
+  - A regular overlay surface is a better fit than `ModalBottomSheet` when the user needs persistent visibility of the underlying page
+  - Keeping the overlay outside `Scaffold` still allows it to float globally across all screens without a full-screen takeover
 
 ---
 

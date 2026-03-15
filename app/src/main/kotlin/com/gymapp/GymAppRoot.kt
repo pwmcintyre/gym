@@ -5,12 +5,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -20,19 +23,17 @@ import androidx.compose.material.icons.automirrored.filled.Chat
 import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -84,7 +85,6 @@ private val bottomNavRoutes = setOf(
     Routes.WORKOUTS, Routes.MOVEMENTS, Routes.SETTINGS,
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun GymAppRoot() {
     GymAppTheme {
@@ -93,7 +93,6 @@ fun GymAppRoot() {
         val currentRoute = navBackStackEntry?.destination?.route
 
         var chatOpen by remember { mutableStateOf(false) }
-        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
         val chatViewModel: ChatViewModel = hiltViewModel()
         LaunchedEffect(navBackStackEntry) {
             chatViewModel.updateScreenContext(navBackStackEntry.toChatScreenContext())
@@ -252,7 +251,6 @@ fun GymAppRoot() {
 
         if (chatOpen) {
             ChatOverlay(
-                sheetState = sheetState,
                 messages = chatViewModel.messages,
                 isLoading = chatViewModel.isLoading,
                 onSend = { chatViewModel.sendMessage(it) },
@@ -296,10 +294,8 @@ private fun NavBackStackEntry?.toChatScreenContext(): ChatScreenContext {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun ChatOverlay(
-    sheetState: androidx.compose.material3.SheetState,
     messages: List<UiChatMessage>,
     isLoading: Boolean,
     onSend: (String) -> Unit,
@@ -315,91 +311,101 @@ private fun ChatOverlay(
         }
     }
 
-    ModalBottomSheet(
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-        dragHandle = null,
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .navigationBarsPadding()
+            .padding(horizontal = 12.dp, vertical = 12.dp),
+        contentAlignment = Alignment.BottomEnd,
     ) {
-        Column(
+        Surface(
             modifier = Modifier
-                .fillMaxWidth()
+                .fillMaxWidth(0.94f)
+                .widthIn(max = 420.dp)
+                .fillMaxHeight(0.48f)
                 .imePadding(),
+            shape = RoundedCornerShape(28.dp),
+            tonalElevation = 12.dp,
+            shadowElevation = 18.dp,
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
         ) {
-            // Header row with title and close button
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .fillMaxHeight(),
             ) {
-                Text(
-                    text = "Coach",
-                    style = MaterialTheme.typography.titleMedium,
-                    modifier = Modifier.padding(start = 8.dp),
-                )
-                IconButton(onClick = onDismiss) {
-                    Icon(
-                        imageVector = Icons.Filled.Close,
-                        contentDescription = "Close chat",
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                ) {
+                    Text(
+                        text = "Coach",
+                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(start = 8.dp),
                     )
-                }
-            }
-
-            // Scrollable message list — reverseLayout so newest is at bottom
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                reverseLayout = true,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                // Loading indicator at top of reversed list = visually at bottom
-                if (isLoading) {
-                    item {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(vertical = 4.dp),
-                            contentAlignment = Alignment.CenterStart,
-                        ) {
-                            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
-                        }
+                    IconButton(onClick = onDismiss) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = "Close chat",
+                        )
                     }
                 }
 
-                items(messages.reversed()) { message ->
-                    MessageBubble(message)
-                }
-            }
-
-            // Input row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 12.dp, vertical = 8.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                OutlinedTextField(
-                    value = inputText,
-                    onValueChange = { inputText = it },
-                    modifier = Modifier.weight(1f),
-                    placeholder = { Text("Message...") },
-                    singleLine = true,
-                )
-                IconButton(
-                    onClick = {
-                        onSend(inputText)
-                        inputText = ""
-                    },
-                    enabled = inputText.isNotBlank() && !isLoading,
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    reverseLayout = true,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Filled.Send,
-                        contentDescription = "Send",
+                    if (isLoading) {
+                        item {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(vertical = 4.dp),
+                                contentAlignment = Alignment.CenterStart,
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+                            }
+                        }
+                    }
+
+                    items(messages.reversed()) { message ->
+                        MessageBubble(message)
+                    }
+                }
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OutlinedTextField(
+                        value = inputText,
+                        onValueChange = { inputText = it },
+                        modifier = Modifier.weight(1f),
+                        placeholder = { Text("Message...") },
+                        singleLine = true,
                     )
+                    IconButton(
+                        onClick = {
+                            onSend(inputText)
+                            inputText = ""
+                        },
+                        enabled = inputText.isNotBlank() && !isLoading,
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Send,
+                            contentDescription = "Send",
+                        )
+                    }
                 }
             }
         }

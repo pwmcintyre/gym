@@ -64,7 +64,7 @@
       ],
       "priority": 4,
       "passes": true,
-      "notes": "Completed on ralph/ai-assistant — FAB and overlay shell implemented."
+      "notes": "Completed on ralph/ai-assistant — FAB and overlay shell implemented. Follow-up: the full-height sheet was replaced with a capped bottom-right overlay card so the current screen stays visible beneath it."
     },
     {
       "id": "US-002",
