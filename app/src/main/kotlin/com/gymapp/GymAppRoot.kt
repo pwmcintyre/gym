@@ -12,6 +12,7 @@ import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Row
@@ -21,6 +22,7 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -341,7 +343,9 @@ private fun ChatOverlay(
     val listState = rememberLazyListState()
     val density = LocalDensity.current
     val imeBottomPadding = with(density) { WindowInsets.ime.getBottom(this).toDp() }
-    val panelHeightFraction = if (imeBottomPadding > 0.dp) 0.60f else 0.48f
+    val imeVisible = imeBottomPadding > 0.dp
+    val panelHeightFraction = if (imeVisible) 0.94f else 0.56f
+    val overlayBottomPadding = if (imeVisible) 12.dp else 92.dp
 
     // Scroll to bottom whenever messages or loading state changes
     LaunchedEffect(messages.size, isLoading) {
@@ -350,18 +354,22 @@ private fun ChatOverlay(
         }
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .navigationBarsPadding()
-            .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = 92.dp),
+            .imePadding()
+            .padding(start = 12.dp, top = 12.dp, end = 12.dp, bottom = overlayBottomPadding),
         contentAlignment = Alignment.BottomEnd,
     ) {
+        val panelMaxHeight = maxHeight - 8.dp
+
         Surface(
             modifier = Modifier
                 .fillMaxWidth(0.94f)
                 .widthIn(max = 420.dp)
-                .fillMaxHeight(panelHeightFraction),
+                .fillMaxHeight(panelHeightFraction)
+                .heightIn(max = panelMaxHeight),
             shape = RoundedCornerShape(28.dp),
             tonalElevation = 12.dp,
             shadowElevation = 18.dp,
@@ -425,7 +433,6 @@ private fun ChatOverlay(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .imePadding()
                         .padding(horizontal = 12.dp, vertical = 8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
