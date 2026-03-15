@@ -116,7 +116,10 @@ fun SettingsScreen(
                         }
                         OutlinedTextField(
                             value = keyDraft,
-                            onValueChange = { keyDraft = it },
+                            onValueChange = {
+                                keyDraft = it
+                                viewModel.saveApiKey(it)
+                            },
                             label = { Text("OpenAI API Key") },
                             placeholder = { Text("sk-...") },
                             singleLine = true,
@@ -126,19 +129,12 @@ fun SettingsScreen(
                                 imeAction = ImeAction.Done,
                             ),
                             keyboardActions = KeyboardActions(
-                                onDone = {
-                                    viewModel.saveApiKey(keyDraft)
-                                    focusManager.clearFocus()
-                                },
+                                onDone = { focusManager.clearFocus() },
                             ),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .onFocusChanged { focusState ->
-                                    if (!focusState.isFocused) viewModel.saveApiKey(keyDraft)
-                                },
+                            modifier = Modifier.fillMaxWidth(),
                         )
                         Text(
-                            text = "Saved automatically when you leave the field.",
+                            text = "Saved as you type.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )

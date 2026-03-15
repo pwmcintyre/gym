@@ -288,7 +288,13 @@ fun GymAppRoot() {
                     chatOpen = false
                     when (action.destination) {
                         is ActionDestination.Settings ->
-                            navController.navigate(Routes.SETTINGS)
+                            navController.navigate(Routes.SETTINGS) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
                         is ActionDestination.NewWorkout -> scope.launch {
                             val sessionId = chatViewModel.createWorkoutFromCoachSuggestion(action.prompt)
                             navController.navigate(Routes.activeWorkout(sessionId))
