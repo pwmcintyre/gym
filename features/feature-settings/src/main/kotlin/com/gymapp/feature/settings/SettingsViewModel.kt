@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gymapp.core.ai.AiSettings
 import com.gymapp.core.ai.AiStatusStore
+import com.gymapp.core.ai.ModelDownloadManager
+import com.gymapp.core.ai.ModelState
 import com.gymapp.core.ai.UserSettings
 import com.gymapp.core.drivebackup.DriveAccountState
 import com.gymapp.core.drivebackup.DriveBackupRepository
@@ -32,6 +34,7 @@ class SettingsViewModel @Inject constructor(
     private val userSettings: UserSettings,
     private val driveAuthManager: GoogleDriveAuthManager,
     private val driveBackupRepository: DriveBackupRepository,
+    private val modelDownloadManager: ModelDownloadManager,
 ) : ViewModel() {
 
     val apiKey: StateFlow<String> = aiSettings.apiKey
@@ -48,6 +51,17 @@ class SettingsViewModel @Inject constructor(
 
     val trainingConstraints: StateFlow<String> = userSettings.trainingConstraints
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), "")
+
+    val modelState: StateFlow<ModelState> = modelDownloadManager.state
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ModelState.NotDownloaded)
+
+    fun downloadModel() {
+        viewModelScope.launch { modelDownloadManager.download() }
+    }
+
+    fun deleteModel() {
+        modelDownloadManager.deleteModel()
+    }
 
     private val _driveBackupState = MutableStateFlow(
         driveAuthManager.currentAccountState().toUiState(),

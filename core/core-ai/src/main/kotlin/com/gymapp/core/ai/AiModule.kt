@@ -10,7 +10,11 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 abstract class AiModule {
 
+    /**
+     * Route all [WorkoutCardParser] injection to [SmartWorkoutCardParser],
+     * which dispatches to OpenAI or local Gemma based on API key availability.
+     */
     @Binds
     @Singleton
-    abstract fun bindWorkoutCardParser(impl: ProxyWorkoutCardParser): WorkoutCardParser
+    abstract fun bindWorkoutCardParser(impl: SmartWorkoutCardParser): WorkoutCardParser
 }

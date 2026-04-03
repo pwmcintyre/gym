@@ -28,12 +28,14 @@ import androidx.compose.material3.FilterChip
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import com.gymapp.core.ai.ModelState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +63,7 @@ fun SettingsScreen(
     val savedTrainingConstraints by viewModel.trainingConstraints.collectAsStateWithLifecycle()
     val driveBackupState by viewModel.driveBackupState.collectAsStateWithLifecycle()
     val lastAiError by viewModel.lastAiError.collectAsStateWithLifecycle()
+    val modelState by viewModel.modelState.collectAsStateWithLifecycle()
     var keyDraft by rememberSaveable(savedKey) { mutableStateOf(savedKey) }
     var bodyWeightDraft by rememberSaveable(savedBodyWeight) {
         mutableStateOf(savedBodyWeight?.let { formatWeight(it) } ?: "")
@@ -134,14 +137,21 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth(),
                         )
                         Text(
-                            text = "Saved as you type.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                                text = "Saved as you type.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
 
-                    SettingsSectionCard(
-                        title = "Training Constraints",
+                        LocalModelCard(
+                            modelState = modelState,
+                            hasApiKey = savedKey.isNotBlank(),
+                            onDownload = viewModel::downloadModel,
+                            onDelete = viewModel::deleteModel,
+                        )
+
+                        SettingsSectionCard(
+                            title = "Training Constraints",
                         supportingText = savedTrainingConstraints.previewConstraints()
                             .takeIf { it.isNotBlank() }
                             ?: "Tell the coach about your equipment, injuries, or limits.",
@@ -382,6 +392,78 @@ private fun TrainingConstraintsScreen(
             modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Save")
+        }
+    }
+}
+
+@Composable
+private fun LocalModelCard(
+    modelState: ModelState,
+    hasApiKey: Boolean,
+    onDownload: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    SettingsSectionCard(
+        title = "Offline AI (Gemma 4)",
+        supportingText = if (hasApiKey) {
+            "OpenAI is active. The local model is used when no API key is set."
+        } else {
+            "No API key set — the app uses the local Gemma model for AI features."
+        },
+    ) {
+        when (modelState) {
+            is ModelState.NotDownloaded -> {
+                Text(
+                    text = "Model not downloaded (~2.6 GB).",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                Button(onClick = onDownload, modifier = Modifier.fillMaxWidth()) {
+                    Text("Download Gemma 4")
+                }
+            }
+
+            is ModelState.Downloading -> {
+                val progress = modelState.progress
+                Text(
+                    text = if (progress >= 0) "Downloading… $progress%" else "Downloading…",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                if (progress >= 0) {
+                    LinearProgressIndicator(
+                        progress = { progress / 100f },
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                } else {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
+            }
+
+            is ModelState.Ready -> {
+                Text(
+                    text = "Gemma 4 ready for offline use.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.primary,
+                )
+                OutlinedButton(
+                    onClick = onDelete,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Delete model (free storage)")
+                }
+            }
+
+            is ModelState.Error -> {
+                Text(
+                    text = "Error: ${modelState.message}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error,
+                )
+                Button(onClick = onDownload, modifier = Modifier.fillMaxWidth()) {
+                    Text("Retry Download")
+                }
+            }
         }
     }
 }

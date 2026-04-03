@@ -32,29 +32,42 @@ sealed class AiException(message: String) : Exception(message) {
     class Unauthorized : AiException("Invalid or expired API key")
     class RateLimited : AiException("Rate limit exceeded — try again shortly")
     class ServiceError(val code: Int) : AiException("OpenAI service error ($code)")
+    class ModelNotReady(reason: String) : AiException(reason)
 }
 
 /**
+ * Common interface for text-based AI backends.
+ * Implementors: [OpenAiAssistant] and [LocalGemmaAssistant].
+ * The app-facing [AiAssistant] delegates to whichever backend is active.
+ */
+interface AiBackend {
+    suspend fun chat(
+        systemPrompt: String,
+        messages: List<ChatMessage>,
+        model: String,
+    ): Result<String>
+}
+
+// ---------------------------------------------------------------------------
+// OpenAI backend
+// ---------------------------------------------------------------------------
+
+/**
  * Sends text-based chat completion requests to OpenAI.
- * Context (workout state or history) is injected as a system prompt.
  */
 @Singleton
-class AiAssistant @Inject constructor(
+class OpenAiAssistant @Inject constructor(
     private val aiSettings: AiSettings,
-) {
+) : AiBackend {
     private val client = OkHttpClient.Builder()
         .connectTimeout(30, TimeUnit.SECONDS)
         .readTimeout(60, TimeUnit.SECONDS)
         .build()
 
-    /**
-     * Sends [messages] (with [systemPrompt] prepended) to GPT-4o and returns the assistant reply.
-     * Failures are typed [AiException] subclasses where possible.
-     */
-    suspend fun chat(
+    override suspend fun chat(
         systemPrompt: String,
         messages: List<ChatMessage>,
-        model: String = "gpt-4o",
+        model: String,
     ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
             val apiKey = aiSettings.apiKey.first()
@@ -100,6 +113,52 @@ class AiAssistant @Inject constructor(
             jsonBody.choices.firstOrNull()?.message?.content
                 ?: error("No content in OpenAI response")
         }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Local Gemma backend
+// ---------------------------------------------------------------------------
+
+/**
+ * Text-based AI backend backed by the on-device [LocalGemmaEngine].
+ * The [model] parameter is ignored — it always uses Gemma 4 E2B.
+ */
+@Singleton
+class LocalGemmaAssistant @Inject constructor(
+    private val engine: LocalGemmaEngine,
+) : AiBackend {
+    override suspend fun chat(
+        systemPrompt: String,
+        messages: List<ChatMessage>,
+        model: String,
+    ): Result<String> = engine.chat(systemPrompt, messages)
+}
+
+// ---------------------------------------------------------------------------
+// Smart dispatcher — picks the right backend based on API key presence
+// ---------------------------------------------------------------------------
+
+/**
+ * Delegates to [OpenAiAssistant] when an API key is configured, otherwise
+ * falls back to [LocalGemmaAssistant].
+ *
+ * This is the singleton that all app code should inject via [AiAssistant].
+ */
+@Singleton
+class AiAssistant @Inject constructor(
+    private val aiSettings: AiSettings,
+    private val openAi: OpenAiAssistant,
+    private val localGemma: LocalGemmaAssistant,
+) {
+    suspend fun chat(
+        systemPrompt: String,
+        messages: List<ChatMessage>,
+        model: String = "gpt-4o",
+    ): Result<String> {
+        val apiKey = aiSettings.apiKey.first()
+        val backend: AiBackend = if (apiKey.isNotBlank()) openAi else localGemma
+        return backend.chat(systemPrompt, messages, model)
     }
 }
 

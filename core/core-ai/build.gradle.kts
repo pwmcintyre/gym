@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.android.library)
-    alias(libs.plugins.kotlin.android)
     alias(libs.plugins.hilt.android)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
@@ -20,10 +19,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+    kotlin { jvmToolchain(17) }
 }
 
 dependencies {
@@ -37,6 +33,9 @@ dependencies {
 
     implementation(libs.okhttp)
     implementation(libs.okhttp.logging)
+
+    implementation(libs.litertlm.android)
+    implementation(libs.mlkit.text.recognition)
 
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.core.ktx)
