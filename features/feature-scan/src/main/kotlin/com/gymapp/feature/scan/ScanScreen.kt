@@ -247,7 +247,7 @@ fun ScanScreen(
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                         CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                         Text(
-                            text = if (uiState.isParsing) "Analysing…" else "Capturing…",
+                            text = uiState.statusText ?: if (uiState.isCapturing) "Capturing…" else "Processing…",
                             color = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.padding(top = 12.dp),
                         )

@@ -63,11 +63,12 @@ class ProxyWorkoutCardParser @Inject constructor(
 
     private val json = Json { ignoreUnknownKeys = true }
 
-    override suspend fun parse(imageBytes: ByteArray): Result<List<ExerciseEntry>> =
+    override suspend fun parse(imageBytes: ByteArray, onProgress: (String) -> Unit): Result<List<ExerciseEntry>> =
         withContext(Dispatchers.IO) {
             runCatching {
                 val apiKey = aiSettings.apiKey.first()
                 require(apiKey.isNotBlank()) { "OpenAI API key not configured. Set it in Settings." }
+                onProgress("Uploading image…")
 
                 val b64 = Base64.getEncoder().encodeToString(imageBytes)
 
@@ -110,6 +111,7 @@ class ProxyWorkoutCardParser @Inject constructor(
                     "OpenAI error ${response.code}: ${response.body?.string()?.take(200)}"
                 }
 
+                onProgress("Reading response…")
                 val body = checkNotNull(response.body?.string()) { "Empty response from OpenAI" }
                 parseExerciseEntriesFromCompletionBody(body, json)
             }
@@ -135,7 +137,12 @@ internal fun parseExerciseEntriesFromContent(
         .removePrefix("```")
         .removeSuffix("```")
         .trim()
-    val parsed = json.decodeFromString<WorkoutResponse>(stripped)
+    // Gemma (and other small models) often emit preamble/postamble text around the JSON.
+    // Grab just the outermost { ... } to be safe.
+    val start = stripped.indexOf('{')
+    val end = stripped.lastIndexOf('}')
+    val jsonOnly = if (start != -1 && end > start) stripped.substring(start, end + 1) else stripped
+    val parsed = json.decodeFromString<WorkoutResponse>(jsonOnly)
     return parsed.items.map { it.toExerciseEntry() }
 }
 

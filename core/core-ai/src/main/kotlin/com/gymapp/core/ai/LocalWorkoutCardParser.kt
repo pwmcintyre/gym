@@ -27,10 +27,11 @@ class LocalWorkoutCardParser @Inject constructor(
 
     private val recognizer = TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS)
 
-    override suspend fun parse(imageBytes: ByteArray): Result<List<ExerciseEntry>> =
+    override suspend fun parse(imageBytes: ByteArray, onProgress: (String) -> Unit): Result<List<ExerciseEntry>> =
         withContext(Dispatchers.Default) {
             runCatching {
                 // Step 1: OCR
+                onProgress("Scanning text…")
                 val bitmap = BitmapFactory.decodeByteArray(imageBytes, 0, imageBytes.size)
                     ?: error("Could not decode image bytes into a bitmap")
                 val image = InputImage.fromBitmap(bitmap, 0)
@@ -41,6 +42,7 @@ class LocalWorkoutCardParser @Inject constructor(
                 }
 
                 // Step 2: Gemma parses the text into JSON
+                onProgress("Analysing workout…")
                 val result = engine.chat(
                     systemPrompt = SCAN_SYSTEM_PROMPT,
                     userPrompt = "Parse this workout board text:\n\n$ocrText",

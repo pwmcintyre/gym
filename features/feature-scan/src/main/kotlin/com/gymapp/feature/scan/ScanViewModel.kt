@@ -1,6 +1,8 @@
 package com.gymapp.feature.scan
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -18,6 +20,7 @@ import com.gymapp.core.ai.WorkoutCardParser
 import com.gymapp.core.database.repository.WorkoutRepository
 import com.gymapp.core.model.ExerciseEntry
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -33,11 +36,11 @@ import javax.inject.Inject
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
-import kotlinx.coroutines.Dispatchers
 
 data class ScanUiState(
     val isCapturing: Boolean = false,
     val isParsing: Boolean = false,
+    val statusText: String? = null,
     val error: String? = null,
     /** Non-null once the AI has returned results and user is reviewing. */
     val reviewItems: List<ExerciseEntry>? = null,
@@ -111,14 +114,15 @@ class ScanViewModel @Inject constructor(
                 _uiState.update { it.copy(isCapturing = false, error = e.message) }
                 return@launch
             }
-            _uiState.update { it.copy(isCapturing = false, isParsing = true) }
+            _uiState.update { it.copy(isCapturing = false, isParsing = true, statusText = "Processing image…") }
 
-            val result = parser.parse(bytes.getOrThrow())
+            val resized = withContext(Dispatchers.Default) { bytes.getOrThrow().resizeToMax(1280) }
+            val result = parser.parse(resized) { msg -> _uiState.update { it.copy(statusText = msg) } }
             result.onSuccess { entries ->
-                _uiState.update { it.copy(isParsing = false, reviewItems = entries) }
+                _uiState.update { it.copy(isParsing = false, statusText = null, reviewItems = entries) }
             }
             result.onFailure { e ->
-                _uiState.update { it.copy(isParsing = false, error = e.message) }
+                _uiState.update { it.copy(isParsing = false, statusText = null, error = e.message) }
             }
         }
     }
@@ -194,7 +198,7 @@ class ScanViewModel @Inject constructor(
 
     /** Read a content URI off the main thread, then parse. */
     fun parseUri(uri: Uri, contentResolver: android.content.ContentResolver) {
-        _uiState.update { it.copy(isParsing = true, error = null) }
+        _uiState.update { it.copy(isParsing = true, statusText = "Reading image…", error = null) }
         viewModelScope.launch {
             val bytes = runCatching {
                 withContext(Dispatchers.IO) {
@@ -203,12 +207,14 @@ class ScanViewModel @Inject constructor(
                 }
             }
             bytes.onFailure { e ->
-                _uiState.update { it.copy(isParsing = false, error = e.message) }
+                _uiState.update { it.copy(isParsing = false, statusText = null, error = e.message) }
                 return@launch
             }
-            parser.parse(bytes.getOrThrow())
-                .onSuccess { entries -> _uiState.update { it.copy(isParsing = false, reviewItems = entries) } }
-                .onFailure { e -> _uiState.update { it.copy(isParsing = false, error = e.message) } }
+            _uiState.update { it.copy(statusText = "Processing image…") }
+            val resized = withContext(Dispatchers.Default) { bytes.getOrThrow().resizeToMax(1280) }
+            parser.parse(resized) { msg -> _uiState.update { it.copy(statusText = msg) } }
+                .onSuccess { entries -> _uiState.update { it.copy(isParsing = false, statusText = null, reviewItems = entries) } }
+                .onFailure { e -> _uiState.update { it.copy(isParsing = false, statusText = null, error = e.message) } }
         }
     }
 
@@ -234,6 +240,28 @@ private suspend fun captureJpeg(capture: ImageCapture, executor: Executor): Byte
             },
         )
     }
+
+/**
+ * Downsample image bytes so the longest side is at most [maxPx].
+ * 4K whiteboard photos (4000×3000) are reduced to 1280×960 — plenty for OCR,
+ * and ~90% fewer pixels to process / encode.
+ */
+private fun ByteArray.resizeToMax(maxPx: Int, quality: Int = 85): ByteArray {
+    val original = BitmapFactory.decodeByteArray(this, 0, size) ?: return this
+    val w = original.width
+    val h = original.height
+    if (w <= maxPx && h <= maxPx) {
+        original.recycle()
+        return this
+    }
+    val scale = maxPx.toFloat() / maxOf(w, h)
+    val scaled = Bitmap.createScaledBitmap(original, (w * scale).toInt(), (h * scale).toInt(), true)
+    original.recycle()
+    val out = ByteArrayOutputStream()
+    scaled.compress(Bitmap.CompressFormat.JPEG, quality, out)
+    scaled.recycle()
+    return out.toByteArray()
+}
 
 private fun nextLabel(items: List<ExerciseEntry>): String {
     val last = items.lastOrNull()?.label ?: return "A1"

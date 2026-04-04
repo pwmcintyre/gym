@@ -19,12 +19,12 @@ class SmartWorkoutCardParser @Inject constructor(
     private val localParser: LocalWorkoutCardParser,
 ) : WorkoutCardParser {
 
-    override suspend fun parse(imageBytes: ByteArray): Result<List<ExerciseEntry>> {
+    override suspend fun parse(imageBytes: ByteArray, onProgress: (String) -> Unit): Result<List<ExerciseEntry>> {
         val apiKey = aiSettings.apiKey.first()
         return if (apiKey.isNotBlank()) {
-            openAiParser.parse(imageBytes)
+            openAiParser.parse(imageBytes, onProgress)
         } else {
-            localParser.parse(imageBytes)
+            localParser.parse(imageBytes, onProgress)
         }
     }
 }

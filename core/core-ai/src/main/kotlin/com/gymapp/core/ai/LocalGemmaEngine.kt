@@ -1,5 +1,6 @@
 package com.gymapp.core.ai
 
+import android.content.Context
 import com.google.ai.edge.litertlm.Backend
 import com.google.ai.edge.litertlm.Content
 import com.google.ai.edge.litertlm.Contents
@@ -7,6 +8,7 @@ import com.google.ai.edge.litertlm.ConversationConfig
 import com.google.ai.edge.litertlm.Engine
 import com.google.ai.edge.litertlm.EngineConfig
 import com.google.ai.edge.litertlm.Message
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -33,6 +35,7 @@ private fun Message.extractText(): String? =
  */
 @Singleton
 class LocalGemmaEngine @Inject constructor(
+    @ApplicationContext private val context: Context,
     private val modelDownloadManager: ModelDownloadManager,
 ) {
     private var engine: Engine? = null
@@ -134,13 +137,23 @@ class LocalGemmaEngine @Inject constructor(
         val modelPath = modelDownloadManager.modelPath()
             ?: error("Gemma model not downloaded. Go to Settings → AI Model to download it.")
 
-        val eng = Engine(
+        // Prefer GPU for ~3–5× faster inference; fall back to CPU if unavailable.
+        val cpuThreads = (Runtime.getRuntime().availableProcessors() - 1).coerceAtLeast(2)
+        engine = tryInit(modelPath, Backend.GPU())
+            ?: tryInit(modelPath, Backend.CPU(numOfThreads = cpuThreads))
+            ?: error("Failed to initialise Gemma engine on GPU and CPU")
+    }
+
+    private fun tryInit(modelPath: String, backend: Backend): Engine? = try {
+        Engine(
             EngineConfig(
                 modelPath = modelPath,
-                backend = Backend.CPU(),
+                backend = backend,
+                // Cache compiled GPU/CPU kernels so subsequent inits are faster.
+                cacheDir = context.cacheDir.absolutePath,
             ),
-        )
-        eng.initialize()
-        engine = eng
+        ).also { it.initialize() }
+    } catch (_: Exception) {
+        null
     }
 }

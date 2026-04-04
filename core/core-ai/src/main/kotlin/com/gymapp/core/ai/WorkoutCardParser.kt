@@ -15,5 +15,5 @@ interface WorkoutCardParser {
      * @param imageBytes JPEG or PNG bytes captured by CameraX.
      * @return Parsed exercise entries, or a failure with the underlying error.
      */
-    suspend fun parse(imageBytes: ByteArray): Result<List<ExerciseEntry>>
+    suspend fun parse(imageBytes: ByteArray, onProgress: (String) -> Unit = {}): Result<List<ExerciseEntry>>
 }
