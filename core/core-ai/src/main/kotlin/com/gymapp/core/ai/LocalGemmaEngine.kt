@@ -55,21 +55,24 @@ class LocalGemmaEngine @Inject constructor(
         userPrompt: String,
     ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
+            // Hold the mutex for the full conversation lifecycle — LiteRT-LM only supports
+            // one active session at a time; concurrent calls produce FAILED_PRECONDITION.
             initMutex.withLock {
                 ensureInitialised()
+                val currentEngine = engine ?: error("Gemma engine not initialised")
+
+                // Each call gets a fresh conversation so there is no leaking history.
+                // close() is required after use — Engine tracks open conversations natively
+                // and throws FAILED_PRECONDITION if a prior one is not closed first.
+                currentEngine.createConversation(
+                    ConversationConfig(
+                        systemInstruction = Contents.of(systemPrompt),
+                    ),
+                ).use { conversation ->
+                    val response = conversation.sendMessage(userPrompt)
+                    response.extractText() ?: error("Empty response from Gemma")
+                }
             }
-
-            val currentEngine = engine ?: error("Gemma engine not initialised")
-
-            // Each call gets a fresh conversation so there is no leaking history.
-            val conversation = currentEngine.createConversation(
-                ConversationConfig(
-                    systemInstruction = Contents.of(systemPrompt),
-                ),
-            )
-
-            val response = conversation.sendMessage(userPrompt)
-            response.extractText() ?: error("Empty response from Gemma")
         }
     }
 
@@ -82,38 +85,39 @@ class LocalGemmaEngine @Inject constructor(
         messages: List<ChatMessage>,
     ): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
+            // Hold the mutex for the full conversation lifecycle — LiteRT-LM only supports
+            // one active session at a time; concurrent calls produce FAILED_PRECONDITION.
             initMutex.withLock {
                 ensureInitialised()
-            }
+                val currentEngine = engine ?: error("Gemma engine not initialised")
 
-            val currentEngine = engine ?: error("Gemma engine not initialised")
+                // Replay all prior messages so Gemma has context.
+                // Build a combined text prompt that includes prior turns.
+                val historyText = buildString {
+                    messages.dropLast(1).forEach { msg ->
+                        val label = if (msg.role == ChatMessage.Role.USER) "User" else "Assistant"
+                        appendLine("$label: ${msg.content}")
+                    }
+                }
 
-            val conversation = currentEngine.createConversation(
-                ConversationConfig(
-                    systemInstruction = Contents.of(systemPrompt),
-                ),
-            )
+                val lastUser = messages.lastOrNull { it.role == ChatMessage.Role.USER }
+                    ?: error("No user message in conversation")
 
-            // Replay all prior messages so Gemma has context.
-            // Build a combined text prompt that includes prior turns.
-            val historyText = buildString {
-                messages.dropLast(1).forEach { msg ->
-                    val label = if (msg.role == ChatMessage.Role.USER) "User" else "Assistant"
-                    appendLine("$label: ${msg.content}")
+                val fullPrompt = if (historyText.isNotBlank()) {
+                    "$historyText\nUser: ${lastUser.content}"
+                } else {
+                    lastUser.content
+                }
+
+                currentEngine.createConversation(
+                    ConversationConfig(
+                        systemInstruction = Contents.of(systemPrompt),
+                    ),
+                ).use { conversation ->
+                    val response = conversation.sendMessage(fullPrompt)
+                    response.extractText() ?: error("Empty response from Gemma")
                 }
             }
-
-            val lastUser = messages.lastOrNull { it.role == ChatMessage.Role.USER }
-                ?: error("No user message in conversation")
-
-            val fullPrompt = if (historyText.isNotBlank()) {
-                "$historyText\nUser: ${lastUser.content}"
-            } else {
-                lastUser.content
-            }
-
-            val response = conversation.sendMessage(fullPrompt)
-            response.extractText() ?: error("Empty response from Gemma")
         }
     }
 

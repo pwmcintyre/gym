@@ -12,12 +12,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Camera
 import androidx.compose.material.icons.filled.Photo
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -27,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
@@ -56,6 +59,8 @@ fun ScanScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val knownNames by viewModel.knownExerciseNames.collectAsStateWithLifecycle()
+    val hasApiKey by viewModel.hasApiKey.collectAsStateWithLifecycle()
+    val isLocalModelReady by viewModel.isLocalModelReady.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val snackbarHostState = remember { SnackbarHostState() }
@@ -152,6 +157,34 @@ fun ScanScreen(
                         onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
                         modifier = Modifier.padding(top = 16.dp),
                     ) { Text("Grant permission") }
+                }
+            }
+
+            // AI not ready banner — floats at top of camera view
+            if (!hasApiKey && !isLocalModelReady && !uiState.isCapturing && !uiState.isParsing) {
+                Surface(
+                    color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.92f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter),
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(
+                            text = "No AI backend ready. Add an OpenAI key or download Gemma in Settings.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer,
+                        )
+                    }
                 }
             }
 

@@ -11,6 +11,9 @@ import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gymapp.core.ai.AiSettings
+import com.gymapp.core.ai.ModelDownloadManager
+import com.gymapp.core.ai.ModelState
 import com.gymapp.core.ai.WorkoutCardParser
 import com.gymapp.core.database.repository.WorkoutRepository
 import com.gymapp.core.model.ExerciseEntry
@@ -19,6 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -43,6 +47,8 @@ data class ScanUiState(
 class ScanViewModel @Inject constructor(
     private val parser: WorkoutCardParser,
     private val workoutRepository: WorkoutRepository,
+    private val aiSettings: AiSettings,
+    private val modelDownloadManager: ModelDownloadManager,
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ScanUiState())
@@ -51,6 +57,16 @@ class ScanViewModel @Inject constructor(
     val knownExerciseNames: StateFlow<List<String>> =
         workoutRepository.observeDistinctExerciseNames()
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    /** True when OpenAI key is set (cloud scan available). */
+    val hasApiKey: StateFlow<Boolean> = aiSettings.apiKey
+        .map { it.isNotBlank() }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
+
+    /** True when local Gemma model is downloaded and ready. */
+    val isLocalModelReady: StateFlow<Boolean> = modelDownloadManager.state
+        .map { it is ModelState.Ready }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), false)
 
     private var imageCapture: ImageCapture? = null
 
