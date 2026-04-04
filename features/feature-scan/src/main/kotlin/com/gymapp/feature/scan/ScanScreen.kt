@@ -2,10 +2,13 @@ package com.gymapp.feature.scan
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.graphics.BitmapFactory
+import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.view.PreviewView
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -42,6 +45,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.unit.dp
@@ -49,6 +55,8 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -68,6 +76,30 @@ fun ScanScreen(
     // Incremented to force AndroidView to rebind the camera after the picker returns
     var cameraBindKey by remember { mutableIntStateOf(0) }
     fun rebindCamera() { cameraBindKey++ }
+
+    // Holds the image chosen from the gallery while it is being analysed
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var selectedImageBitmap by remember { mutableStateOf<ImageBitmap?>(null) }
+
+    // Load bitmap off the main thread whenever the selected URI changes
+    LaunchedEffect(selectedImageUri) {
+        val uri = selectedImageUri
+        selectedImageBitmap = if (uri != null) {
+            withContext(Dispatchers.IO) {
+                context.contentResolver.openInputStream(uri)?.use { stream ->
+                    BitmapFactory.decodeStream(stream)?.asImageBitmap()
+                }
+            }
+        } else null
+    }
+
+    // When parsing finishes (success or error), clear the selected image and return to camera
+    LaunchedEffect(uiState.isParsing) {
+        if (!uiState.isParsing && selectedImageUri != null) {
+            selectedImageUri = null
+            rebindCamera()
+        }
+    }
 
     // --- Camera permission state ---
     var hasCameraPermission by remember {
@@ -89,9 +121,14 @@ fun ScanScreen(
     val imagePicker = rememberLauncherForActivityResult(
         ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        // Picker has returned — rebind the camera before processing the image
-        rebindCamera()
-        if (uri != null) viewModel.parseUri(uri, context.contentResolver)
+        if (uri != null) {
+            // Show the selected image while it is being analysed; camera stays unbound
+            selectedImageUri = uri
+            viewModel.parseUri(uri, context.contentResolver)
+        } else {
+            // Picker cancelled — return to live camera
+            rebindCamera()
+        }
     }
 
     // Show errors in snackbar
@@ -127,7 +164,18 @@ fun ScanScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
         ) {
-            if (hasCameraPermission) {
+            val bitmap = selectedImageBitmap
+            if (bitmap != null) {
+                // Show the gallery-picked image while it is being analysed
+                Image(
+                    bitmap = bitmap,
+                    contentDescription = "Selected image",
+                    contentScale = ContentScale.Fit,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(MaterialTheme.colorScheme.background),
+                )
+            } else if (hasCameraPermission) {
                 // Wrapping in key() forces AndroidView to be recreated (and bindCamera
                 // re-called) whenever cameraBindKey changes — i.e. after the picker returns.
                 key(cameraBindKey) {
