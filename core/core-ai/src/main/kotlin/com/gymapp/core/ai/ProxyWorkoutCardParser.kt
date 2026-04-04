@@ -132,12 +132,14 @@ internal fun parseExerciseEntriesFromContent(
     content: String,
     json: Json = Json { ignoreUnknownKeys = true },
 ): List<ExerciseEntry> {
-    val stripped = content.trim()
+    // Strip Qwen3 <think>...</think> reasoning blocks before any other processing.
+    val withoutThink = content.replace(Regex("<think>[\\s\\S]*?</think>", RegexOption.IGNORE_CASE), "")
+    val stripped = withoutThink.trim()
         .removePrefix("```json")
         .removePrefix("```")
         .removeSuffix("```")
         .trim()
-    // Gemma (and other small models) often emit preamble/postamble text around the JSON.
+    // Small models often emit preamble/postamble text around the JSON.
     // Grab just the outermost { ... } to be safe.
     val start = stripped.indexOf('{')
     val end = stripped.lastIndexOf('}')

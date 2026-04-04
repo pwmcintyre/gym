@@ -404,22 +404,22 @@ private fun LocalModelCard(
     onDelete: () -> Unit,
 ) {
     SettingsSectionCard(
-        title = "Offline AI (Gemma 4)",
+        title = "Offline AI (Qwen3 0.6B)",
         supportingText = if (hasApiKey) {
             "OpenAI is active. The local model is used when no API key is set."
         } else {
-            "No API key set — the app uses the local Gemma model for AI features."
+            "No API key set — the app uses the local Qwen3 model for AI features."
         },
     ) {
         when (modelState) {
             is ModelState.NotDownloaded -> {
                 Text(
-                    text = "Model not downloaded (~2.6 GB).",
+                    text = "Model not downloaded (~614 MB).",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Button(onClick = onDownload, modifier = Modifier.fillMaxWidth()) {
-                    Text("Download Gemma 4")
+                    Text("Download Qwen3 0.6B")
                 }
             }
 
@@ -442,7 +442,7 @@ private fun LocalModelCard(
 
             is ModelState.Ready -> {
                 Text(
-                    text = "Gemma 4 ready for offline use.",
+                    text = "Qwen3 0.6B ready for offline use.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.primary,
                 )

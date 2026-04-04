@@ -35,12 +35,14 @@ sealed class ModelState {
     data class Error(val message: String) : ModelState()
 }
 
-private const val MODEL_FILENAME = "gemma-4-e2b-it.litertlm"
+private const val MODEL_FILENAME = "qwen3-0.6b.litertlm"
 
-// Hugging Face direct download URL for Gemma 4 E2B (public community re-export, no token needed).
-// ?download=true forces an attachment response and avoids XetHub protocol negotiation issues.
+// Qwen3-0.6B — 614 MB, ungated, ~3× fewer params than Gemma 4 E2B, same LiteRT-LM format.
 private const val MODEL_URL =
-    "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm?download=true"
+    "https://huggingface.co/litert-community/Qwen3-0.6B/resolve/main/Qwen3-0.6B.litertlm?download=true"
+
+// Legacy Gemma file left over from earlier builds — cleaned up on next launch.
+private const val LEGACY_MODEL_FILENAME = "gemma-4-e2b-it.litertlm"
 
 @Singleton
 class ModelDownloadManager @Inject constructor(
@@ -53,6 +55,9 @@ class ModelDownloadManager @Inject constructor(
         get() = File(context.filesDir, MODEL_FILENAME)
 
     init {
+        // Clean up the old Gemma file to reclaim ~2.6 GB.
+        File(context.filesDir, LEGACY_MODEL_FILENAME).takeIf { it.exists() }?.delete()
+
         if (modelFile.exists() && modelFile.length() > 0) {
             _state.value = ModelState.Ready(modelFile.absolutePath)
         }
