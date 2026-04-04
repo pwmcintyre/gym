@@ -14,6 +14,10 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
+// Max number of redirects to follow manually (OkHttp follows up to 20 automatically,
+// but we do it ourselves to ensure cross-host redirects strip auth headers cleanly).
+private const val MAX_REDIRECTS = 10
+
 /**
  * Download and lifecycle states for the local Gemma model file.
  */
@@ -33,10 +37,10 @@ sealed class ModelState {
 
 private const val MODEL_FILENAME = "gemma-4-e2b-it.litertlm"
 
-// Hugging Face direct download URL for Gemma 4 E2B
-// Requires HF token only for gated repos; this community re-export is public.
+// Hugging Face direct download URL for Gemma 4 E2B (public community re-export, no token needed).
+// ?download=true forces an attachment response and avoids XetHub protocol negotiation issues.
 private const val MODEL_URL =
-    "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it-cpu.litertlm"
+    "https://huggingface.co/litert-community/gemma-4-E2B-it-litert-lm/resolve/main/gemma-4-E2B-it.litertlm?download=true"
 
 @Singleton
 class ModelDownloadManager @Inject constructor(
@@ -63,22 +67,37 @@ class ModelDownloadManager @Inject constructor(
             try {
                 _state.value = ModelState.Downloading(0)
 
+                // Disable automatic redirects so we can handle cross-host redirects manually
+                // (avoids forwarding auth headers to CDN hosts, which causes 403/404).
                 val client = OkHttpClient.Builder()
                     .connectTimeout(30, TimeUnit.SECONDS)
-                    .readTimeout(120, TimeUnit.SECONDS)
-                    .followRedirects(true)
+                    .readTimeout(0, TimeUnit.SECONDS) // 0 = no timeout — needed for 2.6 GB file
+                    .followRedirects(false)
+                    .followSslRedirects(false)
                     .build()
 
-                val request = Request.Builder().url(MODEL_URL).build()
-                val response = client.newCall(request).execute()
+                // Follow redirects manually, stripping headers on cross-host hops.
+                var url = MODEL_URL
+                var redirectsLeft = MAX_REDIRECTS
+                var response = client.newCall(Request.Builder().url(url).build()).execute()
+
+                while (response.code in 300..399 && redirectsLeft-- > 0) {
+                    val location = response.header("Location") ?: break
+                    response.close()
+                    // Build a clean request to the redirect target (no extra headers).
+                    url = location
+                    response = client.newCall(Request.Builder().url(url).build()).execute()
+                }
 
                 if (!response.isSuccessful) {
-                    _state.value = ModelState.Error("Download failed: HTTP ${response.code}")
+                    _state.value = ModelState.Error("Download failed: HTTP ${response.code} (url=$url)")
+                    response.close()
                     return@withContext
                 }
 
                 val body = response.body ?: run {
                     _state.value = ModelState.Error("Empty response body")
+                    response.close()
                     return@withContext
                 }
 

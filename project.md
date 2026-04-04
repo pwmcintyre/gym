@@ -572,6 +572,28 @@ Implementation notes:
 
 ---
 
+## ✅ Milestone 15 — Local Gemma 4 Offline AI Backend
+
+**Status: complete — committed `86e4cce`, pushed to `ralph/ai-assistant`**
+
+Replaced all remote OpenAI calls with a dual-backend AI system:
+- No API key → uses on-device **Gemma 4 E2B** via LiteRT-LM 0.9.0 (fully offline)
+- API key configured → uses OpenAI as before
+
+**What changed:**
+- `AiAssistant.kt` refactored: `AiBackend` interface, `OpenAiAssistant`, `LocalGemmaAssistant`, `SmartAiAssistant`
+- `LocalGemmaEngine.kt` — singleton LiteRT-LM engine lifecycle manager
+- `ModelDownloadManager.kt` — downloads Gemma 4 E2B from HuggingFace to `filesDir` (~2.6 GB)
+- `LocalWorkoutCardParser.kt` — ML Kit OCR extracts text from images → Gemma for JSON
+- `SmartWorkoutCardParser.kt` — dispatches to OpenAI or local based on API key
+- `SettingsScreen.kt` / `SettingsViewModel.kt` — LocalModelCard for download/delete UI
+- `AndroidManifest.xml` — `uses-native-library` moved inside `<application>` (GPU backend)
+- Full toolchain upgrade: Kotlin 2.3.0, KSP 2.3.6, AGP 9.0.1, Gradle 9.1.0, Compose BOM 2026.03.01
+
+**Next:** Deploy to device and test Gemma model download + inference end-to-end.
+
+---
+
 | Decision                  | Reason                                          |
 | ------------------------- | ----------------------------------------------- |
 | Native Android / Compose  | Best performance, modern UI                     |
