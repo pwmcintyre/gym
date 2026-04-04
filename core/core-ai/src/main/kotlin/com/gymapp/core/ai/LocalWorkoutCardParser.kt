@@ -41,7 +41,14 @@ class LocalWorkoutCardParser @Inject constructor(
                     return@runCatching emptyList()
                 }
 
-                // Step 2: Gemma parses the text into JSON
+                // Step 2a: Try fast regex parser first — covers well-structured whiteboards
+                // in <10ms with no model inference.
+                val regexResult = RegexWorkoutParser.parse(ocrText)
+                if (regexResult.isNotEmpty()) {
+                    return@runCatching regexResult
+                }
+
+                // Step 2b: Regex found nothing (unusual layout / messy OCR) — fall back to Gemma.
                 onProgress("Analysing workout…")
                 val result = engine.chat(
                     systemPrompt = SCAN_SYSTEM_PROMPT,
